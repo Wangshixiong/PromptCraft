@@ -1,0 +1,86 @@
+{
+  "manifest_version": 3,
+  "name": "PromptCraft",
+  "version": "0.1.0",
+  "description": "个人提示词管理工具 - 安全、可靠、可跨设备同步的提示词管理助手",
+  
+  "permissions": [
+    "storage",
+    "activeTab",
+    "contextMenus",
+    "sidePanel",
+    "identity",
+    "notifications"
+  ],
+  
+  "host_permissions": [
+    "https://*.supabase.co/*",
+    "https://github.com/*"
+  ],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "side_panel": {
+    "default_path": "sidebar.html",
+    "openAtInstall": false
+  },
+  
+  "action": {
+    "default_title": "PromptCraft - 提示词管理助手",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  
+  "commands": {
+    "toggle-sidebar": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+P",
+        "mac": "Command+Shift+P"
+      },
+      "description": "切换PromptCraft侧边栏显示/隐藏"
+    },
+    "quick-add-prompt": {
+      "suggested_key": {
+        "default": "Alt+Q",
+        "mac": "Alt+Q"
+      },
+      "description": "快速添加选中文本为提示词"
+    }
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://*.supabase.co https://github.com;",
+    "sandbox": "sandbox allow-scripts allow-forms allow-popups allow-modals; script-src 'self' 'unsafe-inline' 'unsafe-eval'; child-src 'self';"
+  },
+  "oauth2": {
+    "client_id": "Ov23lil2Ci6EtpS1uRkS",
+    "scopes": [
+      "user:email"
+    ],
+    "redirect_uris": [
+      "https://uwgxhtrbixsdabjvuuaj.supabase.co/auth/v1/callback"
+    ]
+  }
+}

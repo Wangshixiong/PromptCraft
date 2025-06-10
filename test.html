@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PromptCraft 插件测试页面</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .test-section h3 {
+            color: #666;
+            margin-top: 0;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .instructions {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .prompt-example {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 PromptCraft 插件测试页面</h1>
+        
+        <div class="instructions">
+            <h3>📋 测试说明</h3>
+            <p>这个页面用于测试 PromptCraft 插件的各项功能：</p>
+            <ul>
+                <li><strong>右键菜单测试</strong>：选中下方任意文本，右键查看是否出现"添加到PromptCraft"选项</li>
+                <li><strong>快捷键测试</strong>：按 <kbd>Ctrl+Shift+P</kbd> 切换侧边栏显示</li>
+                <li><strong>快速添加测试</strong>：选中文本后按 <kbd>Alt+Q</kbd> 快速添加</li>
+                <li><strong>插件图标测试</strong>：点击浏览器工具栏中的 PromptCraft 图标</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 代码生成提示词</h3>
+            <div class="prompt-example">
+请帮我生成一个 <span class="highlight">Python 函数</span>，要求：
+1. 函数名为 calculate_fibonacci
+2. 接受一个整数参数 n
+3. 返回斐波那契数列的第 n 项
+4. 包含错误处理和文档字符串
+5. 使用递归或动态规划实现
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>✍️ 文案优化提示词</h3>
+            <div class="prompt-example">
+请帮我优化以下文案，要求：
+1. <span class="highlight">语言更加生动有趣</span>
+2. 逻辑清晰，条理分明
+3. 符合目标受众的阅读习惯
+4. 突出核心卖点
+5. 控制在 200 字以内
+
+原文案：[在这里粘贴原文案]
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎨 创意设计提示词</h3>
+            <div class="prompt-example">
+请为我设计一个 <span class="highlight">现代简约风格的 Logo</span>，要求：
+1. 体现科技感和专业性
+2. 使用蓝色和白色作为主色调
+3. 包含文字和图形元素
+4. 适用于网站、名片和宣传材料
+5. 提供 SVG 格式的设计稿
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 数据分析提示词</h3>
+            <div class="prompt-example">
+请帮我分析以下数据集，重点关注：
+1. <span class="highlight">数据的分布特征和异常值</span>
+2. 变量之间的相关性分析
+3. 趋势和季节性模式
+4. 预测模型的建议
+5. 可视化图表的推荐
+
+数据描述：[在这里描述数据集]
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎓 学习计划提示词</h3>
+            <div class="prompt-example">
+请为我制定一个关于 <span class="highlight">[学习主题]</span> 的学习计划，包括：
+1. 学习目标和里程碑设定
+2. 详细的学习路径规划
+3. 推荐的学习资源和材料
+4. 每日/每周时间安排建议
+5. 学习效果评估和调整方法
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 问题解决提示词</h3>
+            <div class="prompt-example">
+我遇到了一个问题：<span class="highlight">[具体问题描述]</span>
+
+请帮我：
+1. 分析问题的根本原因
+2. 提供多种解决方案
+3. 评估每种方案的优缺点
+4. 推荐最佳实施步骤
+5. 预防类似问题的建议
+            </div>
+        </div>
+
+        <div style="margin-top: 40px; text-align: center; color: #666;">
+            <p>💡 <strong>提示</strong>：选中任意文本片段，然后右键选择"添加到PromptCraft"来测试插件功能</p>
+            <p>🔧 如果插件未正常工作，请检查是否已在 Chrome 扩展管理页面中启用</p>
+        </div>
+    </div>
+</body>
+</html>

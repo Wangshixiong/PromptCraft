@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PromptCraft - 提示词管理助手</title>
+  <link rel="stylesheet" href="css/sidebar.css">
+</head>
+<body>
+  <!-- 主容器 -->
+  <div id="app" class="app">
+    <!-- 顶部工具栏 -->
+    <header class="header">
+      <div class="header-top">
+        <div class="logo">
+          <span class="logo-icon">📝</span>
+          <span class="logo-text">PromptCraft</span>
+        </div>
+        <div class="header-actions">
+          <button id="theme-toggle" class="btn-icon" title="切换主题">
+            <span class="icon">🌙</span>
+          </button>
+          <button id="settings-btn" class="btn-icon" title="设置">
+            <span class="icon">⚙️</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- 搜索栏 -->
+      <div class="search-container">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="搜索提示词..." autocomplete="off">
+          <button id="clear-search" class="btn-clear" style="display: none;">✕</button>
+        </div>
+      </div>
+      
+      <!-- 分类筛选 -->
+      <div class="category-filter">
+        <div class="filter-group">
+          <div class="category-tags" id="category-tags">
+            <button class="category-tag active" data-category="">全部</button>
+          </div>
+        </div>
+        <button id="add-prompt-btn" class="btn-primary">
+          <span class="icon">➕</span>
+          <span>新增</span>
+        </button>
+      </div>
+    </header>
+    
+    <!-- 主内容区域 -->
+    <main class="main-content">
+      <!-- 登录状态 -->
+      <div id="auth-section" class="auth-section">
+        <!-- 未登录状态 -->
+        <div id="login-view" class="auth-view">
+          <div class="auth-card">
+            <div class="welcome-content">
+              <div class="welcome-icon">🔒</div>
+              <h2>欢迎使用 PromptCraft</h2>
+              <p>请登录以开始管理您的提示词库</p>
+              
+              <!-- GitHub登录按钮 -->
+        <button id="github-login-btn" class="btn-github">
+          <span class="github-icon">🐙</span>
+          使用 GitHub 登录
+        </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 登录中状态 -->
+        <div id="loading-view" class="auth-view" style="display: none;">
+          <div class="auth-card">
+            <div class="loading-spinner"></div>
+            <h2>登录中...</h2>
+            <p>正在验证您的身份</p>
+          </div>
+        </div>
+        
+        <!-- 已登录状态 -->
+        <div id="user-info" class="user-info" style="display: none;">
+          <div class="user-avatar">
+            <img id="user-avatar-img" src="" alt="用户头像">
+          </div>
+          <div class="user-details">
+            <div class="user-name" id="user-name"></div>
+            <div class="user-email" id="user-email"></div>
+          </div>
+          <button id="logout-btn" class="btn-logout" title="登出">
+            <span class="icon">🚪</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- 提示词列表 -->
+      <div id="prompts-section" class="prompts-section" style="display: none;">
+        <!-- 统计信息 -->
+        <div class="stats-bar">
+          <span id="prompts-count" class="stats-text">共 0 条提示词</span>
+          <span id="category-count" class="stats-text">0 个分类</span>
+        </div>
+        
+        <!-- 提示词列表 -->
+        <div id="prompts-list" class="prompts-list">
+          <!-- 提示词项目将通过JavaScript动态生成 -->
+        </div>
+        
+        <!-- 空状态 -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+          <div class="empty-icon">📝</div>
+          <h3>还没有提示词</h3>
+          <p>点击上方的"新增"按钮创建您的第一个提示词</p>
+          <button class="btn-primary" id="create-first-prompt-btn">
+              <span class="icon">➕</span>
+              <span>创建提示词</span>
+            </button>
+        </div>
+        
+        <!-- 搜索无结果 -->
+        <div id="no-results" class="empty-state" style="display: none;">
+          <div class="empty-icon">🔍</div>
+          <h3>未找到匹配的提示词</h3>
+          <p>尝试使用不同的关键词搜索</p>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <!-- 模态框容器 -->
+  <div id="modal-overlay" class="modal-overlay" style="display: none;">
+    <!-- 添加/编辑提示词模态框 -->
+    <div id="prompt-modal" class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">新增提示词</h3>
+        <button id="modal-close" class="btn-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="prompt-form">
+          <div class="form-group">
+            <label for="prompt-title">标题 *</label>
+            <input type="text" id="prompt-title" name="title" required maxlength="100" placeholder="请输入提示词标题">
+          </div>
+          
+          <div class="form-group">
+            <label for="prompt-category">分类</label>
+            <div class="category-input-group">
+              <input type="text" id="prompt-category" name="category" placeholder="请输入或选择分类" list="category-datalist">
+              <datalist id="category-datalist">
+                <!-- 分类选项将通过JavaScript动态生成 -->
+              </datalist>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="prompt-content">内容 *</label>
+            <textarea id="prompt-content" name="content" required rows="8" placeholder="请输入提示词内容..."></textarea>
+            <div class="char-counter">
+              <span id="char-count">0</span> / 2000
+            </div>
+          </div>
+          
+          <div class="form-actions">
+            <button type="button" id="cancel-btn" class="btn-secondary">取消</button>
+            <button type="submit" id="save-btn" class="btn-primary">
+              <span class="icon">💾</span>
+              <span>保存</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <!-- 删除确认模态框 -->
+    <div id="delete-modal" class="modal modal-small">
+      <div class="modal-header">
+        <h3>确认删除</h3>
+        <button class="btn-close" id="delete-modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="delete-warning">
+          <div class="warning-icon">⚠️</div>
+          <p>确定要删除这个提示词吗？</p>
+          <p class="warning-text">此操作无法撤销</p>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" id="delete-cancel-btn">取消</button>
+          <button type="button" id="confirm-delete-btn" class="btn-danger">
+            <span class="icon">🗑️</span>
+            <span>删除</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 设置模态框 -->
+    <div id="settings-modal" class="modal">
+      <div class="modal-header">
+        <h3>设置</h3>
+        <button class="btn-close" id="settings-modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-section">
+          <h4>外观</h4>
+          <div class="setting-item">
+            <label>主题模式</label>
+            <div class="theme-options">
+              <label class="radio-option">
+                <input type="radio" name="theme" value="light" id="theme-light">
+                <span>浅色</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="theme" value="dark" id="theme-dark">
+                <span>深色</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="theme" value="auto" id="theme-auto">
+                <span>跟随系统</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="settings-section">
+          <h4>数据管理</h4>
+          <div class="setting-item">
+            <button class="btn-secondary" id="export-data-btn">
+              <span class="icon">📤</span>
+              <span>导出数据</span>
+            </button>
+          </div>
+          <div class="setting-item">
+            <button class="btn-secondary" id="import-data-btn">
+              <span class="icon">📥</span>
+              <span>导入数据</span>
+            </button>
+          </div>
+        </div>
+        
+        <div class="settings-section">
+          <h4>关于</h4>
+          <div class="about-info">
+            <p><strong>PromptCraft</strong> v0.1.0</p>
+            <p>个人提示词管理工具</p>
+            <p>© 2024 PromptCraft</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 通知容器 -->
+  <div id="notifications" class="notifications"></div>
+  
+  <!-- 加载指示器 -->
+  <div id="loading-indicator" class="loading-indicator" style="display: none;">
+    <div class="loading-spinner"></div>
+  </div>
+  
+  <!-- JavaScript文件 -->
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/sidebar.js"></script>
+</body>
+</html>
