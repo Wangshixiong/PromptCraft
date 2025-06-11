@@ -42,16 +42,203 @@ const promptIdInput = document.getElementById('promptIdInput');
 const promptTitleInput = document.getElementById('promptTitleInput');
 const promptContentInput = document.getElementById('promptContentInput');
 const promptCategoryInput = document.getElementById('promptCategoryInput');
+const promptCategorySelect = document.getElementById('promptCategorySelect');
 
 
 // 全局状态
 let allPrompts = [];
 let currentUser = null;
+let themeMode = 'auto';
+let currentView = null;
+
+// 检测系统主题
+function getSystemTheme() {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+// 应用主题
+function applyTheme(mode) {
+    const actualTheme = mode === 'auto' ? getSystemTheme() : mode;
+    const isDark = actualTheme === 'dark';
+    
+    if (isDark) {
+        document.body.classList.add('dark-mode');
+    } else {
+        document.body.classList.remove('dark-mode');
+    }
+    
+    // 更新图标
+    const icon = themeToggle.querySelector('i');
+    if (mode === 'auto') {
+        icon.className = 'fas fa-adjust';
+        themeToggle.title = '主题：跟随系统';
+    } else if (isDark) {
+        icon.className = 'fas fa-sun';
+        themeToggle.title = '主题：深色';
+    } else {
+        icon.className = 'fas fa-moon';
+        themeToggle.title = '主题：浅色';
+    }
+}
 
 // --- 实用工具函数 ---
 
 const showLoading = () => loadingOverlay.style.display = 'flex';
 const hideLoading = () => loadingOverlay.style.display = 'none';
+
+// 自定义确认弹窗
+function showCustomConfirm(message) {
+    return new Promise((resolve) => {
+        // 创建弹窗容器
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        `;
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            background: var(--background-light);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 300px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            color: var(--text-light);
+        `;
+        
+        // 检查是否为暗色模式
+        if (document.body.classList.contains('dark-mode')) {
+            modal.style.background = 'var(--background-dark)';
+            modal.style.color = 'var(--text-dark)';
+        }
+        
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const cancelBtnColor = isDarkMode ? 'white' : 'var(--text-light)';
+        const cancelBorderColor = isDarkMode ? 'var(--border-dark)' : 'var(--border-light)';
+        
+        modal.innerHTML = `
+            <div style="margin-bottom: 20px; font-size: 16px; line-height: 1.5;">${message}</div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button id="cancelBtn" style="
+                    padding: 8px 16px;
+                    border: 1px solid ${cancelBorderColor};
+                    background: transparent;
+                    color: ${cancelBtnColor};
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">取消</button>
+                <button id="confirmBtn" style="
+                    padding: 8px 16px;
+                    border: none;
+                    background: var(--danger);
+                    color: white;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">确定</button>
+            </div>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        // 事件监听
+        modal.querySelector('#confirmBtn').onclick = () => {
+            document.body.removeChild(overlay);
+            resolve(true);
+        };
+        
+        modal.querySelector('#cancelBtn').onclick = () => {
+            document.body.removeChild(overlay);
+            resolve(false);
+        };
+        
+        overlay.onclick = (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+                resolve(false);
+            }
+        };
+    });
+}
+
+// 自定义警告弹窗
+function showCustomAlert(message) {
+    return new Promise((resolve) => {
+        // 创建弹窗容器
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        `;
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            background: var(--background-light);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 300px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            color: var(--text-light);
+        `;
+        
+        // 检查是否为暗色模式
+        if (document.body.classList.contains('dark-mode')) {
+            modal.style.background = 'var(--background-dark)';
+            modal.style.color = 'var(--text-dark)';
+        }
+        
+        modal.innerHTML = `
+            <div style="margin-bottom: 20px; font-size: 16px; line-height: 1.5;">${message}</div>
+            <div style="display: flex; justify-content: flex-end;">
+                <button id="okBtn" style="
+                    padding: 8px 16px;
+                    border: none;
+                    background: var(--primary-color);
+                    color: white;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 14px;
+                ">确定</button>
+            </div>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        // 事件监听
+        modal.querySelector('#okBtn').onclick = () => {
+            document.body.removeChild(overlay);
+            resolve();
+        };
+        
+        overlay.onclick = (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+                resolve();
+            }
+        };
+    });
+}
 
 function showView(viewId) {
     console.log(`切换视图到: ${viewId}`);
@@ -226,9 +413,20 @@ async function loadUserPrompts(skipLoading = false) {
         }
         
         if (!data || data.length === 0) {
-            console.log('未找到本地提示词，创建示例提示词...');
-            await createSamplePrompts(skipLoading);
-            return; 
+            console.log('未找到本地提示词');
+            // 检查是否是首次使用（localStorage中没有任何数据）
+            const hasEverHadData = localStorage.getItem('promptcraft_has_data');
+            if (!hasEverHadData) {
+                console.log('首次使用，创建示例提示词...');
+                await createSamplePrompts(skipLoading);
+                return;
+            } else {
+                console.log('用户已删除所有提示词，显示空列表');
+                allPrompts = [];
+                renderPrompts([]);
+                updateFilterButtons();
+                return;
+            }
         }
         
         allPrompts = data;
@@ -279,6 +477,8 @@ async function createSamplePrompts(skipLoading = false) {
     try {
         // 保存到本地存储
         localStorage.setItem('promptcraft_prompts', JSON.stringify(sampleData));
+        // 标记用户已经有过数据
+        localStorage.setItem('promptcraft_has_data', 'true');
         console.log('成功创建示例提示词');
         await loadUserPrompts(skipLoading);
     } catch (error) {
@@ -345,6 +545,8 @@ async function savePrompt() {
         
         // 保存到本地存储
         localStorage.setItem('promptcraft_prompts', JSON.stringify(prompts));
+        // 标记用户已经有过数据
+        localStorage.setItem('promptcraft_has_data', 'true');
         console.log('提示词保存成功');
         
         await loadUserPrompts();
@@ -359,7 +561,8 @@ async function savePrompt() {
 }
 
 async function deletePrompt(promptId) {
-    const isConfirmed = confirm('您确定要删除这个提示词吗？此操作无法撤销。');
+    // 显示自定义确认弹窗
+    const isConfirmed = await showCustomConfirm('您确定要删除这个提示词吗？此操作无法撤销。');
     if (!isConfirmed) return;
 
     safeShowLoading();
@@ -383,17 +586,23 @@ async function deletePrompt(promptId) {
         
         if (filteredPrompts.length === prompts.length) {
             console.error('未找到要删除的提示词:', promptId);
-            alert('未找到要删除的提示词');
+            showCustomAlert('未找到要删除的提示词');
         } else {
-            // 保存更新后的数据
+            // 保存更新后的数据到本地存储
             localStorage.setItem('promptcraft_prompts', JSON.stringify(filteredPrompts));
+            // 确保标记用户已经有过数据（即使现在为空）
+            localStorage.setItem('promptcraft_has_data', 'true');
             console.log('提示词删除成功:', promptId);
-            await loadUserPrompts();
+            
+            // 更新内存中的数据并重新渲染
+            allPrompts = filteredPrompts;
+            renderPrompts(allPrompts);
+            updateFilterButtons();
         }
         
     } catch (error) {
         console.error('删除失败:', error);
-        alert('删除失败，请稍后再试。');
+        showCustomAlert('删除失败，请稍后再试。');
     }
     
     forceHideLoading();
@@ -420,6 +629,7 @@ function renderPrompts(promptsToRender) {
                 
                 const card = document.createElement('div');
                 card.className = 'prompt-card fade-in';
+                card.dataset.id = prompt.id;
                 card.innerHTML = `
                     <div class="prompt-header">
                         <div class="prompt-title">${escapeHtml(prompt.title || '无标题')}</div>
@@ -461,6 +671,112 @@ function updateFilterButtons() {
         btn.addEventListener('click', () => handleFilter(cat));
         filterContainer.appendChild(btn);
     });
+    
+    // 更新分类下拉选项
+    updateCategoryOptions();
+}
+
+function updateCategoryOptions() {
+    const existingCategories = [...new Set(allPrompts.map(p => p.category).filter(Boolean))];
+    promptCategorySelect.innerHTML = '<option value="">选择分类</option>';
+    existingCategories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        promptCategorySelect.appendChild(option);
+    });
+}
+
+function setupCategoryInput() {
+    // 创建分类建议容器
+    const suggestionContainer = document.createElement('div');
+    suggestionContainer.style.cssText = `
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--card-light);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        max-height: 150px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    `;
+    
+    // 设置分类输入框的父容器为相对定位
+    promptCategoryInput.parentElement.style.position = 'relative';
+    promptCategoryInput.parentElement.appendChild(suggestionContainer);
+    
+    // 输入框获得焦点时显示建议
+    promptCategoryInput.addEventListener('focus', () => {
+        updateCategorySuggestions();
+    });
+    
+    // 输入框输入时更新建议
+    promptCategoryInput.addEventListener('input', () => {
+        updateCategorySuggestions();
+    });
+    
+    // 点击其他地方时隐藏建议
+    document.addEventListener('click', (e) => {
+        if (!promptCategoryInput.contains(e.target) && !suggestionContainer.contains(e.target)) {
+            suggestionContainer.style.display = 'none';
+        }
+    });
+    
+    function updateCategorySuggestions() {
+        const existingCategories = [...new Set(allPrompts.map(p => p.category).filter(Boolean))];
+        const inputValue = promptCategoryInput.value.toLowerCase();
+        
+        // 过滤匹配的分类
+        const filteredCategories = existingCategories.filter(cat => 
+            cat.toLowerCase().includes(inputValue)
+        );
+        
+        if (filteredCategories.length > 0) {
+            suggestionContainer.innerHTML = '';
+            filteredCategories.forEach(category => {
+                const item = document.createElement('div');
+                item.style.cssText = `
+                    padding: 8px 12px;
+                    cursor: pointer;
+                    border-bottom: 1px solid var(--border-light);
+                    color: var(--text-light);
+                    background-color: var(--background-light);
+                `;
+                item.textContent = category;
+                
+                // 暗色模式样式
+                if (document.body.classList.contains('dark-mode')) {
+                    item.style.color = 'var(--text-dark)';
+                    item.style.backgroundColor = 'var(--background-dark)';
+                    item.style.borderColor = 'var(--border-dark)';
+                }
+                
+                item.addEventListener('mouseenter', () => {
+                    item.style.backgroundColor = 'var(--primary-color)';
+                    item.style.color = 'white';
+                });
+                
+                item.addEventListener('mouseleave', () => {
+                    item.style.backgroundColor = document.body.classList.contains('dark-mode') ? 'var(--background-dark)' : 'var(--background-light)';
+                    item.style.color = document.body.classList.contains('dark-mode') ? 'var(--text-dark)' : 'var(--text-light)';
+                });
+                
+                item.addEventListener('click', () => {
+                    promptCategoryInput.value = category;
+                    suggestionContainer.style.display = 'none';
+                });
+                
+                suggestionContainer.appendChild(item);
+            });
+            suggestionContainer.style.display = 'block';
+        } else {
+            suggestionContainer.style.display = 'none';
+        }
+    }
 }
 
 function handleFilter(category) {
@@ -486,18 +802,103 @@ function handleSearch(term) {
 }
 
 
+// --- 预览功能 ---
+
+function showPreview(prompt) {
+    const overlay = document.createElement('div');
+    overlay.className = 'preview-overlay';
+    
+    const modal = document.createElement('div');
+    modal.className = 'preview-modal';
+    
+    modal.innerHTML = `
+        <div class="preview-header">
+            <div class="preview-title-section">
+                <h2 class="preview-title">${escapeHtml(prompt.title || '无标题')}</h2>
+                ${prompt.category ? `<div class="preview-category">${escapeHtml(prompt.category)}</div>` : ''}
+            </div>
+            <button class="preview-close">&times;</button>
+        </div>
+        <div class="preview-body">
+            <div class="preview-content">${escapeHtml(prompt.content || '')}</div>
+        </div>
+        <div class="preview-footer">
+            <div class="preview-date">${formatDate(prompt.created_at)}</div>
+            <button class="preview-copy-btn"><i class="fas fa-copy"></i> 复制</button>
+        </div>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    // 关闭按钮事件
+    modal.querySelector('.preview-close').onclick = () => {
+        document.body.removeChild(overlay);
+    };
+    
+    // 点击遮罩关闭
+    overlay.onclick = (e) => {
+        if (e.target === overlay) {
+            document.body.removeChild(overlay);
+        }
+    };
+    
+    // 复制按钮事件
+    const copyBtn = modal.querySelector('.preview-copy-btn');
+    copyBtn.onclick = () => {
+        navigator.clipboard.writeText(prompt.content || '').then(() => {
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="fas fa-check"></i> 已复制!';
+            copyBtn.style.background = 'var(--success)';
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+                copyBtn.style.background = '';
+            }, 1500);
+        });
+    };
+    
+    // ESC键关闭
+    const handleEsc = (e) => {
+        if (e.key === 'Escape') {
+            document.body.removeChild(overlay);
+            document.removeEventListener('keydown', handleEsc);
+        }
+    };
+    document.addEventListener('keydown', handleEsc);
+}
+
 // --- 事件监听器设置 ---
 
 function addCardEventListeners() {
+    // 添加卡片点击预览事件
+    document.querySelectorAll('.prompt-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            // 如果点击的是按钮，不触发预览
+            if (e.target.closest('.copy-btn, .edit-btn, .delete-btn')) {
+                return;
+            }
+            
+            const id = card.dataset.id;
+            const prompt = allPrompts.find(p => p.id == id);
+            if (prompt) {
+                showPreview(prompt);
+            }
+        });
+    });
+
     document.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
+            e.stopPropagation();
             const id = e.currentTarget.dataset.id;
             const prompt = allPrompts.find(p => p.id == id);
             if (prompt) {
                 promptIdInput.value = prompt.id;
                 promptTitleInput.value = prompt.title;
                 promptContentInput.value = prompt.content;
-                promptCategoryInput.value = prompt.category;
+                promptCategoryInput.value = prompt.category || '';
+                promptCategorySelect.value = prompt.category || '';
+                promptCategorySelect.style.display = 'none';
+                promptCategoryInput.style.display = 'block';
                 formTitle.textContent = '编辑提示词';
                 showView('formView');
             }
@@ -506,6 +907,7 @@ function addCardEventListeners() {
 
     document.querySelectorAll('.delete-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
+            e.stopPropagation();
             const id = e.currentTarget.dataset.id;
             deletePrompt(id);
         });
@@ -513,6 +915,7 @@ function addCardEventListeners() {
 
     document.querySelectorAll('.copy-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
+            e.stopPropagation();
             const content = e.currentTarget.dataset.content;
             navigator.clipboard.writeText(unescapeHtml(content)).then(() => {
                 const originalText = btn.innerHTML;
@@ -528,13 +931,28 @@ function addCardEventListeners() {
 }
 
 function setupEventListeners() {
-    
+
+
+    // 主题切换
     themeToggle.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        const icon = themeToggle.querySelector('i');
-        const isDark = document.body.classList.contains('dark-mode');
-        icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-        chrome.storage.local.set({ theme: isDark ? 'dark' : 'light' });
+        // 循环切换：auto -> light -> dark -> auto
+        if (themeMode === 'auto') {
+            themeMode = 'light';
+        } else if (themeMode === 'light') {
+            themeMode = 'dark';
+        } else {
+            themeMode = 'auto';
+        }
+        
+        applyTheme(themeMode);
+        chrome.storage.local.set({ themeMode });
+    });
+
+    // 监听系统主题变化
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (themeMode === 'auto') {
+            applyTheme('auto');
+        }
     });
     
     addPromptBtn.addEventListener('click', () => {
@@ -542,11 +960,39 @@ function setupEventListeners() {
         promptTitleInput.value = '';
         promptContentInput.value = '';
         promptCategoryInput.value = '';
+        promptCategorySelect.value = '';
+        promptCategorySelect.style.display = 'none';
+        promptCategoryInput.style.display = 'block';
         formTitle.textContent = '添加新提示词';
         showView('formView');
     });
 
-    searchInput.addEventListener('input', (e) => handleSearch(e.target.value));
+    // 搜索延迟处理
+    let searchTimeout = null;
+    searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.trim();
+        
+        // 清除之前的延迟
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        // 如果搜索框为空，立即显示所有提示词
+        if (searchTerm === '') {
+            handleSearch('');
+            return;
+        }
+        
+        // 如果输入长度小于1个字符，不进行搜索
+        if (searchTerm.length < 1) {
+            return;
+        }
+        
+        // 延迟300ms后执行搜索
+        searchTimeout = setTimeout(() => {
+            handleSearch(searchTerm);
+        }, 300);
+    });
     
     backToListBtn.addEventListener('click', () => showView('mainView'));
     cancelFormBtn.addEventListener('click', () => showView('mainView'));
@@ -554,13 +1000,41 @@ function setupEventListeners() {
     
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.type === 'ADD_FROM_CONTEXT_MENU' && message.data?.content) {
-            if (currentUser) {
-                addPromptBtn.click(); 
-                promptContentInput.value = message.data.content;
-                sendResponse({ status: "success", message: "Content received." });
-            } else {
-                 sendResponse({ status: "error", message: "User not logged in." });
-            }
+            console.log('收到右键菜单消息，内容:', message.data.content);
+            
+            // 等待应用完全初始化后再处理
+            const waitForInitialization = () => {
+                // 检查必要的元素是否存在
+                if (currentUser && addPromptBtn && promptContentInput) {
+                    console.log('应用已初始化完成，开始处理右键添加提示词');
+                    
+                 if (currentView !== 'formView') {
+                     showView('formView');
+                     // 使用 requestAnimationFrame 确保 DOM 更新后再填充
+                     requestAnimationFrame(() => {
+                         promptContentInput.value = message.data.content;
+                         promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
+                         console.log('通过 rAF 切换到添加界面并填充内容');
+                         sendResponse({ status: "success", message: "Content received and form populated via rAF after view switch." });
+                     });
+                 } else {
+                     // 如果已经是 formView，也使用 rAF 确保一致性并处理可能的快速切换场景
+                     requestAnimationFrame(() => {
+                         promptContentInput.value = message.data.content;
+                         promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
+                         console.log('已在添加界面，通过 rAF 填充内容');
+                         sendResponse({ status: "success", message: "Content received and form populated via rAF in existing view." });
+                     });
+                 }
+                } else {
+                    console.log('应用尚未完全初始化，等待中...');
+                    // 如果应用还未初始化完成，继续等待
+                    setTimeout(waitForInitialization, 100);
+                }
+            };
+            
+            // 开始等待初始化完成
+            waitForInitialization();
         }
         return true; 
     });
@@ -597,13 +1071,14 @@ async function initializeApp() {
     console.log('开始初始化应用...');
     try {
         // 主题设置
-        const { theme } = await chrome.storage.local.get('theme');
-        if (theme === 'dark') {
-            document.body.classList.add('dark-mode');
-            themeToggle.querySelector('i').className = 'fas fa-sun';
-        }
+        const { themeMode: savedThemeMode } = await chrome.storage.local.get('themeMode');
+        themeMode = savedThemeMode || 'auto';
+        
+        // 应用初始主题
+        applyTheme(themeMode);
 
         setupEventListeners();
+        setupCategoryInput();
         
         // 直接检查并进入主界面
         await checkUserSession();
