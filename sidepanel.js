@@ -50,6 +50,7 @@ let allPrompts = [];
 let currentUser = null;
 let themeMode = 'auto';
 let currentView = null;
+let isProcessingContextMenu = false; // 标记是否正在处理右键菜单消息
 
 // 检测系统主题
 function getSystemTheme() {
@@ -360,6 +361,12 @@ async function checkUserSession() {
         
         // 再次确认视图显示正确
         setTimeout(() => {
+            // 如果正在处理右键菜单消息，跳过强制显示主界面的操作
+            if (isProcessingContextMenu) {
+                console.log('正在处理右键菜单消息，跳过延迟检查');
+                return;
+            }
+            
             const mainView = document.getElementById('mainView');
             if (mainView && (!mainView.classList.contains('active') || getComputedStyle(mainView).display === 'none')) {
                 console.log('延迟检查发现主界面未正确显示，再次尝试强制显示');
@@ -1002,6 +1009,9 @@ function setupEventListeners() {
         if (message.type === 'ADD_FROM_CONTEXT_MENU' && message.data?.content) {
             console.log('收到右键菜单消息，内容:', message.data.content);
             
+            // 设置标志，防止checkUserSession的延迟检查干扰
+            isProcessingContextMenu = true;
+            
             // 等待应用完全初始化后再处理
             const waitForInitialization = () => {
                 // 检查必要的元素是否存在
@@ -1015,6 +1025,12 @@ function setupEventListeners() {
                          promptContentInput.value = message.data.content;
                          promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
                          console.log('通过 rAF 切换到添加界面并填充内容');
+                         
+                         // 处理完成后重置标志
+                         setTimeout(() => {
+                             isProcessingContextMenu = false;
+                         }, 1000); // 1秒后重置标志，确保不会影响后续操作
+                         
                          sendResponse({ status: "success", message: "Content received and form populated via rAF after view switch." });
                      });
                  } else {
@@ -1023,6 +1039,12 @@ function setupEventListeners() {
                          promptContentInput.value = message.data.content;
                          promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
                          console.log('已在添加界面，通过 rAF 填充内容');
+                         
+                         // 处理完成后重置标志
+                         setTimeout(() => {
+                             isProcessingContextMenu = false;
+                         }, 1000); // 1秒后重置标志，确保不会影响后续操作
+                         
                          sendResponse({ status: "success", message: "Content received and form populated via rAF in existing view." });
                      });
                  }
