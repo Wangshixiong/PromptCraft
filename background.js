@@ -2,11 +2,14 @@
 
 // 当插件首次安装、更新或浏览器启动时运行
 chrome.runtime.onInstalled.addListener(() => {
-    // 创建一个右键菜单项
-    chrome.contextMenus.create({
-      id: "add-to-promptcraft",
-      title: "添加到 Prompt管理助手",
-      contexts: ["selection"] // 只在用户选中文本时显示
+    // 先移除可能存在的菜单项，避免重复创建错误
+    chrome.contextMenus.removeAll(() => {
+        // 创建一个右键菜单项
+        chrome.contextMenus.create({
+          id: "add-to-promptcraft",
+          title: "添加到 Prompt管理助手",
+          contexts: ["selection"] // 只在用户选中文本时显示
+        });
     });
   });
   

@@ -43,6 +43,13 @@ const promptTitleInput = document.getElementById('promptTitleInput');
 const promptContentInput = document.getElementById('promptContentInput');
 const promptCategoryInput = document.getElementById('promptCategoryInput');
 const promptCategorySelect = document.getElementById('promptCategorySelect');
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsOverlay = document.getElementById('settingsOverlay');
+const settingsClose = document.getElementById('settingsClose');
+const importBtn = document.getElementById('importBtn');
+const exportBtn = document.getElementById('exportBtn');
+const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+const fileInput = document.getElementById('fileInput');
 
 
 // 全局状态
@@ -68,17 +75,17 @@ function applyTheme(mode) {
         document.body.classList.remove('dark-mode');
     }
     
-    // 更新图标
+    // 更新图标 - 修复逻辑：浅色模式显示月亮（点击切换到深色），深色模式显示太阳（点击切换到浅色）
     const icon = themeToggle.querySelector('i');
     if (mode === 'auto') {
         icon.className = 'fas fa-adjust';
         themeToggle.title = '主题：跟随系统';
     } else if (isDark) {
         icon.className = 'fas fa-sun';
-        themeToggle.title = '主题：深色';
+        themeToggle.title = '主题：深色模式（点击切换到浅色）';
     } else {
         icon.className = 'fas fa-moon';
-        themeToggle.title = '主题：浅色';
+        themeToggle.title = '主题：浅色模式（点击切换到深色）';
     }
 }
 
@@ -173,72 +180,48 @@ function showCustomConfirm(message) {
     });
 }
 
-// 自定义警告弹窗
-function showCustomAlert(message) {
-    return new Promise((resolve) => {
-        // 创建弹窗容器
-        const overlay = document.createElement('div');
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        `;
-        
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-            background: var(--background-light);
-            border-radius: 12px;
-            padding: 24px;
-            max-width: 300px;
-            width: 90%;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            color: var(--text-light);
-        `;
-        
-        // 检查是否为暗色模式
-        if (document.body.classList.contains('dark-mode')) {
-            modal.style.background = 'var(--background-dark)';
-            modal.style.color = 'var(--text-dark)';
-        }
-        
-        modal.innerHTML = `
-            <div style="margin-bottom: 20px; font-size: 16px; line-height: 1.5;">${message}</div>
-            <div style="display: flex; justify-content: flex-end;">
-                <button id="okBtn" style="
-                    padding: 8px 16px;
-                    border: none;
-                    background: var(--primary-color);
-                    color: white;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    font-size: 14px;
-                ">确定</button>
-            </div>
-        `;
-        
-        overlay.appendChild(modal);
-        document.body.appendChild(overlay);
-        
-        // 事件监听
-        modal.querySelector('#okBtn').onclick = () => {
-            document.body.removeChild(overlay);
-            resolve();
-        };
-        
-        overlay.onclick = (e) => {
-            if (e.target === overlay) {
-                document.body.removeChild(overlay);
-                resolve();
+// Toast 提示功能
+function showToast(message, type = 'success', duration = 3000) {
+    const toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) return;
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const iconMap = {
+        success: 'fas fa-check-circle',
+        error: 'fas fa-exclamation-circle',
+        warning: 'fas fa-exclamation-triangle',
+        info: 'fas fa-info-circle'
+    };
+    
+    toast.innerHTML = `
+        <i class="${iconMap[type] || iconMap.success}"></i>
+        <span>${message}</span>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // 触发显示动画
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    // 自动移除
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            if (toastContainer.contains(toast)) {
+                toastContainer.removeChild(toast);
             }
-        };
-    });
+        }, 300);
+    }, duration);
+}
+
+// 兼容性函数，保持原有的showCustomAlert接口
+function showCustomAlert(message) {
+    showToast(message, 'info');
+    return Promise.resolve();
 }
 
 function showView(viewId) {
@@ -454,42 +437,35 @@ async function loadUserPrompts(skipLoading = false) {
 }
 
 async function createSamplePrompts(skipLoading = false) {
-    const sampleData = [
-        { 
-            id: Date.now() + 1,
-            title: "Midjourney 艺术创作", 
-            content: "Create a stunning cyberpunk cityscape at night with neon lights reflecting on wet streets, flying cars in the distance, and towering skyscrapers reaching into the clouds. Style: photorealistic, cinematic lighting, 8K resolution", 
-            category: "Midjourney",
-            user_id: currentUser.id,
-            created_at: new Date().toISOString()
-        },
-        { 
-            id: Date.now() + 2,
-            title: "Python 代码助手", 
-            content: "You are an expert Python developer. Write a function that takes a list of numbers and returns the sum of all even numbers. Include proper error handling and documentation.", 
-            category: "代码生成",
-            user_id: currentUser.id,
-            created_at: new Date().toISOString()
-        },
-        { 
-            id: Date.now() + 3,
-            title: "文案创作助手", 
-            content: "你是一位专业的文案创作专家。请为一款新的智能手表写一段吸引人的产品描述，突出其健康监测功能和时尚设计。", 
-            category: "文案创作",
-            user_id: currentUser.id,
-            created_at: new Date().toISOString()
-        }
-    ];
-    
     try {
+        // 从JSON文件加载默认提示词
+        const response = await fetch('./default-prompts.json');
+        if (!response.ok) {
+            throw new Error('无法加载默认提示词文件');
+        }
+        
+        const defaultPrompts = await response.json();
+        
+        // 为每个提示词添加用户ID和时间戳
+        const sampleData = defaultPrompts.map((prompt, index) => ({
+            ...prompt,
+            id: Date.now() + index,
+            user_id: currentUser.id,
+            created_at: new Date().toISOString()
+        }));
+        
         // 保存到本地存储
         localStorage.setItem('promptcraft_prompts', JSON.stringify(sampleData));
         // 标记用户已经有过数据
         localStorage.setItem('promptcraft_has_data', 'true');
-        console.log('成功创建示例提示词');
+        console.log('成功创建默认提示词');
         await loadUserPrompts(skipLoading);
     } catch (error) {
-        console.error("创建默认提示词失败:", error);
+        console.error('加载默认提示词失败:', error);
+        // 如果加载失败，创建空的提示词列表
+        localStorage.setItem('promptcraft_prompts', JSON.stringify([]));
+        localStorage.setItem('promptcraft_has_data', 'true');
+        await loadUserPrompts(skipLoading);
     }
 }
 
@@ -500,7 +476,13 @@ async function savePrompt() {
     const category = promptCategoryInput.value.trim() || '未分类';
 
     if (!title || !content) {
-        alert('标题和内容不能为空！');
+        showToast('标题和内容不能为空！', 'warning');
+        return;
+    }
+
+    // 检查内容长度（10000个字符限制）
+    if (content.length > 10000) {
+        showToast('提示词内容不能超过10000个字符！', 'warning');
         return;
     }
 
@@ -535,7 +517,7 @@ async function savePrompt() {
                 console.log('更新提示词:', id);
             } else {
                 console.error('未找到要更新的提示词:', id);
-                alert('未找到要更新的提示词');
+                showToast('未找到要更新的提示词', 'error');
                 forceHideLoading();
                 return;
             }
@@ -561,7 +543,7 @@ async function savePrompt() {
         
     } catch (error) {
         console.error('保存提示词失败:', error);
-        alert('保存失败，请稍后再试。');
+        showToast('保存失败，请稍后再试', 'error');
     }
     
     forceHideLoading();
@@ -593,7 +575,7 @@ async function deletePrompt(promptId) {
         
         if (filteredPrompts.length === prompts.length) {
             console.error('未找到要删除的提示词:', promptId);
-            showCustomAlert('未找到要删除的提示词');
+            showToast('未找到要删除的提示词', 'error');
         } else {
             // 保存更新后的数据到本地存储
             localStorage.setItem('promptcraft_prompts', JSON.stringify(filteredPrompts));
@@ -609,7 +591,7 @@ async function deletePrompt(promptId) {
         
     } catch (error) {
         console.error('删除失败:', error);
-        showCustomAlert('删除失败，请稍后再试。');
+        showToast('删除失败，请稍后再试', 'error');
     }
     
     forceHideLoading();
@@ -1005,6 +987,63 @@ function setupEventListeners() {
     cancelFormBtn.addEventListener('click', () => showView('mainView'));
     savePromptBtn.addEventListener('click', savePrompt);
     
+    // 字符计数功能
+    const characterCountElement = document.getElementById('characterCount');
+    promptContentInput.addEventListener('input', () => {
+        const currentLength = promptContentInput.value.length;
+        characterCountElement.textContent = `${currentLength} / 10000`;
+        
+        // 当接近限制时改变颜色
+        if (currentLength > 9000) {
+            characterCountElement.style.color = '#ef4444'; // 红色警告
+        } else if (currentLength > 8000) {
+            characterCountElement.style.color = '#f59e0b'; // 橙色提醒
+        } else {
+            characterCountElement.style.color = '#64748b'; // 默认灰色
+        }
+    });
+    
+    // 初始化字符计数显示
+    const updateCharacterCount = () => {
+        const currentLength = promptContentInput.value.length;
+        if (characterCountElement) {
+            characterCountElement.textContent = `${currentLength} / 10000`;
+        }
+    };
+    
+    // 在表单显示时更新字符计数
+     const originalShowView = window.showView;
+     window.showView = function(viewName) {
+         originalShowView(viewName);
+         if (viewName === 'formView') {
+             setTimeout(updateCharacterCount, 0);
+         }
+     };
+    
+    // 设置相关事件监听器
+    settingsBtn.addEventListener('click', () => {
+        settingsOverlay.style.display = 'flex';
+    });
+    
+    settingsClose.addEventListener('click', () => {
+        settingsOverlay.style.display = 'none';
+    });
+    
+    settingsOverlay.addEventListener('click', (e) => {
+        if (e.target === settingsOverlay) {
+            settingsOverlay.style.display = 'none';
+        }
+    });
+    
+    // 导入导出功能
+    downloadTemplateBtn.addEventListener('click', handleDownloadTemplate);
+    exportBtn.addEventListener('click', handleExport);
+    importBtn.addEventListener('click', () => {
+        fileInput.click();
+    });
+    
+    fileInput.addEventListener('change', handleFileImport);
+    
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.type === 'ADD_FROM_CONTEXT_MENU' && message.data?.content) {
             console.log('收到右键菜单消息，内容:', message.data.content);
@@ -1060,6 +1099,170 @@ function setupEventListeners() {
         }
         return true; 
     });
+}
+
+// --- 导入导出功能 ---
+
+// 下载模板
+async function handleDownloadTemplate() {
+    try {
+        safeShowLoading();
+        const result = await window.JSONUtils.downloadTemplate();
+        if (result.success) {
+            showToast('JSON模板下载成功！', 'success');
+        } else {
+            showToast(result.message, 'error');
+        }
+    } catch (error) {
+        console.error('下载模板失败:', error);
+        showToast('下载模板失败，请稍后再试', 'error');
+    } finally {
+        forceHideLoading();
+    }
+}
+
+// 导出提示词
+async function handleExport() {
+    try {
+        if (allPrompts.length === 0) {
+            showToast('没有可导出的提示词', 'warning');
+            return;
+        }
+        
+        safeShowLoading();
+        const result = await window.JSONUtils.exportToJSON(allPrompts);
+        if (result.success) {
+            showToast(result.message, 'success');
+        } else {
+            showToast(result.message, 'error');
+        }
+    } catch (error) {
+        console.error('导出失败:', error);
+        showToast('导出失败，请稍后再试', 'error');
+    } finally {
+        forceHideLoading();
+    }
+}
+
+// 处理文件导入
+async function handleFileImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // 重置文件输入
+    event.target.value = '';
+    
+    try {
+        safeShowLoading();
+        
+        // 检查文件类型
+        const fileName = file.name.toLowerCase();
+        if (!fileName.endsWith('.json')) {
+            showToast('请选择JSON文件（.json格式）', 'warning');
+            return;
+        }
+        
+        // 导入数据
+        const importResult = await window.JSONUtils.importFromJSON(file);
+        
+        if (!importResult.success) {
+            showToast(importResult.message || '导入失败', 'error');
+            return;
+        }
+        
+        const { prompts: importedPrompts, errors, total, imported } = importResult;
+        
+        if (imported === 0) {
+            showToast(`导入完成：共 ${total} 条记录，全部导入失败。请检查JSON格式是否正确。`, 'error');
+            if (errors && errors.length > 0) {
+                const downloadFailed = await showCustomConfirm('是否下载失败记录？');
+                if (downloadFailed) {
+                    await window.JSONUtils.exportFailedRecords(errors);
+                }
+            }
+            return;
+        }
+        
+        // 获取现有提示词
+        const storedPrompts = localStorage.getItem('promptcraft_prompts');
+        let existingPrompts = [];
+        
+        if (storedPrompts) {
+            try {
+                existingPrompts = JSON.parse(storedPrompts);
+            } catch (parseError) {
+                console.error('解析现有数据失败:', parseError);
+                existingPrompts = [];
+            }
+        }
+        
+        // 处理重名提示词的更新策略
+        let addedCount = 0;
+        let updatedCount = 0;
+        const finalPrompts = [...existingPrompts];
+        
+        importedPrompts.forEach(newPrompt => {
+            // 查找是否存在同名提示词
+            const existingIndex = finalPrompts.findIndex(existing => 
+                existing.title.trim().toLowerCase() === newPrompt.title.trim().toLowerCase()
+            );
+            
+            if (existingIndex !== -1) {
+                // 更新现有提示词
+                finalPrompts[existingIndex] = {
+                    ...finalPrompts[existingIndex],
+                    content: newPrompt.content,
+                    category: newPrompt.category,
+                    updatedAt: new Date().toISOString()
+                };
+                updatedCount++;
+            } else {
+                // 添加新提示词到开头
+                finalPrompts.unshift({
+                    ...newPrompt,
+                    id: Date.now() + Math.random(),
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                });
+                addedCount++;
+            }
+        });
+        
+        // 保存到本地存储
+        localStorage.setItem('promptcraft_prompts', JSON.stringify(finalPrompts));
+        localStorage.setItem('promptcraft_has_data', 'true');
+        
+        // 重新加载提示词列表
+        await loadUserPrompts();
+        
+        // 关闭设置弹窗
+        settingsOverlay.style.display = 'none';
+        
+        // 显示导入结果
+        let message = `导入完成：\n共计 ${total} 条记录\n新增 ${addedCount} 条`;
+        if (updatedCount > 0) {
+            message += `\n更新 ${updatedCount} 条（同名覆盖）`;
+        }
+        if (errors && errors.length > 0) {
+            message += `\n失败 ${errors.length} 条`;
+        }
+        
+        showToast(message, addedCount > 0 || updatedCount > 0 ? 'success' : 'warning');
+        
+        // 如果有失败记录，询问是否下载
+        if (errors && errors.length > 0) {
+            const downloadFailed = await showCustomConfirm('是否下载失败记录？');
+            if (downloadFailed) {
+                await window.JSONUtils.exportFailedRecords(errors);
+            }
+        }
+        
+    } catch (error) {
+        console.error('导入失败:', error);
+        showToast('导入失败：' + error.message, 'error');
+    } finally {
+        forceHideLoading();
+    }
 }
 
 // --- 初始化 ---

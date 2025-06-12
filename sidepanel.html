@@ -360,7 +360,7 @@
             line-height: 1.5;
             color: var(--text-light);
             margin-bottom: 16px;
-            max-height: 80px;
+            max-height: 60px;
             overflow: hidden;
             position: relative;
             word-break: break-word;
@@ -836,6 +836,309 @@
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
+
+        /* 设置弹窗样式 */
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .settings-modal {
+            background: var(--background-light);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            color: var(--text-light);
+        }
+
+        .dark-mode .settings-modal {
+            background: var(--background-dark);
+            color: var(--text-dark);
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .dark-mode .settings-header {
+            border-bottom-color: var(--border-dark);
+        }
+
+        .settings-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .settings-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: var(--text-light);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+        }
+
+        .dark-mode .settings-close {
+            color: var(--text-dark);
+        }
+
+        .settings-close:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .settings-body {
+            padding: 20px 24px;
+        }
+
+        .settings-section {
+            margin-bottom: 24px;
+        }
+
+        .settings-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .settings-section h4 {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .dark-mode .settings-section h4 {
+            color: var(--primary-light);
+        }
+
+        .settings-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .settings-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .dark-mode .settings-btn {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+            color: var(--text-dark);
+        }
+
+        .settings-btn:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .settings-btn i {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .settings-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .settings-row .settings-btn {
+            flex: 1;
+        }
+
+        .template-btn {
+            font-size: 12px !important;
+        }
+
+        .template-btn i {
+            font-size: 14px !important;
+        }
+
+        .template-btn span {
+            font-size: 12px;
+        }
+
+        /* Toast 提示样式 */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 3000;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--background-light);
+            color: var(--text-light);
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-left: 4px solid var(--success);
+            margin-bottom: 8px;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            pointer-events: auto;
+            max-width: 300px;
+            word-wrap: break-word;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dark-mode .toast {
+            background: var(--background-dark);
+            color: var(--text-dark);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            border-left-color: var(--danger);
+        }
+
+        .toast.warning {
+            border-left-color: var(--warning);
+        }
+
+        .toast i {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .toast.error i {
+            color: var(--danger);
+        }
+
+        .toast.warning i {
+            color: var(--warning);
+        }
+
+        .toast.success i {
+            color: var(--success);
+        }
+
+        /* 数据管理区域重新设计 */
+        .data-management-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 12px;
+        }
+
+        .data-card {
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            min-height: 80px;
+        }
+
+        .dark-mode .data-card {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+        }
+
+        .data-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .data-card.import {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+        }
+
+        .data-card.template {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+        }
+
+        .data-card.export {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: white;
+            border: none;
+        }
+
+        .data-card-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .data-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+
+
+        .data-card:hover .data-card-icon {
+            transform: scale(1.1);
+        }
+
+        /* 移除原有的设置按钮样式，使用新的卡片样式 */
+        .settings-buttons {
+            display: block;
+        }
+
+        .settings-row {
+            display: none;
+        }
+
+        .settings-btn {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -858,6 +1161,7 @@
                 </div>
                 <div class="controls">
                     <button class="btn" id="themeToggle"><i class="fas fa-moon"></i></button>
+                    <button class="btn" id="settingsBtn" title="设置"><i class="fas fa-cog"></i></button>
                 </div>
             </div>
             <div class="search-container">
@@ -888,7 +1192,8 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="promptContentInput"><span class="required">*</span> 提示词内容</label>
-                        <textarea class="form-textarea" id="promptContentInput" placeholder="在此输入或粘贴您的提示词内容..."></textarea>
+                        <textarea class="form-textarea" id="promptContentInput" placeholder="在此输入或粘贴您的提示词内容..." maxlength="10000"></textarea>
+                        <div class="character-count" id="characterCount" style="text-align: right; font-size: 12px; color: #64748b; margin-top: 4px;">0 / 10000</div>
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="promptCategoryInput">分类</label>
@@ -911,8 +1216,44 @@
         <div class="loader"></div>
     </div>
 
+    <!-- 设置弹窗 -->
+    <div class="settings-overlay" id="settingsOverlay" style="display: none;">
+        <div class="settings-modal">
+            <div class="settings-header">
+                <h3>设置</h3>
+                <button class="settings-close" id="settingsClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="settings-body">
+                <div class="settings-section">
+                    <h4>数据管理</h4>
+                    <div class="data-management-grid">
+                        <div class="data-card import" id="importBtn">
+                            <i class="fas fa-file-import data-card-icon"></i>
+                            <div class="data-card-title">导入提示词</div>
+                        </div>
+                        <div class="data-card template" id="downloadTemplateBtn">
+                            <i class="fas fa-download data-card-icon"></i>
+                            <div class="data-card-title">下载模板</div>
+                        </div>
+                        <div class="data-card export" id="exportBtn">
+                            <i class="fas fa-file-export data-card-icon"></i>
+                            <div class="data-card-title">导出提示词</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐藏的文件输入 -->
+    <input type="file" id="fileInput" accept=".json" style="display: none;">
+
+    <!-- Toast 提示容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <!-- 关键改动：为脚本添加 defer 属性 -->
     <script src="lib/supabase.js" defer></script>
+    <script src="lib/json-utils.js" defer></script>
     <script src="sidepanel.js" defer></script>
 </body>
 </html>
