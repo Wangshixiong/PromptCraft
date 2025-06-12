@@ -162,18 +162,21 @@ function showCustomConfirm(message) {
         
         // 事件监听
         modal.querySelector('#confirmBtn').onclick = () => {
-            document.body.removeChild(overlay);
+            // document.body.removeChild(overlay);
+            overlay && overlay.remove()
             resolve(true);
         };
         
         modal.querySelector('#cancelBtn').onclick = () => {
-            document.body.removeChild(overlay);
+            // document.body.removeChild(overlay);
+            overlay && overlay.remove()
             resolve(false);
         };
         
         overlay.onclick = (e) => {
             if (e.target === overlay) {
-                document.body.removeChild(overlay);
+                // document.body.removeChild(overlay);
+                overlay && overlay.remove()
                 resolve(false);
             }
         };
@@ -822,13 +825,15 @@ function showPreview(prompt) {
     
     // 关闭按钮事件
     modal.querySelector('.preview-close').onclick = () => {
-        document.body.removeChild(overlay);
+        // document.body.removeChild(overlay);
+        overlay && overlay.remove()
     };
     
     // 点击遮罩关闭
     overlay.onclick = (e) => {
         if (e.target === overlay) {
-            document.body.removeChild(overlay);
+            // document.body.removeChild(overlay);
+            overlay && overlay.remove()
         }
     };
     
@@ -849,7 +854,8 @@ function showPreview(prompt) {
     // ESC键关闭
     const handleEsc = (e) => {
         if (e.key === 'Escape') {
-            document.body.removeChild(overlay);
+            // document.body.removeChild(overlay);
+            overlay && overlay.remove()
             document.removeEventListener('keydown', handleEsc);
         }
     };
