@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Prompt管理助手",
-    "version": "0.1.4",
+    "version": "0.1.7",
     "description": "一个安全、可靠、可跨设备同步的个人提示词管理工具。",
     "permissions": [
     "storage",
@@ -38,13 +38,13 @@
     }
   },
   "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content_script.js"],
-      "run_at": "document_end",
-      "all_frames": true
-    }
-  ],
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content_script.js"],
+            "run_at": "document_end",
+            "all_frames": true
+        }
+    ],
   "web_accessible_resources": [
     {
       "resources": ["default-prompts.json"],

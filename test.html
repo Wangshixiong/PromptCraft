@@ -1,78 +1,23 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PromptCraft 测试页面</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        .highlight {
-            background-color: yellow;
-            padding: 2px 4px;
-            border-radius: 3px;
-        }
-        .test-text {
-            background-color: #f5f5f5;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 10px 0;
-        }
-    </style>
+    <title>PromptCraft Test</title>
 </head>
 <body>
-    <h1>PromptCraft 插件测试页面</h1>
+    <h1>PromptCraft Extension Test</h1>
+    <p>在下面的输入框中输入 "pp" 然后空格来测试扩展:</p>
+    <input type="text" id="test-input" placeholder="在这里输入 pp 然后空格" style="width: 400px; padding: 10px; font-size: 16px;">
+    <br><br>
+    <textarea id="test-textarea" placeholder="或者在这个文本框中测试" style="width: 400px; height: 100px; padding: 10px; font-size: 16px;"></textarea>
+    <br><br>
+    <div contenteditable="true" id="test-contenteditable" style="border: 1px solid #ccc; width: 400px; height: 100px; padding: 10px; font-size: 16px;">或者在这个可编辑div中测试</div>
     
-    <h2>测试说明</h2>
-    <p>这个页面用于测试 PromptCraft 插件的功能。请按照以下步骤进行测试：</p>
-    
-    <ol>
-        <li>确保已经在 Chrome 中加载了 PromptCraft 插件</li>
-        <li>使用快捷键 <strong>Ctrl+B</strong> (Mac: Cmd+B) 打开侧边栏</li>
-        <li>点击"使用 GitHub 登录"按钮测试登录功能</li>
-        <li>选中下面的测试文本，右键选择"添加到 PromptCraft"</li>
-    </ol>
-    
-    <h2>测试文本</h2>
-    
-    <div class="test-text">
-        <h3>AI 提示词示例 1</h3>
-        <p>请扮演一个专业的产品经理，帮我分析以下产品需求的可行性和优先级。需要考虑技术实现难度、用户价值、商业价值和资源投入等因素。</p>
-    </div>
-    
-    <div class="test-text">
-        <h3>AI 提示词示例 2</h3>
-        <p>作为一名经验丰富的前端开发工程师，请帮我优化这段 JavaScript 代码的性能，并解释优化的原理和预期效果。</p>
-    </div>
-    
-    <div class="test-text">
-        <h3>AI 提示词示例 3</h3>
-        <p>请以创意写作专家的身份，为我的科幻小说构思一个引人入胜的开头，背景设定在2050年的智能城市中。</p>
-    </div>
-    
-    <h2>功能检查清单</h2>
-    <ul>
-        <li>□ 侧边栏能正常打开和关闭</li>
-        <li>□ GitHub 登录功能正常工作（无 302 错误）</li>
-        <li>□ 右键菜单"添加到 PromptCraft"可见</li>
-        <li>□ 选中文本后右键添加功能正常</li>
-        <li>□ 提示词列表能正常显示</li>
-        <li>□ 搜索功能正常工作</li>
-        <li>□ 主题切换功能正常</li>
-    </ul>
-    
-    <h2>故障排查</h2>
-    <p>如果遇到问题，请：</p>
-    <ol>
-        <li>打开浏览器开发者工具 (F12)</li>
-        <li>查看 Console 标签页中的错误信息</li>
-        <li>检查 Network 标签页中的网络请求状态</li>
-        <li>确认 Supabase 配置是否正确</li>
-    </ol>
+    <script>
+        console.log('Test page loaded');
+        // 监听所有输入事件
+        document.addEventListener('input', function(e) {
+            console.log('Input event:', e.target.tagName, e.target.value || e.target.textContent);
+        });
+    </script>
 </body>
 </html>

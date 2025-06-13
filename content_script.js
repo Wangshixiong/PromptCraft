@@ -372,6 +372,8 @@
         isActive: false,
         isUIVisible: false,
         currentInput: null,
+        originalInput: null, // 保存原始触发的输入元素
+        lockedTargetInput: null, // 锁定的目标输入框，防止目标丢失
         uiContainer: null,
         prompts: [],
         filteredPrompts: [],
@@ -381,7 +383,8 @@
         debounceTimer: null,
         isInitialized: false,
         selectedCategory: 'all', // 当前选中的分类
-        searchTerm: '' // 当前搜索词
+        searchTerm: '', // 当前搜索词
+        isInserting: false // 标志位，防止插入时的事件干扰
     };
     
     // 常量定义
@@ -394,11 +397,64 @@
     
     // 初始化系统
     function init() {
-        console.log('PromptCraft Quick Invoke initialized');
+        console.log('PromptCraft: Initializing extension', {
+            url: window.location.href,
+            hostname: window.location.hostname,
+            pathname: window.location.pathname,
+            userAgent: navigator.userAgent,
+            timestamp: new Date().toISOString(),
+            triggerCommand: CONSTANTS.TRIGGER_COMMAND
+        });
+        
+        // 特别检测大模型网站
+        const aiSites = ['kimi.moonshot.cn', 'gemini.google.com', 'doubao.com', 'chatgpt.com', 'claude.ai'];
+        const currentSite = window.location.hostname;
+        const isAISite = aiSites.some(site => currentSite.includes(site));
+        
+        console.log('PromptCraft: AI Site Detection', {
+            currentSite: currentSite,
+            isAISite: isAISite,
+            detectedSites: aiSites.filter(site => currentSite.includes(site))
+        });
+        
+        // 检测CSP限制
+        const metaTags = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
+        if (metaTags.length > 0) {
+            console.log('PromptCraft: CSP detected', {
+                cspCount: metaTags.length,
+                cspContent: Array.from(metaTags).map(tag => tag.content)
+            });
+        }
+        
+        console.log('PromptCraft: Injecting styles');
         injectStyles(); // 注入CSS样式
+        
+        console.log('PromptCraft: Loading prompts');
         loadPrompts();
+        
+        console.log('PromptCraft: Setting up event listeners');
         setupEventListeners();
+        
+        console.log('PromptCraft: Setting up cleanup handlers');
         setupCleanupHandlers();
+        
+        // 设置心跳日志，每30秒输出一次确认扩展运行状态
+        setInterval(() => {
+            console.log('💓 PromptCraft: Heartbeat - Extension is running', {
+                timestamp: new Date().toISOString(),
+                url: window.location.href,
+                isInitialized: state.isInitialized,
+                isUIVisible: state.isUIVisible
+            });
+        }, 30000);
+        
+        console.log('PromptCraft: Initialization completed successfully');
+        
+        // 立即测试一次输入事件监听
+        console.log('PromptCraft: Testing input event listener setup...');
+        setTimeout(() => {
+            console.log('PromptCraft: Extension ready for input detection');
+        }, 1000);
     }
     
     // 获取空的提示词数据（移除硬编码测试数据）
@@ -479,6 +535,8 @@
     
     // 设置事件监听器
     function setupEventListeners() {
+        console.log('PromptCraft: Setting up enhanced event listeners with MutationObserver');
+        
         // 使用捕获阶段监听，确保能够优先处理
         document.addEventListener('input', handleInputEvent, true);
         document.addEventListener('keydown', handleKeydownEvent, true);
@@ -486,12 +544,82 @@
         document.addEventListener('focus', handleFocusEvent, true);
         document.addEventListener('blur', handleBlurEvent, true);
         
+        // 设置MutationObserver监控动态加载的输入框
+        setupDOMObserver();
+        
+        // 初始扫描现有的输入框
+        scanAndBindInputElements(document.body);
+        
         // 监听来自background的消息
-        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            if (message.action === 'promptsUpdated') {
-                loadPrompts();
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+            chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+                if (message.action === 'promptsUpdated') {
+                    loadPrompts();
+                }
+            });
+        }
+        
+        console.log('PromptCraft: Enhanced event listeners setup completed');
+    }
+    
+    // 设置DOM观察器 - 处理动态加载的输入框
+    function setupDOMObserver() {
+        if (!window.MutationObserver) {
+            console.warn('PromptCraft: MutationObserver not supported');
+            return;
+        }
+        
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            // 递归检查新添加的节点及其子节点
+                            scanAndBindInputElements(node);
+                        }
+                    });
+                }
+            });
+        });
+        
+        // 监控整个document.body的DOM变化
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        console.log('PromptCraft: MutationObserver setup completed');
+    }
+    
+    // 扫描并绑定输入元素 - 递归检查所有子节点
+    function scanAndBindInputElements(rootElement) {
+        if (!rootElement || rootElement.nodeType !== Node.ELEMENT_NODE) {
+            return;
+        }
+        
+        // 检查根元素本身
+        if (isEditableElement(rootElement)) {
+            bindInputElement(rootElement);
+        }
+        
+        // 递归检查所有子元素
+        const allElements = rootElement.querySelectorAll('*');
+        allElements.forEach((element) => {
+            if (isEditableElement(element)) {
+                bindInputElement(element);
             }
         });
+    }
+    
+    // 为输入元素绑定事件监听器
+    function bindInputElement(element) {
+        // 避免重复绑定
+        if (element.dataset.promptcraftBound) {
+            return;
+        }
+        
+        element.dataset.promptcraftBound = 'true';
+        console.log('PromptCraft: Bound input element:', element.tagName, element.id || element.className);
     }
     
     // 设置清理处理器
@@ -509,17 +637,46 @@
     // 处理输入事件 - 使用防抖动优化性能
     let inputDebounceTimer = null;
     function handleInputEvent(event) {
+        // 强制输出日志，确保函数被调用
+        console.log('🔥 PromptCraft: handleInputEvent CALLED - This should always appear!');
+        
         const target = event.target;
         
-        console.log('PromptCraft: Input event detected on:', target.tagName, target.type || 'no-type');
+        console.log('PromptCraft: Input event detected', {
+            tagName: target.tagName,
+            type: target.type || 'no-type',
+            id: target.id,
+            className: target.className,
+            contentEditable: target.contentEditable,
+            isInserting: state.isInserting,
+            url: window.location.href,
+            hostname: window.location.hostname,
+            eventType: event.type
+        });
         
-        // 检查是否是可编辑的输入框
-        if (!isEditableElement(target)) {
-            console.log('PromptCraft: Element is not editable, ignoring');
+        // 如果正在插入提示词，跳过处理以防止干扰
+        if (state.isInserting) {
+            console.log('PromptCraft: Currently inserting prompt, ignoring input event');
             return;
         }
         
-        console.log('PromptCraft: Valid input element detected');
+        // 检查是否是可编辑的输入框
+        if (!isEditableElement(target)) {
+            console.log('PromptCraft: Element is not editable, ignoring', {
+                tagName: target.tagName,
+                type: target.type,
+                contentEditable: target.contentEditable,
+                id: target.id,
+                className: target.className
+            });
+            return;
+        }
+        
+        console.log('PromptCraft: Valid input element detected', {
+            tagName: target.tagName,
+            id: target.id,
+            className: target.className
+        });
         
         // 更新当前输入元素
         state.currentInput = target;
@@ -533,14 +690,27 @@
     
     // 处理输入变化
     function processInputChange(inputElement) {
-        if (!inputElement) return;
+        if (!inputElement) {
+            console.log('PromptCraft: processInputChange called with no input element');
+            return;
+        }
         
         const text = getElementText(inputElement);
         state.lastInputValue = text;
         
-        console.log('PromptCraft: Processing input change, text:', text);
+        console.log('PromptCraft: Processing input change', {
+            text: text,
+            textLength: text.length,
+            triggerCommand: CONSTANTS.TRIGGER_COMMAND,
+            isUIVisible: state.isUIVisible,
+            elementType: inputElement.tagName,
+            elementId: inputElement.id,
+            url: window.location.href,
+            hostname: window.location.hostname
+        });
         
         if (state.isUIVisible) {
+            console.log('PromptCraft: UI is already visible, updating search');
             // 如果UI已激活，更新搜索
             updateSearch(text);
             return;
@@ -548,22 +718,56 @@
         
         // 检查是否输入了触发词
         const triggerIndex = text.lastIndexOf(CONSTANTS.TRIGGER_COMMAND);
-        console.log('PromptCraft: Trigger index:', triggerIndex, 'for command:', CONSTANTS.TRIGGER_COMMAND);
+        console.log('PromptCraft: Trigger detection', {
+            triggerIndex: triggerIndex,
+            triggerCommand: CONSTANTS.TRIGGER_COMMAND,
+            textAroundTrigger: triggerIndex >= 0 ? text.substring(Math.max(0, triggerIndex - 5), triggerIndex + CONSTANTS.TRIGGER_COMMAND.length + 5) : 'N/A'
+        });
         
-        if (triggerIndex === -1) return;
+        if (triggerIndex === -1) {
+            console.log('PromptCraft: No trigger command found in text');
+            return;
+        }
         
         // 检查触发词是否是单词边界或行首
-        const isAtWordBoundary = triggerIndex === 0 || !isAlphaNumeric(text.charAt(triggerIndex - 1));
-        const isFollowedBySpace = triggerIndex + CONSTANTS.TRIGGER_COMMAND.length === text.length || 
-                                 text.charAt(triggerIndex + CONSTANTS.TRIGGER_COMMAND.length) === ' ';
+        const charBefore = triggerIndex > 0 ? text.charAt(triggerIndex - 1) : '';
+        const charAfter = triggerIndex + CONSTANTS.TRIGGER_COMMAND.length < text.length ? text.charAt(triggerIndex + CONSTANTS.TRIGGER_COMMAND.length) : '';
+        const isAtWordBoundary = triggerIndex === 0 || !isAlphaNumeric(charBefore);
+        const isFollowedBySpace = triggerIndex + CONSTANTS.TRIGGER_COMMAND.length === text.length || charAfter === ' ';
         
-        console.log('PromptCraft: Boundary check - isAtWordBoundary:', isAtWordBoundary, 'isFollowedBySpace:', isFollowedBySpace);
+        console.log('PromptCraft: Boundary check', {
+            charBefore: charBefore,
+            charAfter: charAfter,
+            isAtWordBoundary: isAtWordBoundary,
+            isFollowedBySpace: isFollowedBySpace,
+            triggerPosition: triggerIndex
+        });
         
         // 只有当触发词在单词边界且后面是空格或文本结束时才触发
         if (isAtWordBoundary && isFollowedBySpace) {
-            console.log('PromptCraft: Triggering UI at position:', triggerIndex);
+            console.log('PromptCraft: Trigger conditions met, locking target and showing UI');
+            
+            // 锁定目标输入框 - 防止目标丢失
+            state.lockedTargetInput = inputElement;
             state.triggerPosition = triggerIndex;
+            
+            // 保存原始输入框引用（向后兼容）
+            if (!state.originalInput) {
+                state.originalInput = inputElement;
+            }
+            
+            console.log('PromptCraft: Target locked', {
+                lockedElement: {
+                    tagName: state.lockedTargetInput.tagName,
+                    id: state.lockedTargetInput.id,
+                    className: state.lockedTargetInput.className
+                },
+                triggerPosition: triggerIndex
+            });
+            
             showQuickInvokeUI();
+        } else {
+            console.log('PromptCraft: Trigger conditions not met, not showing UI');
         }
     }
     
@@ -576,8 +780,22 @@
     
     // 处理键盘事件
     function handleKeydownEvent(event) {
+        console.log('PromptCraft: Keydown event', {
+            key: event.key,
+            code: event.code,
+            target: event.target.tagName,
+            targetId: event.target.id,
+            targetClass: event.target.className,
+            isUIVisible: state.isUIVisible,
+            url: window.location.href,
+            hostname: window.location.hostname
+        });
+        
         // 如果UI未激活，不处理
-        if (!state.isUIVisible) return;
+        if (!state.isUIVisible) {
+            console.log('PromptCraft: UI not visible, ignoring keydown');
+            return;
+        }
         
         // 确保事件来自正确的上下文
         const target = event.target;
@@ -688,19 +906,31 @@
         }
     }
     
-    // 检查元素是否可编辑
+    // 检查元素是否可编辑 - 重构版本：简洁、可靠、支持iFrame
     function isEditableElement(element) {
-        if (!element) return false;
+        if (!element) {
+            return false;
+        }
         
         const tagName = element.tagName.toLowerCase();
         
-        // 标准输入框
+        // A. 标准HTML标签：<textarea> 和 <input type="text">
         if (tagName === 'textarea' || (tagName === 'input' && element.type === 'text')) {
+            console.log('PromptCraft: Found standard input element:', tagName);
             return true;
         }
         
-        // 富文本编辑器
-        if (element.contentEditable === 'true') {
+        // B. 富文本编辑器模式：任何带有 contentEditable="true" 属性的元素
+        // 使用 closest 方法兼容 contentEditable 属性在父元素上的情况
+        const contentEditableElement = element.closest('[contenteditable="true"]');
+        if (contentEditableElement) {
+            console.log('PromptCraft: Found contentEditable element via closest()');
+            return true;
+        }
+        
+        // 直接检查当前元素的 contentEditable 属性
+        if (element.isContentEditable) {
+            console.log('PromptCraft: Element is directly contentEditable');
             return true;
         }
         
@@ -711,8 +941,9 @@
     function getElementText(element) {
         if (element.tagName.toLowerCase() === 'textarea' || element.tagName.toLowerCase() === 'input') {
             return element.value;
-        } else if (element.contentEditable === 'true') {
-            return element.textContent || element.innerText || '';
+        } else if (element.contentEditable === 'true' || element.contentEditable === 'plaintext-only' || element.isContentEditable) {
+            // 优先使用innerText，因为它更接近用户看到的文本
+            return element.innerText || element.textContent || '';
         }
         return '';
     }
@@ -761,26 +992,74 @@
                     element.value = text;
                 }
                 
-            } else if (element.contentEditable === 'true') {
+            } else if (element.contentEditable === 'true' || element.contentEditable === 'plaintext-only' || element.isContentEditable) {
                 console.log('PromptCraft: Setting text for contenteditable element');
-                // 对于contenteditable元素
-                if (element.innerHTML !== undefined) {
-                    console.log('PromptCraft: Using execCommand method');
-                    // 使用Selection API模拟用户输入
+                
+                // 多种方法尝试设置contentEditable元素的内容
+                let success = false;
+                
+                // 方法1: 使用现代Selection API
+                try {
                     element.focus();
                     const selection = window.getSelection();
+                    
+                    // 选择所有内容
                     const range = document.createRange();
                     range.selectNodeContents(element);
                     selection.removeAllRanges();
                     selection.addRange(range);
                     
-                    // 清空并插入新内容
-                    document.execCommand('selectAll', false, null);
-                    document.execCommand('delete', false, null);
-                    document.execCommand('insertText', false, text);
-                } else {
-                    console.log('PromptCraft: Using textContent assignment');
-                    element.textContent = text;
+                    // 删除现有内容并插入新内容
+                    if (document.execCommand) {
+                        document.execCommand('selectAll', false, null);
+                        document.execCommand('delete', false, null);
+                        success = document.execCommand('insertText', false, text);
+                        console.log('PromptCraft: execCommand insertText success:', success);
+                    }
+                } catch (e) {
+                    console.warn('PromptCraft: execCommand method failed:', e);
+                }
+                
+                // 方法2: 如果execCommand失败，使用现代API
+                if (!success) {
+                    try {
+                        element.focus();
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(element);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        
+                        // 使用现代API删除和插入
+                        selection.deleteFromDocument();
+                        const textNode = document.createTextNode(text);
+                        range.insertNode(textNode);
+                        
+                        // 将光标移到文本末尾
+                        range.setStartAfter(textNode);
+                        range.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        
+                        success = true;
+                        console.log('PromptCraft: Modern Selection API success');
+                    } catch (e) {
+                        console.warn('PromptCraft: Modern Selection API failed:', e);
+                    }
+                }
+                
+                // 方法3: 直接设置内容（最后的后备方案）
+                if (!success) {
+                    try {
+                        if (element.innerText !== undefined) {
+                            element.innerText = text;
+                        } else {
+                            element.textContent = text;
+                        }
+                        console.log('PromptCraft: Direct content assignment used');
+                    } catch (e) {
+                        console.warn('PromptCraft: Direct content assignment failed:', e);
+                    }
                 }
             } else {
                 console.log('PromptCraft: Setting text for other element type');
@@ -794,14 +1073,14 @@
             console.log('PromptCraft: Setting successful:', newValue === text);
             
             // 触发全面的事件以确保框架状态更新
-            triggerComprehensiveEvents(element, previousValue, text);
+            triggerComprehensiveEventSequence(element, previousValue, text);
             
         } catch (error) {
             console.warn('PromptCraft: Error in setElementText:', error);
             // 后备方案
             try {
                 element.value = text;
-                triggerComprehensiveEvents(element, '', text);
+                triggerComprehensiveEventSequence(element, '', text);
             } catch (fallbackError) {
                 console.error('PromptCraft: Fallback setElementText also failed:', fallbackError);
             }
@@ -810,16 +1089,47 @@
     
     // 显示快速调用UI
     function showQuickInvokeUI() {
+        console.log('PromptCraft: showQuickInvokeUI called', {
+            isUIVisible: state.isUIVisible,
+            hasCurrentInput: !!state.currentInput,
+            currentInputElement: state.currentInput ? {
+                tagName: state.currentInput.tagName,
+                id: state.currentInput.id,
+                className: state.currentInput.className
+            } : null,
+            url: window.location.href,
+            hostname: window.location.hostname
+        });
+        
         // 防止重复激活
         if (state.isUIVisible) {
+            console.log('PromptCraft: UI is already visible, skipping activation');
             return;
         }
         
         // 检查是否有有效的输入元素
         if (!state.currentInput) {
-            console.warn('PromptCraft: No valid input element found');
+            console.warn('PromptCraft: No valid input element found', {
+                currentInput: state.currentInput,
+                url: window.location.href
+            });
             return;
         }
+        
+        console.log('PromptCraft: Activating UI with state', {
+            promptsCount: state.prompts.length,
+            triggerPosition: state.triggerPosition
+        });
+        
+        // 保存原始输入元素，防止被搜索框覆盖
+        state.originalInput = state.currentInput;
+        console.log('PromptCraft: Saved original input element', {
+            originalInputElement: state.originalInput ? {
+                tagName: state.originalInput.tagName,
+                id: state.originalInput.id,
+                className: state.originalInput.className
+            } : null
+        });
         
         state.isActive = true;
         state.isUIVisible = true;
@@ -828,6 +1138,7 @@
         state.selectedCategory = 'all';
         state.searchTerm = '';
         
+        console.log('PromptCraft: Creating UI components');
         createQuickInvokeUI();
         positionUI();
         applyFilters();
@@ -836,19 +1147,29 @@
         setTimeout(() => {
             const searchInput = state.uiContainer?.querySelector('.promptcraft-search-input');
             if (searchInput) {
+                console.log('PromptCraft: Focusing search input');
                 searchInput.focus();
+            } else {
+                console.warn('PromptCraft: Search input not found for focusing');
             }
         }, 10);
         
-        console.log('PromptCraft: Quick invoke UI activated');
+        console.log('PromptCraft: Quick invoke UI activated successfully');
     }
     
     // 隐藏快速调用UI
     function hideQuickInvokeUI() {
         if (!state.isUIVisible) return;
         
+        console.log('PromptCraft: Hiding Quick Invoke UI');
+        
         state.isUIVisible = false;
         state.isActive = false;
+        
+        // 清理输入元素引用和锁定状态
+        state.originalInput = null;
+        state.lockedTargetInput = null;
+        console.log('PromptCraft: Cleared input references and target lock');
         
         // 移除UI容器
         if (state.uiContainer && state.uiContainer.parentNode) {
@@ -1132,74 +1453,171 @@
     
     // 插入提示词
     function insertPrompt(prompt) {
-        console.log('PromptCraft: insertPrompt called with prompt:', prompt);
-        console.log('PromptCraft: Current input element:', state.currentInput);
+        console.log('PromptCraft: Enhanced insertPrompt called with target locking');
         
-        if (!state.currentInput || !prompt) {
-            console.warn('PromptCraft: Cannot insert prompt - missing input element or prompt');
+        // 使用锁定的目标输入框（最高优先级）
+        const targetInput = state.lockedTargetInput || state.originalInput || state.currentInput;
+        
+        if (!targetInput || !prompt) {
+            console.warn('PromptCraft: Cannot insert prompt - missing target or prompt');
             return;
         }
         
+        // 设置插入标志位
+        state.isInserting = true;
+        
         try {
-            const currentText = getElementText(state.currentInput);
-            console.log('PromptCraft: Current text before insertion:', currentText);
-            console.log('PromptCraft: Trigger position:', state.triggerPosition);
-            console.log('PromptCraft: Prompt content to insert:', prompt.content);
+            const currentText = getElementText(targetInput);
+            let newText, cursorPosition;
             
-            let newText;
-            let cursorPosition;
-            
-            // 如果有记录的触发位置，精确替换
+            // 精确替换触发词
             if (state.triggerPosition >= 0) {
                 const beforeTrigger = currentText.substring(0, state.triggerPosition);
                 const afterTrigger = currentText.substring(state.triggerPosition + CONSTANTS.TRIGGER_COMMAND.length);
                 newText = beforeTrigger + prompt.content + afterTrigger;
                 cursorPosition = state.triggerPosition + prompt.content.length;
-                console.log('PromptCraft: Using trigger position method');
-                console.log('PromptCraft: Before trigger:', beforeTrigger);
-                console.log('PromptCraft: After trigger:', afterTrigger);
             } else {
                 // 后备方案：移除末尾的触发词
                 const triggerRegex = new RegExp(CONSTANTS.TRIGGER_COMMAND.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$');
                 newText = currentText.replace(triggerRegex, prompt.content);
                 cursorPosition = newText.length;
-                console.log('PromptCraft: Using regex replacement method');
             }
             
-            console.log('PromptCraft: New text to set:', newText);
-            console.log('PromptCraft: Cursor position:', cursorPosition);
+            // 增强的文本注入
+            insertTextWithFrameworkSupport(targetInput, newText, cursorPosition);
             
-            // 设置文本内容
-            setElementText(state.currentInput, newText);
-            
-            // 验证文本是否设置成功
-            const verifyText = getElementText(state.currentInput);
-            console.log('PromptCraft: Text after setting:', verifyText);
-            console.log('PromptCraft: Text setting successful:', verifyText === newText);
-            
-            // 设置光标位置
-            setCursorPosition(state.currentInput, cursorPosition);
-            
-            // 触发额外的事件以确保网站响应
-            triggerInputEvents(state.currentInput);
-            
-            // 关闭UI
+            // 关闭UI并清理状态
             hideQuickInvokeUI();
             
-            // 聚焦回输入框
+            // 聚焦回目标输入框
             setTimeout(() => {
                 try {
-                    state.currentInput.focus();
+                    targetInput.focus();
                 } catch (error) {
-                    console.warn('PromptCraft: Failed to focus input after insertion:', error);
+                    console.warn('PromptCraft: Failed to focus target input:', error);
                 }
+                state.isInserting = false;
             }, 50);
             
             console.log('PromptCraft: Prompt inserted successfully:', prompt.title);
             
         } catch (error) {
             console.error('PromptCraft: Error inserting prompt:', error);
+            state.isInserting = false;
             hideQuickInvokeUI();
+        }
+    }
+    
+    // 增强的文本注入函数 - 支持现代前端框架
+    function insertTextWithFrameworkSupport(element, text, cursorPosition) {
+        const previousValue = getElementText(element);
+        
+        // 设置文本内容
+        setElementText(element, text);
+        
+        // 设置光标位置
+        setCursorPosition(element, cursorPosition);
+        
+        // 触发完整的事件序列以确保框架同步
+        triggerComprehensiveEventSequence(element, previousValue, text);
+    }
+    
+    // 触发完整的事件序列
+    function triggerComprehensiveEventSequence(element, previousValue, newValue) {
+        try {
+            // 1. 立即触发基础事件
+            const events = [
+                new Event('focus', { bubbles: true }),
+                new Event('input', { bubbles: true }),
+                new Event('change', { bubbles: true })
+            ];
+            
+            events.forEach(event => {
+                Object.defineProperty(event, 'target', { writable: false, value: element });
+                Object.defineProperty(event, 'currentTarget', { writable: false, value: element });
+                element.dispatchEvent(event);
+            });
+            
+            // 2. 模拟键盘输入序列（异步）
+            setTimeout(() => {
+                try {
+                    // beforeinput事件（现代浏览器）
+                    if (typeof InputEvent !== 'undefined') {
+                        const beforeInputEvent = new InputEvent('beforeinput', {
+                            bubbles: true,
+                            cancelable: true,
+                            inputType: 'insertText',
+                            data: newValue
+                        });
+                        element.dispatchEvent(beforeInputEvent);
+                    }
+                    
+                    // 键盘事件序列
+                    const keyboardEvents = [
+                        { type: 'keydown', key: 'Unidentified', keyCode: 229 },
+                        { type: 'compositionstart' },
+                        { type: 'compositionupdate', data: newValue },
+                        { type: 'input' },
+                        { type: 'compositionend', data: newValue },
+                        { type: 'keyup', key: 'Unidentified', keyCode: 229 }
+                    ];
+                    
+                    keyboardEvents.forEach((config, index) => {
+                        setTimeout(() => {
+                            try {
+                                let event;
+                                if (config.type.startsWith('composition')) {
+                                    event = new CompositionEvent(config.type, {
+                                        bubbles: true,
+                                        data: config.data || ''
+                                    });
+                                } else if (config.type.startsWith('key')) {
+                                    event = new KeyboardEvent(config.type, {
+                                        bubbles: true,
+                                        key: config.key,
+                                        keyCode: config.keyCode
+                                    });
+                                } else {
+                                    event = new Event(config.type, { bubbles: true });
+                                }
+                                element.dispatchEvent(event);
+                            } catch (e) {
+                                // 忽略单个事件错误
+                            }
+                        }, index * 5);
+                    });
+                } catch (e) {
+                    console.warn('PromptCraft: Failed to trigger keyboard sequence:', e);
+                }
+            }, 0);
+            
+            // 3. React特殊处理
+            setTimeout(() => {
+                try {
+                    const reactFiberKey = Object.keys(element).find(key => 
+                        key.startsWith('__reactInternalInstance') || key.startsWith('__reactFiber')
+                    );
+                    
+                    if (reactFiberKey) {
+                        // 强制React重新渲染
+                        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                            window.HTMLInputElement.prototype, 'value'
+                        )?.set || Object.getOwnPropertyDescriptor(
+                            window.HTMLTextAreaElement.prototype, 'value'
+                        )?.set;
+                        
+                        if (nativeInputValueSetter) {
+                            nativeInputValueSetter.call(element, newValue);
+                            element.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    }
+                } catch (e) {
+                    console.warn('PromptCraft: React special handling failed:', e);
+                }
+            }, 10);
+            
+        } catch (error) {
+            console.warn('PromptCraft: Failed to trigger comprehensive events:', error);
         }
     }
     
@@ -1234,164 +1652,7 @@
         }
     }
     
-    // 触发输入事件 - 改进版本，参考quick-prompt最佳实践
-    function triggerInputEvents(element) {
-        try {
-            triggerComprehensiveEvents(element);
-        } catch (error) {
-            console.warn('PromptCraft: Failed to trigger input events:', error);
-        }
-    }
-    
-    // 触发全面的事件以确保现代框架兼容性
-    function triggerComprehensiveEvents(element, previousValue = '', newValue = '') {
-        try {
-            // 立即触发关键事件，模拟真实用户输入
-            const createInputEvent = (type, bubbles = true) => {
-                const event = new Event(type, { bubbles, cancelable: true });
-                // 为React等框架设置必要的属性
-                Object.defineProperty(event, 'target', { writable: false, value: element });
-                Object.defineProperty(event, 'currentTarget', { writable: false, value: element });
-                return event;
-            };
-            
-            // 立即触发input事件
-            element.dispatchEvent(createInputEvent('input'));
-            
-            // 模拟键盘输入序列
-            setTimeout(() => {
-                try {
-                    // 触发beforeinput事件（现代浏览器支持）
-                    if (typeof InputEvent !== 'undefined') {
-                        const beforeInputEvent = new InputEvent('beforeinput', {
-                            bubbles: true,
-                            cancelable: true,
-                            inputType: 'insertText',
-                            data: newValue
-                        });
-                        element.dispatchEvent(beforeInputEvent);
-                    }
-                    
-                    // 触发键盘事件序列
-                    const keyboardEvents = [
-                        { type: 'keydown', key: 'Unidentified', keyCode: 229 }, // 输入法组合键
-                        { type: 'compositionstart' },
-                        { type: 'compositionupdate', data: newValue },
-                        { type: 'compositionend', data: newValue },
-                        { type: 'input' },
-                        { type: 'keyup', key: 'Unidentified', keyCode: 229 }
-                    ];
-                    
-                    keyboardEvents.forEach((eventConfig, index) => {
-                        setTimeout(() => {
-                            try {
-                                let event;
-                                if (eventConfig.type.startsWith('composition')) {
-                                    event = new CompositionEvent(eventConfig.type, {
-                                        bubbles: true,
-                                        cancelable: true,
-                                        data: eventConfig.data || ''
-                                    });
-                                } else if (eventConfig.type.startsWith('key')) {
-                                    event = new KeyboardEvent(eventConfig.type, {
-                                        bubbles: true,
-                                        cancelable: true,
-                                        key: eventConfig.key || 'Unidentified',
-                                        keyCode: eventConfig.keyCode || 0,
-                                        which: eventConfig.keyCode || 0
-                                    });
-                                } else {
-                                    event = createInputEvent(eventConfig.type);
-                                }
-                                element.dispatchEvent(event);
-                            } catch (e) {
-                                // 忽略单个事件错误
-                            }
-                        }, index * 5); // 每个事件间隔5ms
-                    });
-                } catch (e) {
-                    console.warn('PromptCraft: Failed to trigger keyboard sequence:', e);
-                }
-            }, 0);
-            
-            // React特殊处理
-            setTimeout(() => {
-                try {
-                    // 检测React Fiber
-                    const reactFiberKey = Object.keys(element).find(key => 
-                        key.startsWith('__reactInternalInstance') || key.startsWith('__reactFiber')
-                    );
-                    
-                    if (reactFiberKey) {
-                        // React组件检测到，触发React特定事件
-                        const reactEvent = createInputEvent('input');
-                        
-                        // 设置React SyntheticEvent属性
-                        Object.defineProperty(reactEvent, 'nativeEvent', {
-                            writable: false,
-                            value: reactEvent
-                        });
-                        
-                        element.dispatchEvent(reactEvent);
-                        
-                        // 强制触发change事件
-                        setTimeout(() => {
-                            element.dispatchEvent(createInputEvent('change'));
-                        }, 10);
-                    }
-                    
-                    // Vue检测和处理
-                    if (element.__vue__ || element._vModifiers || element.__vueParentContext) {
-                        const vueEvent = createInputEvent('input');
-                        element.dispatchEvent(vueEvent);
-                        
-                        // Vue的v-model通常监听input事件
-                        setTimeout(() => {
-                            element.dispatchEvent(createInputEvent('change'));
-                        }, 10);
-                    }
-                    
-                    // Angular检测
-                    if (element.ng || element.__ngContext__) {
-                        const angularEvent = createInputEvent('input');
-                        element.dispatchEvent(angularEvent);
-                    }
-                    
-                } catch (e) {
-                    console.warn('PromptCraft: Failed to trigger framework-specific events:', e);
-                }
-            }, 20);
-            
-            // 最终确保事件
-            setTimeout(() => {
-                try {
-                    // 最后的input和change事件确保
-                    ['input', 'change', 'blur'].forEach(eventType => {
-                        const event = createInputEvent(eventType);
-                        element.dispatchEvent(event);
-                    });
-                    
-                    // 自定义事件通知
-                    const customEvent = new CustomEvent('promptcraft-text-inserted', {
-                        bubbles: true,
-                        detail: { 
-                            element: element, 
-                            previousValue: previousValue,
-                            newValue: newValue,
-                            timestamp: Date.now() 
-                        }
-                    });
-                    element.dispatchEvent(customEvent);
-                    
-                } catch (e) {
-                    console.warn('PromptCraft: Failed to trigger final events:', e);
-                }
-            }, 50);
-            
-        } catch (error) {
-            console.warn('PromptCraft: Failed to trigger comprehensive events:', error);
-        }
-    }
+    // 注意：旧的triggerInputEvents函数已被insertTextWithFrameworkSupport中的triggerComprehensiveEventSequence替代
     
     // HTML转义
     function escapeHtml(unsafe) {
