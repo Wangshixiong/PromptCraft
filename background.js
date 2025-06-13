@@ -1,14 +1,55 @@
 // background.js
 
+// 从default-prompts.json加载默认提示词数据
+async function loadDefaultPromptsToMemory() {
+    try {
+        // 检查storage中是否已有数据
+        const result = await chrome.storage.local.get(['prompts']);
+        if (result.prompts && result.prompts.length > 0) {
+            console.log('PromptCraft: Prompts already exist in storage, count:', result.prompts.length);
+            return;
+        }
+        
+        // 从default-prompts.json文件加载默认数据
+        const response = await fetch(chrome.runtime.getURL('default-prompts.json'));
+        const defaultPrompts = await response.json();
+        
+        // 将默认数据保存到chrome.storage.local
+        await chrome.storage.local.set({ prompts: defaultPrompts });
+        console.log('PromptCraft: Default prompts loaded to memory, count:', defaultPrompts.length);
+        
+    } catch (error) {
+        console.error('PromptCraft: Failed to load default prompts:', error);
+        // 如果加载失败，设置错误状态而不是使用硬编码数据
+        await chrome.storage.local.set({ 
+            prompts: [], 
+            loadError: true, 
+            errorMessage: `加载默认提示词失败: ${error.message}` 
+        });
+        console.log('PromptCraft: Load error status saved to storage');
+    }
+}
+
 // 当插件首次安装、更新或浏览器启动时运行
-chrome.runtime.onInstalled.addListener(() => {
-    // 创建一个右键菜单项
-    chrome.contextMenus.create({
-      id: "add-to-promptcraft",
-      title: "添加到 PromptCraft",
-      contexts: ["selection"] // 只在用户选中文本时显示
+chrome.runtime.onInstalled.addListener(async () => {
+    // 先移除可能存在的菜单项，避免重复创建错误
+    chrome.contextMenus.removeAll(() => {
+        // 创建一个右键菜单项
+        chrome.contextMenus.create({
+          id: "add-to-promptcraft",
+          title: "添加到 Prompt管理助手",
+          contexts: ["selection"] // 只在用户选中文本时显示
+        });
     });
-  });
+    
+    // 加载默认提示词到内存
+    await loadDefaultPromptsToMemory();
+});
+
+// 当浏览器启动时也加载默认数据（如果需要）
+chrome.runtime.onStartup.addListener(async () => {
+    await loadDefaultPromptsToMemory();
+});
   
   // 监听右键菜单的点击事件
   chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -19,7 +60,7 @@ chrome.runtime.onInstalled.addListener(() => {
       chrome.sidePanel.open({ windowId: tab.windowId });
   
       // 向侧边栏发送消息，传递选中的文本
-      // 使用一个延迟来确保侧边栏有足够的时间来加载和设置监听器
+      // 使用更长的延迟来确保侧边栏有足够的时间来加载和设置监听器
       setTimeout(() => {
           chrome.runtime.sendMessage({
               type: "ADD_FROM_CONTEXT_MENU",
@@ -28,19 +69,53 @@ chrome.runtime.onInstalled.addListener(() => {
               }
           }, (response) => {
               if (chrome.runtime.lastError) {
-                  // 如果侧边栏还没准备好，可能会发生错误
+                  // 如果侧边栏还没准备好，实现重试逻辑
                   console.log("Error sending message:", chrome.runtime.lastError.message);
-                  // 你可以在这里实现重试逻辑
+                  console.log("尝试重新发送消息...");
+                  setTimeout(() => {
+                       chrome.runtime.sendMessage({
+                           type: "ADD_FROM_CONTEXT_MENU",
+                           data: {
+                               content: info.selectionText
+                           }
+                       }, (retryResponse) => {
+                           if (chrome.runtime.lastError) {
+                               console.log("重试发送消息失败:", chrome.runtime.lastError.message);
+                           } else {
+                               console.log("重试发送消息成功:", retryResponse);
+                           }
+                       });
+                   }, 300);
               } else {
                   console.log("Message sent successfully, response:", response);
               }
           });
-      }, 200); // 200毫秒延迟
+      }, 400); // 优化延迟时间，平衡稳定性和响应速度
     }
   });
   
   // 当点击插件图标时，打开侧边栏
   chrome.action.onClicked.addListener((tab) => {
     chrome.sidePanel.open({ windowId: tab.windowId });
+  });
+  
+  // 监听来自content script的消息
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'getPrompts') {
+      // 从storage中获取提示词数据
+      chrome.storage.local.get(['prompts', 'loadError', 'errorMessage'], (result) => {
+        if (result.loadError) {
+          sendResponse({ 
+            prompts: [], 
+            loadError: true, 
+            errorMessage: result.errorMessage || '加载默认提示词失败' 
+          });
+        } else {
+          const prompts = result.prompts || [];
+          sendResponse({ prompts: prompts });
+        }
+      });
+      return true; // 保持消息通道开放以支持异步响应
+    }
   });
   
