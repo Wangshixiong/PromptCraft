@@ -341,6 +341,9 @@ html body #promptcraft-quick-invoke-container .promptcraft-help-keys { display: 
         console.log('PromptCraft: Setting up cleanup handlers');
         setupCleanupHandlers();
 
+        console.log('PromptCraft: Setting up storage change listener');
+        setupStorageChangeListener();
+
         // 设置心跳日志，每30秒输出一次确认扩展运行状态
         setInterval(() => {
             console.log('💓 PromptCraft: Heartbeat - Extension is running', {
@@ -463,6 +466,28 @@ html body #promptcraft-quick-invoke-container .promptcraft-help-keys { display: 
         }
 
         console.log('PromptCraft: Enhanced event listeners setup completed');
+    }
+
+    // 设置存储变化监听器
+    function setupStorageChangeListener() {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+            chrome.storage.onChanged.addListener((changes, namespace) => {
+                if (namespace === 'local' && changes.prompts) {
+                    console.log('PromptCraft: Storage prompts changed, reloading data');
+                    console.log('PromptCraft: Old prompts count:', changes.prompts.oldValue ? changes.prompts.oldValue.length : 0);
+                    console.log('PromptCraft: New prompts count:', changes.prompts.newValue ? changes.prompts.newValue.length : 0);
+                    
+                    // 直接更新state中的prompts数据
+                    state.prompts = changes.prompts.newValue || [];
+                    
+                    // 如果当前有显示的UI，立即更新
+                    updateUIAfterPromptsLoad();
+                }
+            });
+            console.log('PromptCraft: Storage change listener setup completed');
+        } else {
+            console.warn('PromptCraft: Chrome storage API not available for change listener');
+        }
     }
 
     // 设置DOM观察器 - 处理动态加载的输入框

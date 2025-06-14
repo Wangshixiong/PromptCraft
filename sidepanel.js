@@ -251,8 +251,9 @@ function showView(viewId) {
             const isVisible = targetView.offsetWidth > 0 && targetView.offsetHeight > 0;
             console.log(`视图 ${viewId} 是否可见: ${isVisible}`);
             if (!isVisible) {
-                console.warn(`警告：视图 ${viewId} 可能未正确显示，尝试强制显示`);
-                targetView.style.display = 'flex';
+                console.warn(`警告：视图 ${viewId} 可能未正确显示，确保active类已添加`);
+                // 确保active类已正确添加
+                targetView.classList.add('active');
             }
         }, 100);
         
@@ -288,7 +289,7 @@ async function handleLogout() {
     safeShowLoading();
     
     // 清除本地数据
-    localStorage.removeItem('promptcraft_prompts');
+    await chrome.storage.local.remove(['prompts']);
     currentUser = null;
     allPrompts = [];
     renderPrompts([]);
@@ -301,87 +302,16 @@ async function handleLogout() {
 }
 
 async function checkUserSession() {
-    try {
-        safeShowLoading();
-        console.log('直接进入主界面模式...');
-        
-        // 创建一个虚拟用户对象，用于本地存储
-        currentUser = {
-            id: 'local-user',
-            email: 'local@example.com'
-        };
-        
-        console.log('设置虚拟用户，直接进入主界面');
-        
-        // 直接切换到主界面
-        const viewSwitched = showView('mainView');
-        console.log('视图切换结果:', viewSwitched ? '成功' : '失败');
-        
-        // 如果视图切换失败，尝试直接操作DOM
-        if (!viewSwitched) {
-            console.log('视图切换失败，尝试直接操作DOM');
-            document.querySelectorAll('.view').forEach(view => {
-                view.style.display = 'none';
-                view.classList.remove('active');
-            });
-            const mainView = document.getElementById('mainView');
-            if (mainView) {
-                mainView.style.display = 'flex';
-                mainView.classList.add('active');
-                currentView = 'mainView';
-                console.log('通过DOM操作强制显示主界面成功');
-            } else {
-                console.error('找不到主视图元素');
-            }
-        }
-        
-        // 然后加载数据
-        try {
-            console.log('加载本地提示词...');
-            await loadUserPrompts(true); // 跳过内部loading
-            console.log('提示词加载成功');
-        } catch (err) {
-            console.error('加载数据失败:', err);
-            console.error('错误详情:', err.message, err.stack);
-        }
-        
-        // 再次确认视图显示正确
-        setTimeout(() => {
-            // 如果正在处理右键菜单消息，跳过强制显示主界面的操作
-            if (isProcessingContextMenu) {
-                console.log('正在处理右键菜单消息，跳过延迟检查');
-                return;
-            }
-            
-            const mainView = document.getElementById('mainView');
-            if (mainView && (!mainView.classList.contains('active') || getComputedStyle(mainView).display === 'none')) {
-                console.log('延迟检查发现主界面未正确显示，再次尝试强制显示');
-                document.querySelectorAll('.view').forEach(view => {
-                    view.style.display = 'none';
-                    view.classList.remove('active');
-                });
-                mainView.style.display = 'flex';
-                mainView.classList.add('active');
-                currentView = 'mainView';
-            }
-        }, 500);
-        
-        console.log('直接进入主界面完成');
-        
-    } catch (err) {
-        console.error('检查会话时发生错误:', err);
-        console.error('错误详情:', err.message, err.stack);
-        showView('authView');
-    } finally {
-        forceHideLoading();
-    }
+    // 这个函数现在主要用于兼容性，实际初始化已在initializeApp中完成
+    console.log('checkUserSession: 用户会话已在initializeApp中处理');
+    return true;
 }
 
 
 // --- 数据处理 (CRUD) ---
 
 async function loadUserPrompts(skipLoading = false) {
-    console.log('开始加载本地提示词，skipLoading:', skipLoading);
+    console.log('开始加载提示词数据，skipLoading:', skipLoading);
     if (!currentUser) {
         console.error('无法加载提示词：用户未设置');
         return;
@@ -389,91 +319,40 @@ async function loadUserPrompts(skipLoading = false) {
     if (!skipLoading) safeShowLoading();
     
     try {
-        console.log('从本地存储加载提示词...');
+        console.log('从chrome.storage.local加载提示词...');
         
-        // 从localStorage获取提示词数据
-        const storedPrompts = localStorage.getItem('promptcraft_prompts');
-        let data = [];
+        // 从chrome.storage.local获取提示词数据
+        const result = await chrome.storage.local.get(['prompts', 'loadError', 'errorMessage']);
+        let data = result.prompts || [];
         
-        if (storedPrompts) {
-            try {
-                data = JSON.parse(storedPrompts);
-                console.log('成功获取本地提示词数据，数量:', data?.length || 0);
-            } catch (parseError) {
-                console.error('解析本地数据失败:', parseError);
-                data = [];
-            }
-        }
+        console.log('成功获取提示词数据，数量:', data.length);
         
-        if (!data || data.length === 0) {
-            console.log('未找到本地提示词');
-            // 检查是否是首次使用（localStorage中没有任何数据）
-            const hasEverHadData = localStorage.getItem('promptcraft_has_data');
-            if (!hasEverHadData) {
-                console.log('首次使用，创建示例提示词...');
-                await createSamplePrompts(skipLoading);
-                return;
-            } else {
-                console.log('用户已删除所有提示词，显示空列表');
-                allPrompts = [];
-                renderPrompts([]);
-                updateFilterButtons();
-                return;
-            }
+        // 检查是否有加载错误
+        if (result.loadError) {
+            console.warn('检测到数据加载错误:', result.errorMessage);
+            showToast(result.errorMessage || '数据加载失败', 'warning');
         }
         
         allPrompts = data;
         console.log('渲染提示词列表...');
         renderPrompts(allPrompts);
         updateFilterButtons();
-        console.log('本地提示词加载完成');
+        console.log('提示词加载完成');
         
     } catch (err) {
-        console.error('加载本地提示词时发生错误:', err);
+        console.error('加载提示词时发生错误:', err);
         console.error('错误详情:', err.message, err.stack);
         // 即使出错，也尝试显示空列表
+        allPrompts = [];
         renderPrompts([]);
         updateFilterButtons();
+        showToast('加载数据失败，请刷新重试', 'error');
     } finally {
         if (!skipLoading) forceHideLoading();
     }
 }
 
-async function createSamplePrompts(skipLoading = false) {
-    try {
-        // 从JSON文件加载默认提示词
-        const response = await fetch('./default-prompts.json');
-        if (!response.ok) {
-            throw new Error('无法加载默认提示词文件');
-        }
-        
-        const defaultPrompts = await response.json();
-        
-        // 为每个提示词添加用户ID和时间戳
-        const sampleData = defaultPrompts.map((prompt, index) => ({
-            ...prompt,
-            id: Date.now() + index,
-            user_id: currentUser.id,
-            created_at: new Date().toISOString()
-        }));
-        
-        // 保存到本地存储
-        localStorage.setItem('promptcraft_prompts', JSON.stringify(sampleData));
-        // 同时保存到chrome.storage.local供content script使用
-        chrome.storage.local.set({ prompts: sampleData });
-        // 标记用户已经有过数据
-        localStorage.setItem('promptcraft_has_data', 'true');
-        console.log('成功创建默认提示词');
-        await loadUserPrompts(skipLoading);
-    } catch (error) {
-        console.error('加载默认提示词失败:', error);
-        // 如果加载失败，创建空的提示词列表
-        localStorage.setItem('promptcraft_prompts', JSON.stringify([]));
-        chrome.storage.local.set({ prompts: [] });
-        localStorage.setItem('promptcraft_has_data', 'true');
-        await loadUserPrompts(skipLoading);
-    }
-}
+// createSamplePrompts函数已移除，默认提示词现在由background.js在安装时创建
 
 async function savePrompt() {
     const id = promptIdInput.value;
@@ -495,18 +374,9 @@ async function savePrompt() {
     safeShowLoading();
     
     try {
-        // 从本地存储获取现有数据
-        const storedPrompts = localStorage.getItem('promptcraft_prompts');
-        let prompts = [];
-        
-        if (storedPrompts) {
-            try {
-                prompts = JSON.parse(storedPrompts);
-            } catch (parseError) {
-                console.error('解析本地数据失败:', parseError);
-                prompts = [];
-            }
-        }
+        // 从chrome.storage.local获取现有数据
+        const result = await chrome.storage.local.get(['prompts']);
+        let prompts = result.prompts || [];
         
         const promptData = {
             user_id: currentUser.id,
@@ -538,12 +408,8 @@ async function savePrompt() {
             console.log('添加新提示词:', newPrompt.id);
         }
         
-        // 保存到本地存储
-        localStorage.setItem('promptcraft_prompts', JSON.stringify(prompts));
-        // 同时保存到chrome.storage.local供content script使用
-        chrome.storage.local.set({ prompts: prompts });
-        // 标记用户已经有过数据
-        localStorage.setItem('promptcraft_has_data', 'true');
+        // 保存到chrome.storage.local
+        await chrome.storage.local.set({ prompts: prompts });
         console.log('提示词保存成功');
         
         await loadUserPrompts();
@@ -565,18 +431,9 @@ async function deletePrompt(promptId) {
     safeShowLoading();
     
     try {
-        // 从本地存储获取现有数据
-        const storedPrompts = localStorage.getItem('promptcraft_prompts');
-        let prompts = [];
-        
-        if (storedPrompts) {
-            try {
-                prompts = JSON.parse(storedPrompts);
-            } catch (parseError) {
-                console.error('解析本地数据失败:', parseError);
-                prompts = [];
-            }
-        }
+        // 从chrome.storage.local获取现有数据
+        const result = await chrome.storage.local.get(['prompts']);
+        let prompts = result.prompts || [];
         
         // 删除指定的提示词
         const filteredPrompts = prompts.filter(p => p.id != promptId);
@@ -585,12 +442,8 @@ async function deletePrompt(promptId) {
             console.error('未找到要删除的提示词:', promptId);
             showToast('未找到要删除的提示词', 'error');
         } else {
-            // 保存更新后的数据到本地存储
-            localStorage.setItem('promptcraft_prompts', JSON.stringify(filteredPrompts));
-        // 同时保存到chrome.storage.local供content script使用
-        chrome.storage.local.set({ prompts: filteredPrompts });
-            // 确保标记用户已经有过数据（即使现在为空）
-            localStorage.setItem('promptcraft_has_data', 'true');
+            // 保存更新后的数据到chrome.storage.local
+            await chrome.storage.local.set({ prompts: filteredPrompts });
             console.log('提示词删除成功:', promptId);
             
             // 更新内存中的数据并重新渲染
@@ -612,7 +465,9 @@ async function deletePrompt(promptId) {
 function renderPrompts(promptsToRender) {
     console.log('开始渲染提示词列表...');
     try {
+        // 清空骨架屏占位符和所有内容
         promptsContainer.innerHTML = '';
+        console.log('已清空骨架屏占位符');
         if (promptsToRender.length === 0) {
             promptsContainer.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #64748b;"><i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i><h3>空空如也</h3><p>点击上方按钮添加您的第一个提示词吧！</p></div>`;
             return;
@@ -1197,17 +1052,8 @@ async function handleFileImport(event) {
         }
         
         // 获取现有提示词
-        const storedPrompts = localStorage.getItem('promptcraft_prompts');
-        let existingPrompts = [];
-        
-        if (storedPrompts) {
-            try {
-                existingPrompts = JSON.parse(storedPrompts);
-            } catch (parseError) {
-                console.error('解析现有数据失败:', parseError);
-                existingPrompts = [];
-            }
-        }
+        const result = await chrome.storage.local.get(['prompts']);
+        let existingPrompts = result.prompts || [];
         
         // 处理重名提示词的更新策略
         let addedCount = 0;
@@ -1241,11 +1087,8 @@ async function handleFileImport(event) {
             }
         });
         
-        // 保存到本地存储
-        localStorage.setItem('promptcraft_prompts', JSON.stringify(finalPrompts));
-        // 同时保存到chrome.storage.local供content script使用
-        chrome.storage.local.set({ prompts: finalPrompts });
-        localStorage.setItem('promptcraft_has_data', 'true');
+        // 保存到chrome.storage.local
+        await chrome.storage.local.set({ prompts: finalPrompts });
         
         // 重新加载提示词列表
         await loadUserPrompts();
@@ -1310,26 +1153,52 @@ function safeShowLoading() {
 async function initializeApp() {
     console.log('开始初始化应用...');
     try {
-        // 主题设置
+        // 确保DOM元素存在后再显示主界面
+        const mainView = document.getElementById('mainView');
+        if (mainView) {
+            showView('mainView');
+        } else {
+            console.error('mainView元素未找到，延迟重试');
+            setTimeout(() => {
+                if (document.getElementById('mainView')) {
+                    showView('mainView');
+                }
+            }, 100);
+        }
+        
+        // 创建虚拟用户，立即可用
+        currentUser = {
+            id: 'local-user',
+            email: 'local@example.com'
+        };
+        
+        // 立即获取主题设置并应用
         const { themeMode: savedThemeMode } = await chrome.storage.local.get('themeMode');
         themeMode = savedThemeMode || 'auto';
-        
-        // 应用初始主题
         applyTheme(themeMode);
 
+        // 设置事件监听器
         setupEventListeners();
         setupCategoryInput();
         
-        // 直接检查并进入主界面
-        await checkUserSession();
+        // 从chrome.storage.local获取数据后再渲染
+        await loadUserPrompts(true); // 跳过loading显示，因为有骨架屏
         
     } catch (error) {
         console.error('初始化应用时发生错误:', error);
-        forceHideLoading();
         // 即使出错也尝试进入主界面
         showView('mainView');
+        // 清空骨架屏，显示错误状态
+        const promptsContainer = document.getElementById('promptsContainer');
+        if (promptsContainer) {
+            promptsContainer.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #64748b;"><i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; color: #ef4444;"></i><h3>加载失败</h3><p>请刷新页面重试</p></div>`;
+        }
     }
 }
 
-initializeApp();
+// 立即显示界面，不等待任何操作
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM加载完成，立即初始化应用');
+    initializeApp();
+});
 

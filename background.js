@@ -3,30 +3,51 @@
 // 从default-prompts.json加载默认提示词数据
 async function loadDefaultPromptsToMemory() {
     try {
-        // 检查storage中是否已有数据
-        const result = await chrome.storage.local.get(['prompts']);
-        if (result.prompts && result.prompts.length > 0) {
-            console.log('PromptCraft: Prompts already exist in storage, count:', result.prompts.length);
+        // 检查是否已经初始化过
+        const result = await chrome.storage.local.get(['prompts', 'promptcraft_has_data']);
+        if (result.promptcraft_has_data) {
+            console.log('PromptCraft: Already initialized, prompts count:', result.prompts?.length || 0);
             return;
         }
         
+        console.log('PromptCraft: First time installation, loading default prompts...');
+        
         // 从default-prompts.json文件加载默认数据
         const response = await fetch(chrome.runtime.getURL('default-prompts.json'));
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const defaultPrompts = await response.json();
         
-        // 将默认数据保存到chrome.storage.local
-        await chrome.storage.local.set({ prompts: defaultPrompts });
-        console.log('PromptCraft: Default prompts loaded to memory, count:', defaultPrompts.length);
+        // 为每个提示词添加完整的数据结构
+        const processedPrompts = defaultPrompts.map((prompt, index) => ({
+            ...prompt,
+            id: Date.now() + index,
+            user_id: 'local-user',
+            created_at: new Date().toISOString()
+        }));
+        
+        // 将处理后的数据保存到chrome.storage.local
+        await chrome.storage.local.set({ 
+            prompts: processedPrompts,
+            promptcraft_has_data: true,
+            themeMode: 'auto' // 默认主题设置
+        });
+        
+        console.log('PromptCraft: Default prompts loaded successfully, count:', processedPrompts.length);
         
     } catch (error) {
         console.error('PromptCraft: Failed to load default prompts:', error);
-        // 如果加载失败，设置错误状态而不是使用硬编码数据
+        // 如果加载失败，设置空数据但标记为已初始化
         await chrome.storage.local.set({ 
-            prompts: [], 
-            loadError: true, 
-            errorMessage: `加载默认提示词失败: ${error.message}` 
+            prompts: [],
+            promptcraft_has_data: true,
+            loadError: true,
+            errorMessage: `加载默认提示词失败: ${error.message}`,
+            themeMode: 'auto'
         });
-        console.log('PromptCraft: Load error status saved to storage');
+        console.log('PromptCraft: Error state saved, extension will show empty list');
     }
 }
 
