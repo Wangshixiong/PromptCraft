@@ -2,558 +2,248 @@
 // PromptCraft In-Page Quick Invoke - 页面内快速调用功能
 // 实现智能输入区域识别、精确触发检测和完整的UI生命周期管理
 
-(function() {
+(function () {
     'use strict';
-    
+
     // 防止重复注入
     if (window.promptCraftInjected) {
         return;
     }
     window.promptCraftInjected = true;
-    
+
     // 注入CSS样式 - 现代化命令面板风格
     function injectStyles() {
         if (document.getElementById('promptcraft-quick-invoke-styles')) {
             return; // 样式已存在
         }
-        
+
         const style = document.createElement('style');
         style.id = 'promptcraft-quick-invoke-styles';
         // 在iFrame中确保样式优先级
         style.setAttribute('data-promptcraft', 'true');
         style.textContent = `
-            /* PromptCraft Command Palette - 现代化命令面板风格 */
-            html #promptcraft-quick-invoke-container,
-            body #promptcraft-quick-invoke-container,
-            iframe #promptcraft-quick-invoke-container,
-            #promptcraft-quick-invoke-container {
-                --primary-color: #6366f1;
-                --primary-light: #818cf8;
-                --primary-dark: #4f46e5;
-                --background-light: #ffffff;
-                --background-dark: #1a1b23;
-                --text-light: #1f2937;
-                --text-dark: #f9fafb;
-                --text-secondary-light: #6b7280;
-                --text-secondary-dark: #9ca3af;
-                --card-light: #f8fafc;
-                --card-dark: #252730;
-                --border-light: #e5e7eb;
-                --border-dark: #374151;
-                --hover-light: #f3f4f6;
-                --hover-dark: #374151;
-                --success: #10b981;
-                --danger: #ef4444;
-                --warning: #f59e0b;
-                --shadow-light: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-                --shadow-dark: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
-                --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-                --backdrop-blur: blur(8px);
-                
-                /* position 由 JavaScript 动态设置 */
-                width: 640px;
-                max-width: 90vw;
-                max-height: 80vh;
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: var(--backdrop-blur);
-                -webkit-backdrop-filter: var(--backdrop-blur);
-                border: 1px solid var(--border-light);
-                border-radius: 16px;
-                box-shadow: var(--shadow-light);
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-                font-size: 14px;
-                color: var(--text-light);
-                z-index: 2147483647;
-                overflow: hidden;
-                transition: var(--transition);
-                animation: promptcraft-slideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            }
-            
-            @media (prefers-color-scheme: dark) {
-                #promptcraft-quick-invoke-container {
-                    background: rgba(26, 27, 35, 0.95);
-                    border-color: var(--border-dark);
-                    color: var(--text-dark);
-                    box-shadow: var(--shadow-dark);
-                }
-            }
-            
-            @keyframes promptcraft-slideIn {
-                from {
-                    opacity: 0;
-                }
-                to {
-                    opacity: 1;
-                }
-            }
-            
-            /* 搜索容器 - 命令面板头部 */
-            #promptcraft-quick-invoke-container .promptcraft-search-container {
-                padding: 20px 20px 16px 20px;
-                border-bottom: 1px solid var(--border-light);
-                background: transparent;
-            }
-            
-            @media (prefers-color-scheme: dark) {
-                #promptcraft-quick-invoke-container .promptcraft-search-container {
-                    border-bottom-color: var(--border-dark);
-                }
-            }
-            
-            /* 搜索输入框 - 大型聚焦式设计 */
-            #promptcraft-quick-invoke-container .promptcraft-search-input {
-                width: 100%;
-                padding: 14px 16px;
-                border: 2px solid transparent;
-                border-radius: 12px;
-                background: var(--card-light);
-                color: var(--text-light);
-                font-size: 16px;
-                font-weight: 400;
-                outline: none;
-                transition: var(--transition);
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-search-input:focus {
-                border-color: var(--primary-color);
-                background: var(--background-light);
-                box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), 0 4px 6px rgba(0, 0, 0, 0.1);
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-search-input::placeholder {
-                color: var(--text-secondary-light);
-                font-weight: 400;
-            }
-            
-            @media (prefers-color-scheme: dark) {
-                #promptcraft-quick-invoke-container .promptcraft-search-input {
-                    background: var(--card-dark);
-                    color: var(--text-dark);
-                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-                }
-                
-                #promptcraft-quick-invoke-container .promptcraft-search-input:focus {
-                    background: var(--background-dark);
-                    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2), 0 4px 6px rgba(0, 0, 0, 0.3);
-                }
-                
-                #promptcraft-quick-invoke-container .promptcraft-search-input::placeholder {
-                    color: var(--text-secondary-dark);
-                }
-            }
-            
-            /* 分类筛选器 - 精致标签设计 */
-            #promptcraft-quick-invoke-container .promptcraft-category-filter {
-                padding: 12px 20px 16px 20px;
-                border-bottom: 1px solid var(--border-light);
-                background: transparent;
-            }
-            
-            @media (prefers-color-scheme: dark) {
-                #promptcraft-quick-invoke-container .promptcraft-category-filter {
-                    border-bottom-color: var(--border-dark);
-                }
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-category-tabs {
-                display: flex;
-                gap: 8px;
-                flex-wrap: wrap;
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-category-tab {
-                position: relative;
-                padding: 8px 14px;
-                border: 1px solid var(--border-light);
-                border-radius: 20px;
-                background: var(--background-light);
-                color: var(--text-secondary-light);
-                font-size: 13px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: var(--transition);
-                white-space: nowrap;
-                user-select: none;
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-category-tab::before {
-                content: '';
-                position: absolute;
-                left: 10px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 6px;
-                height: 6px;
-                border-radius: 50%;
-                background: var(--text-secondary-light);
-                transition: var(--transition);
-                opacity: 0.6;
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-category-tab {
-                padding-left: 24px;
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-category-tab:hover {
-                background: var(--hover-light);
-                border-color: var(--primary-light);
-                color: var(--primary-color);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-category-tab:hover::before {
-                background: var(--primary-color);
-                opacity: 1;
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-category-tab.active {
-                background: var(--primary-color);
-                color: white;
-                border-color: var(--primary-color);
-                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-category-tab.active::before {
-                background: white;
-                opacity: 1;
-            }
-            
-            @media (prefers-color-scheme: dark) {
-                #promptcraft-quick-invoke-container .promptcraft-category-tab {
-                    background: var(--card-dark);
-                    border-color: var(--border-dark);
-                    color: var(--text-secondary-dark);
-                }
-                
-                #promptcraft-quick-invoke-container .promptcraft-category-tab::before {
-                    background: var(--text-secondary-dark);
-                }
-                
-                #promptcraft-quick-invoke-container .promptcraft-category-tab:hover {
-                    background: var(--hover-dark);
-                    color: var(--primary-light);
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-                }
-                
-                #promptcraft-quick-invoke-container .promptcraft-category-tab:hover::before {
-                    background: var(--primary-light);
-                }
-            }
-            
-            /* 提示词列表 - 优化滚动体验，隐藏滚动条实现完美对称 */
-            html #promptcraft-quick-invoke-container .promptcraft-prompt-list,
-            body #promptcraft-quick-invoke-container .promptcraft-prompt-list,
-            iframe #promptcraft-quick-invoke-container .promptcraft-prompt-list,
-            #promptcraft-quick-invoke-container .promptcraft-prompt-list {
-                max-height: 400px !important;
-                overflow-y: auto !important;
-                padding: 8px 16px 12px 16px !important;
-                scroll-behavior: smooth !important;
-                /* 隐藏滚动条但保持滚动功能 - 增加特异性 */
-                scrollbar-width: none !important; /* Firefox */
-                -ms-overflow-style: none !important; /* IE and Edge */
-            }
-            
-            /* 完全隐藏 WebKit 滚动条 - 增加特异性，支持iFrame */
-            html #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar,
-            body #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar,
-            iframe #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar,
-            #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar {
-                display: none !important;
-                width: 0 !important;
-                height: 0 !important;
-                background: transparent !important;
-            }
-            
-            html #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar-track,
-            body #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar-track,
-            iframe #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar-track,
-            #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar-track {
-                display: none !important;
-                background: transparent !important;
-            }
-            
-            html #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar-thumb,
-            body #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar-thumb,
-            iframe #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar-thumb,
-            #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar-thumb {
-                display: none !important;
-                background: transparent !important;
-            }
-            
-            /* 为了用户体验，在鼠标悬停时显示极细的滚动指示器 */
-            #promptcraft-quick-invoke-container .promptcraft-prompt-list:hover {
-                /* 可选：添加右侧阴影提示可滚动 */
-                background: linear-gradient(to right, transparent 0%, transparent 95%, rgba(0,0,0,0.05) 100%);
-            }
-            
-            @media (prefers-color-scheme: dark) {
-                #promptcraft-quick-invoke-container .promptcraft-prompt-list:hover {
-                    background: linear-gradient(to right, transparent 0%, transparent 95%, rgba(255,255,255,0.05) 100%);
-                }
-            }
-            
-            /* 提示词项 - 层次化卡片设计 */
-            #promptcraft-quick-invoke-container .promptcraft-prompt-item {
-                padding: 16px;
-                margin-bottom: 6px;
-                border: 1px solid transparent;
-                border-radius: 12px;
-                background: transparent;
-                cursor: pointer;
-                transition: var(--transition);
-                position: relative;
-                overflow: hidden;
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-prompt-item::before {
-                content: '';
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 3px;
-                height: 100%;
-                background: var(--primary-color);
-                transform: scaleY(0);
-                transition: var(--transition);
-                border-radius: 0 2px 2px 0;
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-prompt-item:hover {
-                background: var(--hover-light);
-                border-color: var(--border-light);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-prompt-item:hover::before {
-                transform: scaleY(1);
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected {
-                background: var(--primary-color);
-                color: white;
-                border-color: var(--primary-color);
-                transform: translateY(-2px);
-                box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected::before {
-                background: white;
-                transform: scaleY(1);
-            }
-            
-            @media (prefers-color-scheme: dark) {
-                #promptcraft-quick-invoke-container .promptcraft-prompt-item:hover {
-                    background: var(--hover-dark);
-                    border-color: var(--border-dark);
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-                }
-            }
-            
-            /* 提示词头部 - 标题和分类在同一行 */
-            #promptcraft-quick-invoke-container .promptcraft-prompt-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 6px;
-                gap: 12px;
-            }
-            
-            /* 提示词标题 - 更粗更突出，左对齐 */
-            #promptcraft-quick-invoke-container .promptcraft-prompt-title {
-                font-weight: 700;
-                font-size: 15px;
-                color: var(--text-light);
-                line-height: 1.3;
-                letter-spacing: -0.01em;
-                flex: 1;
-                min-width: 0;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            
-            @media (prefers-color-scheme: dark) {
-                #promptcraft-quick-invoke-container .promptcraft-prompt-title {
-                    color: var(--text-dark);
-                }
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected .promptcraft-prompt-title {
-                color: white;
-            }
-            
-            /* 提示词预览 - 更浅的颜色形成对比 */
-            #promptcraft-quick-invoke-container .promptcraft-prompt-preview {
-                font-size: 13px;
-                color: var(--text-secondary-light);
-                margin-bottom: 8px;
-                line-height: 1.5;
-                max-height: 42px;
-                overflow: hidden;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-                font-weight: 400;
-            }
-            
-            @media (prefers-color-scheme: dark) {
-                #promptcraft-quick-invoke-container .promptcraft-prompt-preview {
-                    color: var(--text-secondary-dark);
-                }
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected .promptcraft-prompt-preview {
-                color: rgba(255, 255, 255, 0.85);
-            }
-            
-            /* 提示词分类 - 精致的小圆点设计，右对齐 */
-            #promptcraft-quick-invoke-container .promptcraft-prompt-category {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                flex-shrink: 0;
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-prompt-category .category {
-                display: inline-flex;
-                align-items: center;
-                padding: 3px 10px;
-                background: var(--card-light);
-                color: var(--text-secondary-light);
-                border: 1px solid var(--border-light);
-                border-radius: 12px;
-                font-size: 11px;
-                font-weight: 500;
-                transition: var(--transition);
-                white-space: nowrap;
-            }
-            
-            @media (prefers-color-scheme: dark) {
-                #promptcraft-quick-invoke-container .promptcraft-prompt-category .category {
-                    background: var(--card-dark);
-                    color: var(--text-secondary-dark);
-                    border-color: var(--border-dark);
-                }
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-prompt-item:hover .promptcraft-prompt-category .category {
-                background: rgba(99, 102, 241, 0.1);
-                color: var(--primary-color);
-                border-color: rgba(99, 102, 241, 0.2);
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected .promptcraft-prompt-category .category {
-                background: rgba(255, 255, 255, 0.15);
-                color: rgba(255, 255, 255, 0.9);
-                border-color: rgba(255, 255, 255, 0.2);
-            }
-            
-            /* 无结果提示 */
-            #promptcraft-quick-invoke-container .promptcraft-no-results {
-                padding: 40px 20px;
-                text-align: center;
-                color: var(--text-light);
-                opacity: 0.6;
-                font-size: 14px;
-            }
-            
-            @media (prefers-color-scheme: dark) {
-                #promptcraft-quick-invoke-container .promptcraft-no-results {
-                    color: var(--text-dark);
-                }
-            }
-            
-            /* 操作提示 */
-            #promptcraft-quick-invoke-container .promptcraft-help-text {
-                padding: 12px 16px;
-                background: var(--card-light);
-                border-top: 1px solid var(--border-light);
-                font-size: 12px;
-                color: var(--text-light);
-                opacity: 0.8;
-                text-align: center;
-                font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-                line-height: 1.4;
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-help-main {
-                margin-bottom: 4px;
-                font-weight: 500;
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-help-trigger {
-                font-size: 11px;
-                opacity: 0.7;
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-help-keys {
-                display: inline-block;
-                padding: 2px 6px;
-                background: rgba(99, 102, 241, 0.1);
-                border: 1px solid rgba(99, 102, 241, 0.2);
-                border-radius: 4px;
-                font-family: 'Consolas', 'Monaco', monospace;
-                font-size: 11px;
-                font-weight: 600;
-                color: #6366f1;
-                margin: 0 2px;
-            }
-            
-            #promptcraft-quick-invoke-container .promptcraft-help-command {
-                display: inline-block;
-                padding: 1px 4px;
-                background: rgba(34, 197, 94, 0.1);
-                border: 1px solid rgba(34, 197, 94, 0.2);
-                border-radius: 3px;
-                font-family: 'Consolas', 'Monaco', monospace;
-                font-size: 11px;
-                font-weight: 600;
-                color: #22c55e;
-                margin: 0 2px;
-            }
-            
-            @media (prefers-color-scheme: dark) {
-                #promptcraft-quick-invoke-container .promptcraft-help-text {
-                    background: var(--card-dark);
-                    border-top-color: var(--border-dark);
-                    color: var(--text-dark);
-                }
-                
-                #promptcraft-quick-invoke-container .promptcraft-help-keys {
-                    background: rgba(99, 102, 241, 0.15);
-                    border-color: rgba(99, 102, 241, 0.3);
-                    color: #818cf8;
-                }
-                
-                #promptcraft-quick-invoke-container .promptcraft-help-command {
-                    background: rgba(34, 197, 94, 0.15);
-                    border-color: rgba(34, 197, 94, 0.3);
-                    color: #4ade80;
-                }
-            }
-            
-            /* 响应式设计 */
-            @media (max-width: 768px) {
-                #promptcraft-quick-invoke-container {
-                    width: calc(100vw - 20px);
-                    max-width: 600px;
-                }
-            }
-            
-            @media (max-width: 480px) {
-                #promptcraft-quick-invoke-container {
-                    width: calc(100vw - 20px);
-                    max-width: 500px;
-                }
-            }
-        `;
-        
+/* =================================================================== */
+/* == PromptCraft UI - 最终优化版CSS（解决优先级、布局和颜色问题） == */
+/* =================================================================== */
+
+/* 使用高优先级选择器确保样式在任何网站(包括iFrame)中都能生效 */
+html body #promptcraft-quick-invoke-container,
+html body #promptcraft-quick-invoke-container * {
+    box-sizing: border-box !important;
+}
+html body #promptcraft-quick-invoke-container {
+    /* --- 颜色变量定义 --- */
+    --primary-color: #6366f1;
+    --primary-light: #818cf8;
+    --primary-dark: #4f46e5;
+    --background-light: #ffffff;
+    --background-dark: #1f2937; /* 更深邃的暗色背景 */
+    --text-light: #111827;
+    --text-dark: #f9fafb;
+    --text-secondary-light: #6b7280;
+    --text-secondary-dark: #9ca3af;
+    --card-light: #f9fafb;
+    --card-dark: #374151; /* 卡片使用稍亮的暗色 */
+    --border-light: #e5e7eb;
+    --border-dark: #4b5563;
+    --hover-light: #f3f4f6;
+    --selected-light: #eef2ff; /* 浅色模式选中色 - 淡靛蓝 */
+    --selected-dark: var(--primary-color); /* 深色模式选中色 - 统一使用主色调 */
+    --shadow-light: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-dark: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --backdrop-blur: blur(12px);
+
+    /* --- 基础布局 --- */
+    all: initial; /* CSS Reset: 隔离外部样式影响 */
+    * { all: revert; } /* 恢复子元素的默认样式 */
+
+    position: fixed; /* 使用fixed定位实现屏幕居中 */
+    width: 640px;
+    max-width: calc(100vw - 40px);
+    max-height: 80vh;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: var(--backdrop-blur);
+    -webkit-backdrop-filter: var(--backdrop-blur);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    box-shadow: var(--shadow-light);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-size: 14px;
+    color: var(--text-light);
+    z-index: 2147483647;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: promptcraft-slideIn 0.25s ease-out;
+    padding: 0 12px; /* 设置主容器的左右内边距为12px */
+}
+
+/* 深色模式总容器 */
+@media (prefers-color-scheme: dark) {
+    html body #promptcraft-quick-invoke-container {
+        background: rgba(31, 41, 55, 0.85);
+        border-color: var(--border-dark);
+        color: var(--text-dark);
+        box-shadow: var(--shadow-dark);
+    }
+}
+
+/* 动画 */
+@keyframes promptcraft-slideIn { from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+
+/* 搜索和分类区域的通用内边距 */
+html body #promptcraft-quick-invoke-container .promptcraft-search-container,
+html body #promptcraft-quick-invoke-container .promptcraft-category-filter {
+    padding: 16px 0; /* 移除左右内边距，只保留上下内边距 */
+    border-bottom: 1px solid var(--border-light);
+    background: transparent;
+    flex-shrink: 0;
+}
+@media (prefers-color-scheme: dark) {
+    html body #promptcraft-quick-invoke-container .promptcraft-search-container,
+    html body #promptcraft-quick-invoke-container .promptcraft-category-filter {
+        border-bottom-color: var(--border-dark);
+    }
+}
+
+/* 搜索输入框 */
+html body #promptcraft-quick-invoke-container .promptcraft-search-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    background: var(--background-light);
+    color: var(--text-light);
+    font-size: 16px;
+    outline: none;
+    box-shadow: none;
+}
+@media (prefers-color-scheme: dark) {
+    html body #promptcraft-quick-invoke-container .promptcraft-search-input {
+        background: var(--card-dark);
+        border-color: var(--border-dark);
+        color: var(--text-dark);
+    }
+}
+
+/* 分类标签 */
+html body #promptcraft-quick-invoke-container .promptcraft-category-tab {
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: var(--card-light);
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary-light);
+    cursor: pointer;
+    transition: var(--transition);
+}
+html body #promptcraft-quick-invoke-container .promptcraft-category-tab.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    font-weight: 600;
+}
+@media (prefers-color-scheme: dark) {
+    html body #promptcraft-quick-invoke-container .promptcraft-category-tab {
+        background: var(--card-dark);
+        border-color: var(--border-dark);
+        color: var(--text-secondary-dark);
+    }
+    html body #promptcraft-quick-invoke-container .promptcraft-category-tab.active {
+        background: var(--primary-light);
+        color: var(--background-dark);
+        border-color: var(--primary-light);
+    }
+}
+
+/* --- 核心修复：列表布局问题 --- */
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-list {
+    flex-grow: 1; /* 让列表区域占据剩余空间 */
+    overflow-y: auto;
+    padding: 8px 0; /* 移除左右内边距，只保留上下内边距 */
+    scroll-behavior: smooth;
+}
+
+/* --- 核心修复：提示词卡片布局与颜色 --- */
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-item {
+    display: block;
+    padding: 12px 16px;
+    margin: 0 0 6px 0; /* 修正：移除水平margin */
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: var(--transition);
+}
+
+/* --- 核心修复：统一选中/悬停状态 --- */
+
+/* 浅色模式 */
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-item:hover {
+    background-color: var(--hover-light);
+}
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected {
+    background-color: var(--selected-light);
+    border-color: var(--primary-color);
+}
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected .promptcraft-prompt-title {
+    color: var(--primary-dark);
+}
+
+/* 深色模式 */
+@media (prefers-color-scheme: dark) {
+    html body #promptcraft-quick-invoke-container .promptcraft-prompt-item:hover {
+        background-color: var(--hover-dark);
+    }
+    html body #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected {
+        background-color: var(--selected-dark);
+        border-color: var(--primary-light);
+    }
+    html body #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected .promptcraft-prompt-title,
+    html body #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected .promptcraft-prompt-preview,
+    html body #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected .promptcraft-prompt-category .category {
+        color: white;
+    }
+    html body #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected .promptcraft-prompt-category .category {
+        background-color: rgba(255,255,255,0.1);
+        border-color: rgba(255,255,255,0.2);
+    }
+}
+
+/* 卡片内部元素样式 */
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-title { font-weight: 600; font-size: 14px; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-preview { font-size: 13px; color: var(--text-secondary-light); line-height: 1.5; max-height: 40px; overflow: hidden; }
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-category .category { font-size: 11px; padding: 2px 8px; border-radius: 10px; background-color: var(--card-light); border: 1px solid var(--border-light); }
+
+@media (prefers-color-scheme: dark) {
+    html body #promptcraft-quick-invoke-container .promptcraft-prompt-preview { color: var(--text-secondary-dark); }
+    html body #promptcraft-quick-invoke-container .promptcraft-prompt-category .category { background-color: var(--card-dark); border-color: var(--border-dark); }
+}
+
+/* 底部帮助文本 */
+html body #promptcraft-quick-invoke-container .promptcraft-help-text {
+    padding: 12px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-secondary-light);
+    border-top: 1px solid var(--border-light);
+    flex-shrink: 0;
+}
+@media (prefers-color-scheme: dark) {
+    html body #promptcraft-quick-invoke-container .promptcraft-help-text {
+        color: var(--text-secondary-dark);
+        border-top-color: var(--border-dark);
+    }
+}
+/* ... 其他帮助文本样式 ... */
+html body #promptcraft-quick-invoke-container .promptcraft-help-keys { display: inline-block; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); }
+@media (prefers-color-scheme: dark) {
+    html body #promptcraft-quick-invoke-container .promptcraft-help-keys { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
+}
+`;
+
         document.head.appendChild(style);
-        
+
         // 为iFrame环境添加额外的滚动条隐藏样式
         if (window.self !== window.top) {
             try {
@@ -565,7 +255,7 @@
                             -ms-overflow-style: none !important;
                         }
                     `, 0);
-                    
+
                     style.sheet.insertRule(`
                         html body #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar {
                             display: none !important;
@@ -579,7 +269,7 @@
             }
         }
     }
-    
+
     // 全局状态管理
     const state = {
         isActive: false,
@@ -599,7 +289,7 @@
         searchTerm: '', // 当前搜索词
         isInserting: false // 标志位，防止插入时的事件干扰
     };
-    
+
     // 常量定义
     const CONSTANTS = {
         TRIGGER_COMMAND: 'pp',
@@ -607,7 +297,7 @@
         DEBOUNCE_DELAY: 100,
         POSITION_OFFSET: 5
     };
-    
+
     // 初始化系统
     function init() {
         console.log('PromptCraft: Initializing extension', {
@@ -618,18 +308,18 @@
             timestamp: new Date().toISOString(),
             triggerCommand: CONSTANTS.TRIGGER_COMMAND
         });
-        
+
         // 特别检测大模型网站
         const aiSites = ['kimi.moonshot.cn', 'gemini.google.com', 'doubao.com', 'chatgpt.com', 'claude.ai'];
         const currentSite = window.location.hostname;
         const isAISite = aiSites.some(site => currentSite.includes(site));
-        
+
         console.log('PromptCraft: AI Site Detection', {
             currentSite: currentSite,
             isAISite: isAISite,
             detectedSites: aiSites.filter(site => currentSite.includes(site))
         });
-        
+
         // 检测CSP限制
         const metaTags = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
         if (metaTags.length > 0) {
@@ -638,19 +328,19 @@
                 cspContent: Array.from(metaTags).map(tag => tag.content)
             });
         }
-        
+
         console.log('PromptCraft: Injecting styles');
         injectStyles(); // 注入CSS样式
-        
+
         console.log('PromptCraft: Loading prompts');
         loadPrompts();
-        
+
         console.log('PromptCraft: Setting up event listeners');
         setupEventListeners();
-        
+
         console.log('PromptCraft: Setting up cleanup handlers');
         setupCleanupHandlers();
-        
+
         // 设置心跳日志，每30秒输出一次确认扩展运行状态
         setInterval(() => {
             console.log('💓 PromptCraft: Heartbeat - Extension is running', {
@@ -660,21 +350,21 @@
                 isUIVisible: state.isUIVisible
             });
         }, 30000);
-        
+
         console.log('PromptCraft: Initialization completed successfully');
-        
+
         // 立即测试一次输入事件监听
         console.log('PromptCraft: Testing input event listener setup...');
         setTimeout(() => {
             console.log('PromptCraft: Extension ready for input detection');
         }, 1000);
     }
-    
+
     // 获取空的提示词数据（移除硬编码测试数据）
     function getEmptyPrompts() {
         return [];
     }
-    
+
     // 数据加载完成后更新UI
     function updateUIAfterPromptsLoad() {
         console.log('PromptCraft: updateUIAfterPromptsLoad called, current prompts:', state.prompts);
@@ -682,7 +372,7 @@
         if (state.prompts.length > 0) {
             console.log('PromptCraft: First prompt:', state.prompts[0]);
         }
-        
+
         // 如果当前有显示的UI，需要重新渲染
         const existingContainer = document.getElementById(CONSTANTS.UI_CONTAINER_ID);
         if (existingContainer && state.currentInput) {
@@ -693,16 +383,16 @@
             initializeCategoryTabs();
         }
     }
-    
+
     // 从内存(chrome.storage)加载提示词数据
     function loadPrompts() {
         try {
             // 检查是否在扩展环境中
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
                 // 从background script获取内存中的提示词数据
-                chrome.runtime.sendMessage({action: 'getPrompts'}, (response) => {
+                chrome.runtime.sendMessage({ action: 'getPrompts' }, (response) => {
                     console.log('PromptCraft: Received response from background:', response);
-                    
+
                     if (chrome.runtime.lastError) {
                         const errorMsg = chrome.runtime.lastError.message || chrome.runtime.lastError.toString();
                         console.warn('PromptCraft: Failed to load prompts from memory:', errorMsg);
@@ -712,7 +402,7 @@
                         updateUIAfterPromptsLoad();
                         return;
                     }
-                    
+
                     if (response && response.loadError) {
                         // 显示加载错误信息
                         console.error('PromptCraft: Load error detected:', response.errorMessage);
@@ -745,24 +435,24 @@
             updateUIAfterPromptsLoad();
         }
     }
-    
+
     // 设置事件监听器
     function setupEventListeners() {
         console.log('PromptCraft: Setting up enhanced event listeners with MutationObserver');
-        
+
         // 使用捕获阶段监听，确保能够优先处理
         document.addEventListener('input', handleInputEvent, true);
         document.addEventListener('keydown', handleKeydownEvent, true);
         document.addEventListener('click', handleClickEvent, true);
         document.addEventListener('focus', handleFocusEvent, true);
         document.addEventListener('blur', handleBlurEvent, true);
-        
+
         // 设置MutationObserver监控动态加载的输入框
         setupDOMObserver();
-        
+
         // 初始扫描现有的输入框
         scanAndBindInputElements(document.body);
-        
+
         // 监听来自background的消息
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
             chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -771,17 +461,17 @@
                 }
             });
         }
-        
+
         console.log('PromptCraft: Enhanced event listeners setup completed');
     }
-    
+
     // 设置DOM观察器 - 处理动态加载的输入框
     function setupDOMObserver() {
         if (!window.MutationObserver) {
             console.warn('PromptCraft: MutationObserver not supported');
             return;
         }
-        
+
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
                 if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
@@ -794,27 +484,27 @@
                 }
             });
         });
-        
+
         // 监控整个document.body的DOM变化
         observer.observe(document.body, {
             childList: true,
             subtree: true
         });
-        
+
         console.log('PromptCraft: MutationObserver setup completed');
     }
-    
+
     // 扫描并绑定输入元素 - 递归检查所有子节点
     function scanAndBindInputElements(rootElement) {
         if (!rootElement || rootElement.nodeType !== Node.ELEMENT_NODE) {
             return;
         }
-        
+
         // 检查根元素本身
         if (isEditableElement(rootElement)) {
             bindInputElement(rootElement);
         }
-        
+
         // 递归检查所有子元素
         const allElements = rootElement.querySelectorAll('*');
         allElements.forEach((element) => {
@@ -823,18 +513,18 @@
             }
         });
     }
-    
+
     // 为输入元素绑定事件监听器
     function bindInputElement(element) {
         // 避免重复绑定
         if (element.dataset.promptcraftBound) {
             return;
         }
-        
+
         element.dataset.promptcraftBound = 'true';
         console.log('PromptCraft: Bound input element:', element.tagName, element.id || element.className);
     }
-    
+
     // 设置清理处理器
     function setupCleanupHandlers() {
         // 页面卸载时清理
@@ -846,15 +536,15 @@
             }
         });
     }
-    
+
     // 处理输入事件 - 使用防抖动优化性能
     let inputDebounceTimer = null;
     function handleInputEvent(event) {
         // 强制输出日志，确保函数被调用
         console.log('🔥 PromptCraft: handleInputEvent CALLED - This should always appear!');
-        
+
         const target = event.target;
-        
+
         console.log('PromptCraft: Input event detected', {
             tagName: target.tagName,
             type: target.type || 'no-type',
@@ -866,13 +556,13 @@
             hostname: window.location.hostname,
             eventType: event.type
         });
-        
+
         // 如果正在插入提示词，跳过处理以防止干扰
         if (state.isInserting) {
             console.log('PromptCraft: Currently inserting prompt, ignoring input event');
             return;
         }
-        
+
         // 检查是否是可编辑的输入框
         if (!isEditableElement(target)) {
             console.log('PromptCraft: Element is not editable, ignoring', {
@@ -884,33 +574,33 @@
             });
             return;
         }
-        
+
         console.log('PromptCraft: Valid input element detected', {
             tagName: target.tagName,
             id: target.id,
             className: target.className
         });
-        
+
         // 更新当前输入元素
         state.currentInput = target;
-        
+
         // 使用防抖动处理输入，避免频繁处理
         clearTimeout(inputDebounceTimer);
         inputDebounceTimer = setTimeout(() => {
             processInputChange(target);
         }, CONSTANTS.DEBOUNCE_DELAY);
     }
-    
+
     // 处理输入变化
     function processInputChange(inputElement) {
         if (!inputElement) {
             console.log('PromptCraft: processInputChange called with no input element');
             return;
         }
-        
+
         const text = getElementText(inputElement);
         state.lastInputValue = text;
-        
+
         console.log('PromptCraft: Processing input change', {
             text: text,
             textLength: text.length,
@@ -921,14 +611,14 @@
             url: window.location.href,
             hostname: window.location.hostname
         });
-        
+
         if (state.isUIVisible) {
             console.log('PromptCraft: UI is already visible, updating search');
             // 如果UI已激活，更新搜索
             updateSearch(text);
             return;
         }
-        
+
         // 检查是否输入了触发词
         const triggerIndex = text.lastIndexOf(CONSTANTS.TRIGGER_COMMAND);
         console.log('PromptCraft: Trigger detection', {
@@ -936,18 +626,18 @@
             triggerCommand: CONSTANTS.TRIGGER_COMMAND,
             textAroundTrigger: triggerIndex >= 0 ? text.substring(Math.max(0, triggerIndex - 5), triggerIndex + CONSTANTS.TRIGGER_COMMAND.length + 5) : 'N/A'
         });
-        
+
         if (triggerIndex === -1) {
             console.log('PromptCraft: No trigger command found in text');
             return;
         }
-        
+
         // 检查触发词是否是单词边界或行首
         const charBefore = triggerIndex > 0 ? text.charAt(triggerIndex - 1) : '';
         const charAfter = triggerIndex + CONSTANTS.TRIGGER_COMMAND.length < text.length ? text.charAt(triggerIndex + CONSTANTS.TRIGGER_COMMAND.length) : '';
         const isAtWordBoundary = triggerIndex === 0 || !isAlphaNumeric(charBefore);
         const isFollowedBySpace = triggerIndex + CONSTANTS.TRIGGER_COMMAND.length === text.length || charAfter === ' ';
-        
+
         console.log('PromptCraft: Boundary check', {
             charBefore: charBefore,
             charAfter: charAfter,
@@ -955,20 +645,20 @@
             isFollowedBySpace: isFollowedBySpace,
             triggerPosition: triggerIndex
         });
-        
+
         // 只有当触发词在单词边界且后面是空格或文本结束时才触发
         if (isAtWordBoundary && isFollowedBySpace) {
             console.log('PromptCraft: Trigger conditions met, locking target and showing UI');
-            
+
             // 锁定目标输入框 - 防止目标丢失
             state.lockedTargetInput = inputElement;
             state.triggerPosition = triggerIndex;
-            
+
             // 保存原始输入框引用（向后兼容）
             if (!state.originalInput) {
                 state.originalInput = inputElement;
             }
-            
+
             console.log('PromptCraft: Target locked', {
                 lockedElement: {
                     tagName: state.lockedTargetInput.tagName,
@@ -977,20 +667,20 @@
                 },
                 triggerPosition: triggerIndex
             });
-            
+
             showQuickInvokeUI();
         } else {
             console.log('PromptCraft: Trigger conditions not met, not showing UI');
         }
     }
-    
-    // 工具函数
-     function isAlphaNumeric(char) {
-         return /[a-zA-Z0-9]/.test(char);
-     }
-    
 
-    
+    // 工具函数
+    function isAlphaNumeric(char) {
+        return /[a-zA-Z0-9]/.test(char);
+    }
+
+
+
     // 处理键盘事件
     function handleKeydownEvent(event) {
         console.log('PromptCraft: Keydown event', {
@@ -1003,54 +693,54 @@
             url: window.location.href,
             hostname: window.location.hostname
         });
-        
+
         // 如果UI未激活，不处理
         if (!state.isUIVisible) {
             console.log('PromptCraft: UI not visible, ignoring keydown');
             return;
         }
-        
+
         // 确保事件来自正确的上下文
         const target = event.target;
         const isInQuickInvokeUI = target.closest('#promptcraft-quick-invoke-container');
         const isCurrentInput = target === state.currentInput;
-        
+
         // 只处理来自Quick Invoke UI或当前输入框的键盘事件
         if (!isInQuickInvokeUI && !isCurrentInput) {
             return;
         }
-        
+
         const searchInput = state.uiContainer?.querySelector('.promptcraft-search-input');
         const isSearchFocused = document.activeElement === searchInput;
-        
+
         switch (event.key) {
             case 'Escape':
                 hideQuickInvokeUI();
                 event.preventDefault();
                 event.stopPropagation();
                 break;
-                
+
             case 'ArrowUp':
                 state.selectedIndex = Math.max(0, state.selectedIndex - 1);
                 updateSelection();
                 event.preventDefault();
                 event.stopPropagation();
                 break;
-                
+
             case 'ArrowDown':
                 state.selectedIndex = Math.min(state.filteredPrompts.length - 1, state.selectedIndex + 1);
                 updateSelection();
                 event.preventDefault();
                 event.stopPropagation();
                 break;
-                
+
             case 'ArrowLeft':
             case 'ArrowRight':
                 if (isSearchFocused && event.target.selectionStart !== event.target.selectionEnd) {
                     // 如果在搜索框中有选中文本，允许正常的左右键行为
                     return;
                 }
-                if (isSearchFocused && ((event.key === 'ArrowLeft' && event.target.selectionStart === 0) || 
+                if (isSearchFocused && ((event.key === 'ArrowLeft' && event.target.selectionStart === 0) ||
                     (event.key === 'ArrowRight' && event.target.selectionStart === event.target.value.length))) {
                     // 在搜索框边界时，切换分类
                     event.preventDefault();
@@ -1058,7 +748,7 @@
                     switchCategory(event.key === 'ArrowRight' ? 1 : -1);
                 }
                 break;
-                
+
             case 'Enter':
                 // 只有在搜索框中或选中提示词时才处理Enter
                 if (isInQuickInvokeUI || (isCurrentInput && state.filteredPrompts[state.selectedIndex])) {
@@ -1069,7 +759,7 @@
                     event.stopPropagation();
                 }
                 break;
-                
+
             case 'Tab':
                 if (isInQuickInvokeUI) {
                     // Tab键也可以选择当前项
@@ -1082,28 +772,28 @@
                 break;
         }
     }
-    
+
     // 处理点击事件
     function handleClickEvent(event) {
         // 如果UI未激活，不处理
         if (!state.isUIVisible) return;
-        
+
         // 检查点击是否在UI容器外
         if (state.uiContainer && !state.uiContainer.contains(event.target)) {
             hideQuickInvokeUI();
         }
     }
-    
+
     // 处理焦点事件
     function handleFocusEvent(event) {
         const target = event.target;
-        
+
         // 检查是否是可编辑的输入框
         if (isEditableElement(target)) {
             state.currentInput = target;
         }
     }
-    
+
     // 处理失焦事件
     function handleBlurEvent(event) {
         // 如果失焦的是当前输入元素，且不是因为点击了UI
@@ -1118,21 +808,21 @@
             }, 100);
         }
     }
-    
+
     // 检查元素是否可编辑 - 重构版本：简洁、可靠、支持iFrame
     function isEditableElement(element) {
         if (!element) {
             return false;
         }
-        
+
         const tagName = element.tagName.toLowerCase();
-        
+
         // A. 标准HTML标签：<textarea> 和 <input type="text">
         if (tagName === 'textarea' || (tagName === 'input' && element.type === 'text')) {
             console.log('PromptCraft: Found standard input element:', tagName);
             return true;
         }
-        
+
         // B. 富文本编辑器模式：任何带有 contentEditable="true" 属性的元素
         // 使用 closest 方法兼容 contentEditable 属性在父元素上的情况
         const contentEditableElement = element.closest('[contenteditable="true"]');
@@ -1140,16 +830,16 @@
             console.log('PromptCraft: Found contentEditable element via closest()');
             return true;
         }
-        
+
         // 直接检查当前元素的 contentEditable 属性
         if (element.isContentEditable) {
             console.log('PromptCraft: Element is directly contentEditable');
             return true;
         }
-        
+
         return false;
     }
-    
+
     // 获取元素文本内容
     function getElementText(element) {
         if (element.tagName.toLowerCase() === 'textarea' || element.tagName.toLowerCase() === 'input') {
@@ -1160,33 +850,33 @@
         }
         return '';
     }
-    
+
     // 设置元素文本内容 - 针对现代框架优化的版本
     function setElementText(element, text) {
         console.log('PromptCraft: setElementText called with element:', element);
         console.log('PromptCraft: setElementText text to set:', text);
         console.log('PromptCraft: Element tag name:', element.tagName);
         console.log('PromptCraft: Element contentEditable:', element.contentEditable);
-        
+
         if (!element || text === undefined) {
             console.warn('PromptCraft: Invalid element or text for setElementText');
             return;
         }
-        
+
         try {
             // 先聚焦元素
             element.focus();
-            
+
             // 保存原始值用于比较
             const previousValue = element.value || '';
             console.log('PromptCraft: Previous value:', previousValue);
-            
+
             if (element.tagName.toLowerCase() === 'textarea' || element.tagName.toLowerCase() === 'input') {
                 console.log('PromptCraft: Setting text for input/textarea element');
                 // 使用原生设置器绕过React的值变更检查
-                const descriptor = Object.getOwnPropertyDescriptor(element, 'value') || 
-                                 Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), 'value');
-                
+                const descriptor = Object.getOwnPropertyDescriptor(element, 'value') ||
+                    Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), 'value');
+
                 if (descriptor && descriptor.set) {
                     console.log('PromptCraft: Using descriptor setter');
                     // 使用原型链上的原生setter
@@ -1204,24 +894,24 @@
                     // 后备方案：直接设置value
                     element.value = text;
                 }
-                
+
             } else if (element.contentEditable === 'true' || element.contentEditable === 'plaintext-only' || element.isContentEditable) {
                 console.log('PromptCraft: Setting text for contenteditable element');
-                
+
                 // 多种方法尝试设置contentEditable元素的内容
                 let success = false;
-                
+
                 // 方法1: 使用现代Selection API
                 try {
                     element.focus();
                     const selection = window.getSelection();
-                    
+
                     // 选择所有内容
                     const range = document.createRange();
                     range.selectNodeContents(element);
                     selection.removeAllRanges();
                     selection.addRange(range);
-                    
+
                     // 删除现有内容并插入新内容
                     if (document.execCommand) {
                         document.execCommand('selectAll', false, null);
@@ -1232,7 +922,7 @@
                 } catch (e) {
                     console.warn('PromptCraft: execCommand method failed:', e);
                 }
-                
+
                 // 方法2: 如果execCommand失败，使用现代API
                 if (!success) {
                     try {
@@ -1242,25 +932,25 @@
                         range.selectNodeContents(element);
                         selection.removeAllRanges();
                         selection.addRange(range);
-                        
+
                         // 使用现代API删除和插入
                         selection.deleteFromDocument();
                         const textNode = document.createTextNode(text);
                         range.insertNode(textNode);
-                        
+
                         // 将光标移到文本末尾
                         range.setStartAfter(textNode);
                         range.collapse(true);
                         selection.removeAllRanges();
                         selection.addRange(range);
-                        
+
                         success = true;
                         console.log('PromptCraft: Modern Selection API success');
                     } catch (e) {
                         console.warn('PromptCraft: Modern Selection API failed:', e);
                     }
                 }
-                
+
                 // 方法3: 直接设置内容（最后的后备方案）
                 if (!success) {
                     try {
@@ -1279,15 +969,15 @@
                 // 其他类型的元素
                 element.value = text;
             }
-            
+
             // 验证设置结果
             const newValue = getElementText(element);
             console.log('PromptCraft: Value after setting:', newValue);
             console.log('PromptCraft: Setting successful:', newValue === text);
-            
+
             // 触发全面的事件以确保框架状态更新
             triggerComprehensiveEventSequence(element, previousValue, text);
-            
+
         } catch (error) {
             console.warn('PromptCraft: Error in setElementText:', error);
             // 后备方案
@@ -1299,7 +989,7 @@
             }
         }
     }
-    
+
     // 显示快速调用UI
     function showQuickInvokeUI() {
         console.log('PromptCraft: showQuickInvokeUI called', {
@@ -1313,13 +1003,13 @@
             url: window.location.href,
             hostname: window.location.hostname
         });
-        
+
         // 防止重复激活
         if (state.isUIVisible) {
             console.log('PromptCraft: UI is already visible, skipping activation');
             return;
         }
-        
+
         // 检查是否有有效的输入元素
         if (!state.currentInput) {
             console.warn('PromptCraft: No valid input element found', {
@@ -1328,12 +1018,12 @@
             });
             return;
         }
-        
+
         console.log('PromptCraft: Activating UI with state', {
             promptsCount: state.prompts.length,
             triggerPosition: state.triggerPosition
         });
-        
+
         // 保存原始输入元素，防止被搜索框覆盖
         state.originalInput = state.currentInput;
         console.log('PromptCraft: Saved original input element', {
@@ -1343,19 +1033,19 @@
                 className: state.originalInput.className
             } : null
         });
-        
+
         state.isActive = true;
         state.isUIVisible = true;
         state.filteredPrompts = [...state.prompts];
         state.selectedIndex = 0;
         state.selectedCategory = 'all';
         state.searchTerm = '';
-        
+
         console.log('PromptCraft: Creating UI components');
         createQuickInvokeUI();
         positionUI();
         applyFilters();
-        
+
         // 聚焦搜索框
         setTimeout(() => {
             const searchInput = state.uiContainer?.querySelector('.promptcraft-search-input');
@@ -1366,46 +1056,46 @@
                 console.warn('PromptCraft: Search input not found for focusing');
             }
         }, 10);
-        
+
         console.log('PromptCraft: Quick invoke UI activated successfully');
     }
-    
+
     // 隐藏快速调用UI
     function hideQuickInvokeUI() {
         if (!state.isUIVisible) return;
-        
+
         console.log('PromptCraft: Hiding Quick Invoke UI');
-        
+
         state.isUIVisible = false;
         state.isActive = false;
-        
+
         // 清理输入元素引用和锁定状态
         state.originalInput = null;
         state.lockedTargetInput = null;
         console.log('PromptCraft: Cleared input references and target lock');
-        
+
         // 移除UI容器
         if (state.uiContainer && state.uiContainer.parentNode) {
             state.uiContainer.parentNode.removeChild(state.uiContainer);
         }
         state.uiContainer = null;
-        
+
         // 清理定时器
         if (state.debounceTimer) {
             clearTimeout(state.debounceTimer);
             state.debounceTimer = null;
         }
-        
+
         // 重置状态
         state.selectedIndex = 0;
         state.selectedCategory = 'all';
         state.searchTerm = '';
         state.triggerPosition = -1;
         state.filteredPrompts = [];
-        
+
         console.log('PromptCraft: Quick invoke UI deactivated and cleaned up');
     }
-    
+
     // 创建快速调用UI
     function createQuickInvokeUI() {
         // 确保之前的UI已被清理
@@ -1413,11 +1103,11 @@
         if (existingUI) {
             existingUI.remove();
         }
-        
+
         // 创建主容器
         state.uiContainer = document.createElement('div');
         state.uiContainer.id = CONSTANTS.UI_CONTAINER_ID;
-        
+
         // 构建UI结构
         state.uiContainer.innerHTML = `
             <div class="promptcraft-search-container">
@@ -1438,18 +1128,18 @@
                 </div>
             </div>
         `;
-        
+
         // 添加到页面
         document.body.appendChild(state.uiContainer);
-        
+
         // 立即设置位置，确保正确定位
         setTimeout(() => {
             positionUI();
         }, 0);
-        
+
         // 初始化分类标签
         initializeCategoryTabs();
-        
+
         // 设置搜索框事件
         const searchInput = state.uiContainer.querySelector('.promptcraft-search-input');
         if (searchInput) {
@@ -1457,7 +1147,7 @@
                 state.searchTerm = e.target.value;
                 applyFilters();
             });
-            
+
             // 阻止搜索框的某些默认行为
             searchInput.addEventListener('keydown', (e) => {
                 // 阻止搜索框内的方向键影响页面滚动
@@ -1465,7 +1155,7 @@
                     e.stopPropagation();
                 }
             });
-            
+
             // 自动聚焦搜索框
             setTimeout(() => {
                 try {
@@ -1476,52 +1166,52 @@
             }, 50);
         }
     }
-    
+
     // 智能定位UI - 现代化命令面板定位策略
     function positionUI() {
         if (!state.uiContainer || !state.currentInput) {
             return;
         }
-        
+
         try {
             const inputRect = state.currentInput.getBoundingClientRect();
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
             const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
             const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-            
+
             // 动态获取UI实际尺寸
             const uiRect = state.uiContainer.getBoundingClientRect();
             const uiWidth = uiRect.width || 640; // 使用实际宽度，回退到预估值
             const uiHeight = uiRect.height || 500; // 使用实际高度，回退到预估值
-            
+
             // 判断输入框是否在视口下半部分
             const inputCenterY = inputRect.top + inputRect.height / 2;
             const isInputInLowerHalf = inputCenterY > viewportHeight / 2;
-            
+
             let left, top, position;
-            
+
             if (isInputInLowerHalf) {
                 // 特殊策略：输入框在下半部分时，优先显示在输入框上方
                 console.log('PromptCraft: Input in lower half, positioning above input');
-                
+
                 // 计算输入框上方的可用空间
                 const spaceAboveInput = inputRect.top;
                 const requiredHeight = uiHeight + 20; // 20px 缓冲区
-                
+
                 if (spaceAboveInput >= requiredHeight) {
                     // 上方有足够空间，显示在输入框上方
                     position = 'absolute';
                     left = inputRect.left + scrollLeft + (inputRect.width / 2) - (uiWidth / 2);
                     top = inputRect.top + scrollTop - uiHeight - 12; // 12px 间距
-                    
+
                     // 水平边界检查
                     if (left < 10) {
                         left = 10;
                     } else if (left + uiWidth > viewportWidth - 10) {
                         left = viewportWidth - uiWidth - 10;
                     }
-                    
+
                     // 垂直边界检查
                     if (top < scrollTop + 10) {
                         top = scrollTop + 10;
@@ -1530,12 +1220,12 @@
                     // 上方空间不足，使用整体居中但避免遮挡输入框
                     position = 'fixed';
                     left = (viewportWidth - uiWidth) / 2;
-                    
+
                     // 计算一个不会遮挡输入框的垂直位置
                     const inputTopInViewport = inputRect.top;
                     const maxTopForClearance = inputTopInViewport - uiHeight - 20;
                     const centerTop = (viewportHeight - uiHeight) / 2;
-                    
+
                     if (centerTop <= maxTopForClearance) {
                         // 居中位置不会遮挡输入框
                         top = centerTop;
@@ -1543,7 +1233,7 @@
                         // 居中会遮挡，使用能保持间距的最低位置
                         top = Math.max(10, maxTopForClearance);
                     }
-                    
+
                     // 边界检查
                     if (left < 10) left = 10;
                     if (top < 10) top = 10;
@@ -1554,15 +1244,15 @@
                         top = viewportHeight - uiHeight - 10;
                     }
                 }
-                
+
             } else {
                 // 默认策略：固定定位，整体屏幕居中
                 console.log('PromptCraft: Using default centered positioning');
-                
+
                 position = 'fixed';
                 left = (viewportWidth - uiWidth) / 2;
                 top = (viewportHeight - uiHeight) / 2;
-                
+
                 // 确保居中位置不会超出视口边界
                 if (left < 10) left = 10;
                 if (top < 10) top = 10;
@@ -1573,16 +1263,16 @@
                     top = viewportHeight - uiHeight - 10;
                 }
             }
-            
+
             // 清除可能的transform样式
             state.uiContainer.style.transform = '';
-            
+
             // 应用位置样式
             state.uiContainer.style.position = position;
             state.uiContainer.style.left = left + 'px';
             state.uiContainer.style.top = top + 'px';
             state.uiContainer.style.zIndex = '2147483647';
-            
+
             // 添加定位类名用于CSS样式区分
             state.uiContainer.classList.remove('positioned-center', 'positioned-above-input');
             if (position === 'fixed') {
@@ -1590,9 +1280,9 @@
             } else {
                 state.uiContainer.classList.add('positioned-above-input');
             }
-            
+
             console.log(`PromptCraft: UI positioned - ${position} at (${Math.round(left)}, ${Math.round(top)})`);
-            
+
         } catch (error) {
             console.warn('PromptCraft: Error positioning UI:', error);
             // 错误时回退到简单的居中定位
@@ -1603,24 +1293,24 @@
             state.uiContainer.style.zIndex = '2147483647';
         }
     }
-    
+
     // 初始化分类标签
     function initializeCategoryTabs() {
         if (!state.uiContainer) return;
-        
+
         const tabsContainer = state.uiContainer.querySelector('.promptcraft-category-tabs');
         if (!tabsContainer) return;
-        
+
         // 获取所有分类
         const categories = ['all', ...new Set(state.prompts.map(p => p.category).filter(Boolean))];
-        
+
         // 创建分类标签
         tabsContainer.innerHTML = categories.map(category => {
             const displayName = category === 'all' ? '全部' : category;
             const isActive = category === state.selectedCategory;
             return `<button class="promptcraft-category-tab ${isActive ? 'active' : ''}" data-category="${category}">${escapeHtml(displayName)}</button>`;
         }).join('');
-        
+
         // 添加点击事件
         tabsContainer.querySelectorAll('.promptcraft-category-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
@@ -1629,11 +1319,11 @@
             });
         });
     }
-    
+
     // 选择分类
     function selectCategory(category) {
         state.selectedCategory = category;
-        
+
         // 更新标签样式
         if (state.uiContainer) {
             const tabs = state.uiContainer.querySelectorAll('.promptcraft-category-tab');
@@ -1641,72 +1331,72 @@
                 tab.classList.toggle('active', tab.dataset.category === category);
             });
         }
-        
+
         // 应用筛选
         applyFilters();
     }
-    
+
     // 切换分类（键盘导航）
     function switchCategory(direction) {
         if (!state.uiContainer) return;
-        
+
         const tabs = Array.from(state.uiContainer.querySelectorAll('.promptcraft-category-tab'));
         const currentIndex = tabs.findIndex(tab => tab.dataset.category === state.selectedCategory);
-        
+
         let newIndex;
         if (direction > 0) {
             newIndex = currentIndex < tabs.length - 1 ? currentIndex + 1 : 0;
         } else {
             newIndex = currentIndex > 0 ? currentIndex - 1 : tabs.length - 1;
         }
-        
+
         if (tabs[newIndex]) {
             selectCategory(tabs[newIndex].dataset.category);
         }
     }
-    
+
     // 应用所有筛选条件
     function applyFilters() {
         let filtered = [...state.prompts];
-        
+
         // 按分类筛选
         if (state.selectedCategory !== 'all') {
             filtered = filtered.filter(prompt => prompt.category === state.selectedCategory);
         }
-        
+
         // 按搜索词筛选
         if (state.searchTerm.trim()) {
             const term = state.searchTerm.toLowerCase();
-            filtered = filtered.filter(prompt => 
+            filtered = filtered.filter(prompt =>
                 prompt.title.toLowerCase().includes(term) ||
                 prompt.content.toLowerCase().includes(term) ||
                 (prompt.category && prompt.category.toLowerCase().includes(term))
             );
         }
-        
+
         state.filteredPrompts = filtered;
         state.selectedIndex = 0;
         updatePromptList();
     }
-    
+
     // 过滤提示词（保留向后兼容）
     function filterPrompts(searchTerm) {
         state.searchTerm = searchTerm;
         applyFilters();
     }
-    
+
     // 更新提示词列表
     function updatePromptList() {
         if (!state.uiContainer) return;
-        
+
         const listContainer = state.uiContainer.querySelector('.promptcraft-prompt-list');
         if (!listContainer) return;
-        
+
         if (state.filteredPrompts.length === 0) {
             listContainer.innerHTML = '<div class="promptcraft-no-results">未找到匹配的提示词</div>';
             return;
         }
-        
+
         listContainer.innerHTML = state.filteredPrompts.map((prompt, index) => `
             <div class="promptcraft-prompt-item ${index === state.selectedIndex ? 'selected' : ''}" data-index="${index}">
                 <div class="promptcraft-prompt-header">
@@ -1716,7 +1406,7 @@
                 <div class="promptcraft-prompt-preview">${escapeHtml(prompt.content.substring(0, 100))}${prompt.content.length > 100 ? '...' : ''}</div>
             </div>
         `).join('');
-        
+
         // 添加鼠标按下事件（避免与blur事件冲突）
         listContainer.querySelectorAll('.promptcraft-prompt-item').forEach((item) => {
             item.addEventListener('mousedown', (event) => {
@@ -1730,41 +1420,41 @@
             });
         });
     }
-    
+
     // 更新选择
     function updateSelection() {
         if (!state.uiContainer) return;
-        
+
         const items = state.uiContainer.querySelectorAll('.promptcraft-prompt-item');
         items.forEach((item, index) => {
             item.classList.toggle('selected', index === state.selectedIndex);
         });
-        
+
         // 滚动到选中项
         if (items[state.selectedIndex]) {
             items[state.selectedIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
     }
-    
+
     // 插入提示词
     function insertPrompt(prompt) {
         console.log('PromptCraft: Enhanced insertPrompt called with target locking');
-        
+
         // 使用锁定的目标输入框（最高优先级）
         const targetInput = state.lockedTargetInput || state.originalInput || state.currentInput;
-        
+
         if (!targetInput || !prompt) {
             console.warn('PromptCraft: Cannot insert prompt - missing target or prompt');
             return;
         }
-        
+
         // 设置插入标志位
         state.isInserting = true;
-        
+
         try {
             const currentText = getElementText(targetInput);
             let newText, cursorPosition;
-            
+
             // 精确替换触发词
             if (state.triggerPosition >= 0) {
                 const beforeTrigger = currentText.substring(0, state.triggerPosition);
@@ -1777,13 +1467,13 @@
                 newText = currentText.replace(triggerRegex, prompt.content);
                 cursorPosition = newText.length;
             }
-            
+
             // 增强的文本注入
             insertTextWithFrameworkSupport(targetInput, newText, cursorPosition);
-            
+
             // 关闭UI并清理状态
             hideQuickInvokeUI();
-            
+
             // 聚焦回目标输入框
             setTimeout(() => {
                 try {
@@ -1793,30 +1483,30 @@
                 }
                 state.isInserting = false;
             }, 50);
-            
+
             console.log('PromptCraft: Prompt inserted successfully:', prompt.title);
-            
+
         } catch (error) {
             console.error('PromptCraft: Error inserting prompt:', error);
             state.isInserting = false;
             hideQuickInvokeUI();
         }
     }
-    
+
     // 增强的文本注入函数 - 支持现代前端框架
     function insertTextWithFrameworkSupport(element, text, cursorPosition) {
         const previousValue = getElementText(element);
-        
+
         // 设置文本内容
         setElementText(element, text);
-        
+
         // 设置光标位置
         setCursorPosition(element, cursorPosition);
-        
+
         // 触发完整的事件序列以确保框架同步
         triggerComprehensiveEventSequence(element, previousValue, text);
     }
-    
+
     // 触发完整的事件序列
     function triggerComprehensiveEventSequence(element, previousValue, newValue) {
         try {
@@ -1826,13 +1516,13 @@
                 new Event('input', { bubbles: true }),
                 new Event('change', { bubbles: true })
             ];
-            
+
             events.forEach(event => {
                 Object.defineProperty(event, 'target', { writable: false, value: element });
                 Object.defineProperty(event, 'currentTarget', { writable: false, value: element });
                 element.dispatchEvent(event);
             });
-            
+
             // 2. 模拟键盘输入序列（异步）
             setTimeout(() => {
                 try {
@@ -1846,7 +1536,7 @@
                         });
                         element.dispatchEvent(beforeInputEvent);
                     }
-                    
+
                     // 键盘事件序列
                     const keyboardEvents = [
                         { type: 'keydown', key: 'Unidentified', keyCode: 229 },
@@ -1856,7 +1546,7 @@
                         { type: 'compositionend', data: newValue },
                         { type: 'keyup', key: 'Unidentified', keyCode: 229 }
                     ];
-                    
+
                     keyboardEvents.forEach((config, index) => {
                         setTimeout(() => {
                             try {
@@ -1885,14 +1575,14 @@
                     console.warn('PromptCraft: Failed to trigger keyboard sequence:', e);
                 }
             }, 0);
-            
+
             // 3. React特殊处理
             setTimeout(() => {
                 try {
-                    const reactFiberKey = Object.keys(element).find(key => 
+                    const reactFiberKey = Object.keys(element).find(key =>
                         key.startsWith('__reactInternalInstance') || key.startsWith('__reactFiber')
                     );
-                    
+
                     if (reactFiberKey) {
                         // 强制React重新渲染
                         const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
@@ -1900,7 +1590,7 @@
                         )?.set || Object.getOwnPropertyDescriptor(
                             window.HTMLTextAreaElement.prototype, 'value'
                         )?.set;
-                        
+
                         if (nativeInputValueSetter) {
                             nativeInputValueSetter.call(element, newValue);
                             element.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1910,12 +1600,12 @@
                     console.warn('PromptCraft: React special handling failed:', e);
                 }
             }, 10);
-            
+
         } catch (error) {
             console.warn('PromptCraft: Failed to trigger comprehensive events:', error);
         }
     }
-    
+
     // 设置光标位置
     function setCursorPosition(element, position) {
         try {
@@ -1926,18 +1616,18 @@
                 // 对于contenteditable元素
                 const range = document.createRange();
                 const selection = window.getSelection();
-                
+
                 // 找到文本节点
                 const textNode = element.firstChild || element;
                 const maxPosition = textNode.textContent ? textNode.textContent.length : 0;
                 const safePosition = Math.min(position, maxPosition);
-                
+
                 if (textNode.nodeType === Node.TEXT_NODE) {
                     range.setStart(textNode, safePosition);
                 } else {
                     range.setStart(textNode, 0);
                 }
-                
+
                 range.collapse(true);
                 selection.removeAllRanges();
                 selection.addRange(range);
@@ -1946,9 +1636,9 @@
             console.warn('PromptCraft: Failed to set cursor position:', error);
         }
     }
-    
+
     // 注意：旧的triggerInputEvents函数已被insertTextWithFrameworkSupport中的triggerComprehensiveEventSequence替代
-    
+
     // HTML转义
     function escapeHtml(unsafe) {
         if (!unsafe) return '';
@@ -1959,21 +1649,21 @@
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
     }
-    
+
     // 处理搜索输入
     function handleSearchInput(event) {
         if (!state.uiContainer) return;
-        
+
         const searchInput = state.uiContainer.querySelector('.promptcraft-search-input');
         if (!searchInput) return;
-        
+
         // 移除开头的触发命令
         const searchTerm = searchInput.value.replace(new RegExp(`^${CONSTANTS.TRIGGER_COMMAND}\\s*`), '');
-        
+
         state.searchTerm = searchTerm;
         applyFilters();
     }
-    
+
     // 更新搜索（当用户继续输入时）
     function updateSearch(text) {
         // 提取触发命令之后的文本作为搜索词
@@ -1987,11 +1677,11 @@
             }
         }
     }
-    
+
     // 显示错误信息给用户
     function showErrorMessage(message) {
         console.error('PromptCraft Error:', message);
-        
+
         // 创建错误提示元素
         const errorDiv = document.createElement('div');
         errorDiv.style.cssText = `
@@ -2010,10 +1700,10 @@
             word-wrap: break-word;
         `;
         errorDiv.textContent = `提示词助手: ${message}`;
-        
+
         // 添加到页面
         document.body.appendChild(errorDiv);
-        
+
         // 3秒后自动移除
         setTimeout(() => {
             if (errorDiv.parentNode) {
@@ -2021,34 +1711,34 @@
             }
         }, 3000);
     }
-    
+
     // 清理所有资源
     function cleanup() {
         console.log('PromptCraft: Cleaning up resources');
-        
+
         // 移除UI
         hideQuickInvokeUI();
-        
+
         // 清理定时器
         if (state.debounceTimer) {
             clearTimeout(state.debounceTimer);
             state.debounceTimer = null;
         }
-        
+
         // 重置状态
         state.isUIVisible = false;
         state.currentInput = null;
         state.triggerPosition = -1;
         state.isInitialized = false;
-        
+
         console.log('PromptCraft: Cleanup complete');
     }
-    
+
     // 页面加载完成后初始化
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
     }
-    
+
 })();
