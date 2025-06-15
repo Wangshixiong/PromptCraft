@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 认证测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            color: #6366f1;
+            margin-top: 0;
+        }
+        .btn {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #4f46e5;
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+        }
+        .error {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+        }
+        .info {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OAuth 认证测试页面</h1>
+        
+        <div class="test-section">
+            <h3>1. 初始化测试</h3>
+            <button class="btn" onclick="testInitialization()">测试认证服务初始化</button>
+            <div id="initResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. 重定向URL测试</h3>
+            <button class="btn" onclick="testRedirectURL()">获取Chrome扩展重定向URL</button>
+            <div id="redirectResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. OAuth登录测试</h3>
+            <button class="btn" onclick="testGitHubLogin()" id="githubBtn">测试GitHub登录</button>
+            <button class="btn" onclick="testGoogleLogin()" id="googleBtn">测试Google登录</button>
+            <div id="loginResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. 用户状态测试</h3>
+            <button class="btn" onclick="testUserStatus()">检查用户状态</button>
+            <button class="btn" onclick="testSignOut()">测试登出</button>
+            <div id="statusResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- 引入必要的库 -->
+    <script src="lib/auth-config.js"></script>
+    <script src="lib/auth-service.js"></script>
+    
+    <script>
+        let authService = null;
+        
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `result ${type}`;
+            element.textContent = message;
+        }
+        
+        async function testInitialization() {
+            try {
+                showResult('initResult', '正在初始化认证服务...', 'info');
+                
+                if (typeof AuthService === 'undefined') {
+                    throw new Error('AuthService 类未找到');
+                }
+                
+                authService = new AuthService();
+                await authService.initialize();
+                
+                showResult('initResult', '✅ 认证服务初始化成功', 'success');
+                
+                // 启用其他测试按钮
+                document.getElementById('githubBtn').disabled = false;
+                document.getElementById('googleBtn').disabled = false;
+                
+            } catch (error) {
+                showResult('initResult', `❌ 初始化失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function testRedirectURL() {
+            try {
+                if (typeof chrome === 'undefined' || !chrome.identity) {
+                    throw new Error('Chrome Identity API 不可用（需要在Chrome扩展环境中运行）');
+                }
+                
+                const redirectUrl = chrome.identity.getRedirectURL();
+                showResult('redirectResult', `✅ Chrome扩展重定向URL: ${redirectUrl}`, 'success');
+                
+            } catch (error) {
+                showResult('redirectResult', `❌ 获取重定向URL失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testGitHubLogin() {
+            if (!authService) {
+                showResult('loginResult', '❌ 请先初始化认证服务', 'error');
+                return;
+            }
+            
+            try {
+                showResult('loginResult', '正在启动GitHub OAuth流程...', 'info');
+                document.getElementById('githubBtn').disabled = true;
+                
+                const result = await authService.signInWithGitHub();
+                showResult('loginResult', `✅ GitHub登录成功: ${JSON.stringify(result, null, 2)}`, 'success');
+                
+            } catch (error) {
+                showResult('loginResult', `❌ GitHub登录失败: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('githubBtn').disabled = false;
+            }
+        }
+        
+        async function testGoogleLogin() {
+            if (!authService) {
+                showResult('loginResult', '❌ 请先初始化认证服务', 'error');
+                return;
+            }
+            
+            try {
+                showResult('loginResult', '正在启动Google OAuth流程...', 'info');
+                document.getElementById('googleBtn').disabled = true;
+                
+                const result = await authService.signInWithGoogle();
+                showResult('loginResult', `✅ Google登录成功: ${JSON.stringify(result, null, 2)}`, 'success');
+                
+            } catch (error) {
+                showResult('loginResult', `❌ Google登录失败: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('googleBtn').disabled = false;
+            }
+        }
+        
+        function testUserStatus() {
+            if (!authService) {
+                showResult('statusResult', '❌ 请先初始化认证服务', 'error');
+                return;
+            }
+            
+            try {
+                const isAuthenticated = authService.isAuthenticated();
+                const currentUser = authService.getCurrentUser();
+                const provider = authService.getAuthProvider();
+                
+                const status = {
+                    isAuthenticated,
+                    currentUser: currentUser ? {
+                        id: currentUser.id,
+                        email: currentUser.email,
+                        created_at: currentUser.created_at
+                    } : null,
+                    provider
+                };
+                
+                showResult('statusResult', `用户状态:\n${JSON.stringify(status, null, 2)}`, 'info');
+                
+            } catch (error) {
+                showResult('statusResult', `❌ 获取用户状态失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testSignOut() {
+            if (!authService) {
+                showResult('statusResult', '❌ 请先初始化认证服务', 'error');
+                return;
+            }
+            
+            try {
+                showResult('statusResult', '正在登出...', 'info');
+                
+                const result = await authService.signOut();
+                showResult('statusResult', `✅ 登出成功: ${JSON.stringify(result, null, 2)}`, 'success');
+                
+            } catch (error) {
+                showResult('statusResult', `❌ 登出失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 页面加载时禁用登录按钮
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('githubBtn').disabled = true;
+            document.getElementById('googleBtn').disabled = true;
+        });
+    </script>
+</body>
+</html>

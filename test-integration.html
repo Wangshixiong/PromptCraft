@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本地存储管理器集成测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>本地存储管理器集成测试</h1>
+    
+    <div class="test-section">
+        <h2>1. 初始化测试</h2>
+        <button onclick="testInitialization()">测试初始化</button>
+        <div id="init-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 数据验证测试</h2>
+        <button onclick="testDataValidation()">测试数据验证</button>
+        <div id="validation-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 提示词操作测试</h2>
+        <button onclick="testPromptOperations()">测试提示词操作</button>
+        <div id="operations-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 搜索功能测试</h2>
+        <button onclick="testSearchFunctions()">测试搜索功能</button>
+        <div id="search-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. 导入导出测试</h2>
+        <button onclick="testImportExport()">测试导入导出</button>
+        <div id="import-export-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>6. 完整集成测试</h2>
+        <button onclick="runAllTests()">运行所有测试</button>
+        <div id="all-tests-result"></div>
+    </div>
+
+    <!-- 引入必要的库文件 -->
+    <script src="lib/uuid-utils.js"></script>
+    <script src="lib/data-validator.js"></script>
+    <script src="lib/local-storage.js"></script>
+    
+    <script>
+        // 模拟 Chrome 扩展 API
+        if (typeof chrome === 'undefined') {
+            window.chrome = {
+                storage: {
+                    local: {
+                        get: function(keys) {
+                            return new Promise((resolve) => {
+                                const result = {};
+                                if (typeof keys === 'string') {
+                                    keys = [keys];
+                                }
+                                if (Array.isArray(keys)) {
+                                    keys.forEach(key => {
+                                        const value = localStorage.getItem(key);
+                                        if (value !== null) {
+                                            try {
+                                                result[key] = JSON.parse(value);
+                                            } catch (e) {
+                                                result[key] = value;
+                                            }
+                                        }
+                                    });
+                                } else if (keys === null || keys === undefined) {
+                                    // 获取所有数据
+                                    for (let i = 0; i < localStorage.length; i++) {
+                                        const key = localStorage.key(i);
+                                        const value = localStorage.getItem(key);
+                                        try {
+                                            result[key] = JSON.parse(value);
+                                        } catch (e) {
+                                            result[key] = value;
+                                        }
+                                    }
+                                } else {
+                                    // keys 是对象
+                                    Object.keys(keys).forEach(key => {
+                                        const value = localStorage.getItem(key);
+                                        if (value !== null) {
+                                            try {
+                                                result[key] = JSON.parse(value);
+                                            } catch (e) {
+                                                result[key] = value;
+                                            }
+                                        } else {
+                                            result[key] = keys[key]; // 默认值
+                                        }
+                                    });
+                                }
+                                resolve(result);
+                            });
+                        },
+                        set: function(items) {
+                            return new Promise((resolve) => {
+                                Object.keys(items).forEach(key => {
+                                    localStorage.setItem(key, JSON.stringify(items[key]));
+                                });
+                                resolve();
+                            });
+                        },
+                        remove: function(keys) {
+                            return new Promise((resolve) => {
+                                if (typeof keys === 'string') {
+                                    keys = [keys];
+                                }
+                                keys.forEach(key => {
+                                    localStorage.removeItem(key);
+                                });
+                                resolve();
+                            });
+                        },
+                        clear: function() {
+                            return new Promise((resolve) => {
+                                localStorage.clear();
+                                resolve();
+                            });
+                        }
+                    }
+                }
+            };
+        }
+
+        let localStorageManager;
+        let dataValidator;
+
+        // 显示测试结果的辅助函数
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = message;
+            element.appendChild(resultDiv);
+        }
+
+        function clearResults(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        // 1. 初始化测试
+        async function testInitialization() {
+            clearResults('init-result');
+            
+            try {
+                // 测试数据验证器初始化
+                dataValidator = new DataValidator();
+                showResult('init-result', '✅ DataValidator 初始化成功', 'success');
+                
+                // 测试本地存储管理器初始化
+                localStorageManager = new LocalStorageManager();
+                showResult('init-result', '✅ LocalStorageManager 初始化成功', 'success');
+                
+                // 测试 UUID 工具
+                const testUuid = UUIDUtils.generateUUID();
+                if (UUIDUtils.isValidUUID(testUuid)) {
+                    showResult('init-result', `✅ UUID 工具正常工作: ${testUuid}`, 'success');
+                } else {
+                    showResult('init-result', '❌ UUID 工具异常', 'error');
+                }
+                
+            } catch (error) {
+                showResult('init-result', `❌ 初始化失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 2. 数据验证测试
+        async function testDataValidation() {
+            clearResults('validation-result');
+            
+            if (!dataValidator) {
+                showResult('validation-result', '❌ 请先运行初始化测试', 'error');
+                return;
+            }
+            
+            try {
+                // 测试有效数据
+                const validPrompt = {
+                    id: UUIDUtils.generateUUID(),
+                    title: '测试提示词',
+                    content: '这是一个测试提示词的内容',
+                    category: '测试分类',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                
+                const validationResult = dataValidator.validatePrompt(validPrompt);
+                if (validationResult.isValid) {
+                    showResult('validation-result', '✅ 有效数据验证通过', 'success');
+                } else {
+                    showResult('validation-result', `❌ 有效数据验证失败: ${validationResult.errors.join(', ')}`, 'error');
+                }
+                
+                // 测试无效数据
+                const invalidPrompt = {
+                    id: 'invalid-id',
+                    title: '',
+                    content: 'a'.repeat(10001), // 超长内容
+                    category: 'a'.repeat(101), // 超长分类
+                };
+                
+                const invalidResult = dataValidator.validatePrompt(invalidPrompt);
+                if (!invalidResult.isValid) {
+                    showResult('validation-result', `✅ 无效数据正确被拒绝: ${invalidResult.errors.join(', ')}`, 'success');
+                } else {
+                    showResult('validation-result', '❌ 无效数据验证失败', 'error');
+                }
+                
+                // 测试数据清理
+                const dirtyPrompt = {
+                    id: UUIDUtils.generateUUID(),
+                    title: '  测试标题  ',
+                    content: '  测试内容  ',
+                    category: '  测试分类  ',
+                    created_at: new Date().toISOString()
+                };
+                
+                const cleanedPrompt = dataValidator.cleanPromptData(dirtyPrompt);
+                if (cleanedPrompt.title === '测试标题' && cleanedPrompt.content === '测试内容') {
+                    showResult('validation-result', '✅ 数据清理功能正常', 'success');
+                } else {
+                    showResult('validation-result', '❌ 数据清理功能异常', 'error');
+                }
+                
+            } catch (error) {
+                showResult('validation-result', `❌ 数据验证测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 3. 提示词操作测试
+        async function testPromptOperations() {
+            clearResults('operations-result');
+            
+            if (!localStorageManager) {
+                showResult('operations-result', '❌ 请先运行初始化测试', 'error');
+                return;
+            }
+            
+            try {
+                // 清空现有数据
+                await chrome.storage.local.clear();
+                
+                // 测试添加提示词
+                const testPrompt = {
+                    id: UUIDUtils.generateUUID(),
+                    title: '测试提示词',
+                    content: '这是一个测试提示词的内容',
+                    category: '测试分类',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                
+                await localStorageManager.addPrompt(testPrompt);
+                showResult('operations-result', '✅ 添加提示词成功', 'success');
+                
+                // 测试获取提示词
+                const prompts = await localStorageManager.getPrompts();
+                if (prompts.length === 1 && prompts[0].id === testPrompt.id) {
+                    showResult('operations-result', '✅ 获取提示词成功', 'success');
+                } else {
+                    showResult('operations-result', '❌ 获取提示词失败', 'error');
+                }
+                
+                // 测试按 ID 获取提示词
+                const promptById = await localStorageManager.getPromptById(testPrompt.id);
+                if (promptById && promptById.id === testPrompt.id) {
+                    showResult('operations-result', '✅ 按 ID 获取提示词成功', 'success');
+                } else {
+                    showResult('operations-result', '❌ 按 ID 获取提示词失败', 'error');
+                }
+                
+                // 测试更新提示词
+                const updatedData = {
+                    title: '更新后的标题',
+                    content: '更新后的内容'
+                };
+                
+                await localStorageManager.updatePrompt(testPrompt.id, updatedData);
+                const updatedPrompt = await localStorageManager.getPromptById(testPrompt.id);
+                if (updatedPrompt.title === '更新后的标题') {
+                    showResult('operations-result', '✅ 更新提示词成功', 'success');
+                } else {
+                    showResult('operations-result', '❌ 更新提示词失败', 'error');
+                }
+                
+                // 测试删除提示词
+                await localStorageManager.deletePrompt(testPrompt.id);
+                const promptsAfterDelete = await localStorageManager.getPrompts();
+                if (promptsAfterDelete.length === 0) {
+                    showResult('operations-result', '✅ 删除提示词成功', 'success');
+                } else {
+                    showResult('operations-result', '❌ 删除提示词失败', 'error');
+                }
+                
+            } catch (error) {
+                showResult('operations-result', `❌ 提示词操作测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 4. 搜索功能测试
+        async function testSearchFunctions() {
+            clearResults('search-result');
+            
+            if (!localStorageManager) {
+                showResult('search-result', '❌ 请先运行初始化测试', 'error');
+                return;
+            }
+            
+            try {
+                // 清空现有数据
+                await chrome.storage.local.clear();
+                
+                // 添加测试数据
+                const testPrompts = [
+                    {
+                        id: UUIDUtils.generateUUID(),
+                        title: 'JavaScript 编程',
+                        content: '帮我写一个 JavaScript 函数',
+                        category: '编程',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    },
+                    {
+                        id: UUIDUtils.generateUUID(),
+                        title: 'Python 数据分析',
+                        content: '使用 Python 进行数据分析',
+                        category: '编程',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    },
+                    {
+                        id: UUIDUtils.generateUUID(),
+                        title: '写作助手',
+                        content: '帮我写一篇文章',
+                        category: '写作',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    }
+                ];
+                
+                for (const prompt of testPrompts) {
+                    await localStorageManager.addPrompt(prompt);
+                }
+                
+                // 测试关键词搜索
+                const searchResults1 = await localStorageManager.searchPrompts('JavaScript');
+                if (searchResults1.length === 1 && searchResults1[0].title.includes('JavaScript')) {
+                    showResult('search-result', '✅ 关键词搜索功能正常', 'success');
+                } else {
+                    showResult('search-result', '❌ 关键词搜索功能异常', 'error');
+                }
+                
+                // 测试分类筛选
+                const searchResults2 = await localStorageManager.searchPrompts('', '编程');
+                if (searchResults2.length === 2) {
+                    showResult('search-result', '✅ 分类筛选功能正常', 'success');
+                } else {
+                    showResult('search-result', `❌ 分类筛选功能异常，期望2个结果，实际${searchResults2.length}个`, 'error');
+                }
+                
+                // 测试组合搜索
+                const searchResults3 = await localStorageManager.searchPrompts('Python', '编程');
+                if (searchResults3.length === 1 && searchResults3[0].title.includes('Python')) {
+                    showResult('search-result', '✅ 组合搜索功能正常', 'success');
+                } else {
+                    showResult('search-result', '❌ 组合搜索功能异常', 'error');
+                }
+                
+            } catch (error) {
+                showResult('search-result', `❌ 搜索功能测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 5. 导入导出测试
+        async function testImportExport() {
+            clearResults('import-export-result');
+            
+            if (!localStorageManager) {
+                showResult('import-export-result', '❌ 请先运行初始化测试', 'error');
+                return;
+            }
+            
+            try {
+                // 清空现有数据
+                await chrome.storage.local.clear();
+                
+                // 添加测试数据
+                const testPrompt = {
+                    id: UUIDUtils.generateUUID(),
+                    title: '导出测试提示词',
+                    content: '这是用于测试导出功能的提示词',
+                    category: '测试',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                
+                await localStorageManager.addPrompt(testPrompt);
+                
+                // 测试导出
+                const exportData = await localStorageManager.exportData();
+                if (exportData.prompts && exportData.prompts.length === 1) {
+                    showResult('import-export-result', '✅ 数据导出功能正常', 'success');
+                    showResult('import-export-result', `<pre>${JSON.stringify(exportData, null, 2)}</pre>`, 'info');
+                } else {
+                    showResult('import-export-result', '❌ 数据导出功能异常', 'error');
+                }
+                
+                // 测试导入
+                await chrome.storage.local.clear();
+                
+                const importData = {
+                    prompts: [testPrompt],
+                    categories: ['测试'],
+                    version: '1.0.0',
+                    exportTime: new Date().toISOString()
+                };
+                
+                await localStorageManager.importData(importData);
+                const importedPrompts = await localStorageManager.getPrompts();
+                
+                if (importedPrompts.length === 1 && importedPrompts[0].id === testPrompt.id) {
+                    showResult('import-export-result', '✅ 数据导入功能正常', 'success');
+                } else {
+                    showResult('import-export-result', '❌ 数据导入功能异常', 'error');
+                }
+                
+            } catch (error) {
+                showResult('import-export-result', `❌ 导入导出测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 6. 运行所有测试
+        async function runAllTests() {
+            clearResults('all-tests-result');
+            showResult('all-tests-result', '🚀 开始运行完整集成测试...', 'info');
+            
+            try {
+                await testInitialization();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                await testDataValidation();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                await testPromptOperations();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                await testSearchFunctions();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                await testImportExport();
+                
+                showResult('all-tests-result', '🎉 所有测试完成！请查看各个测试部分的详细结果。', 'success');
+                
+            } catch (error) {
+                showResult('all-tests-result', `❌ 集成测试失败: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,32 +1,7 @@
 // sidepanel.js
 
-// *****************************************************************************
-// * 指令：请在此处填入您的 Supabase 配置                  *
-// *****************************************************************************
-//                                                                             *
-// 1. 访问 https://app.supabase.com/ 登录并进入您的项目。                         *
-// 2. 在左侧菜单中，点击 "Project Settings" (齿轮图标)。                           *
-// 3. 选择 "API" 选项卡。                                                      *
-// 4. 在 "Project API keys" 部分，找到 "anon" "public" key 并复制它。            *
-// 5. 将复制的 key 粘贴到下面的 `supabaseKey` 变量中。                           *
-// 6. 在 "Configuration" 部分，找到您的项目 URL 并复制它。                       *
-// 7. 将复制的 URL 粘贴到下面的 `supabaseUrl` 变量中。                           *
-//                                                                             *
-// *****************************************************************************
-
-const supabaseUrl = 'https://uwgxhtrbixsdabjvuuaj.supabase.co'; // 您已填写的示例
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3Z3hodHJiaXhzZGFianZ1dWFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NzQ0NzUsImV4cCI6MjA2NTA1MDQ3NX0.6R4t3Bxy6g-ajI1Fym-RWmZgIvlAGLxy6uV1wbTULN0'; // 您已填写的示例
-
-
-// -----------------------------------------------------------------------------
-// 请不要修改下面的代码
-// -----------------------------------------------------------------------------
-
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-
 // DOM 元素引用
 const loadingOverlay = document.getElementById('loadingOverlay');
-const authView = document.getElementById('authView');
 const mainView = document.getElementById('mainView');
 const formView = document.getElementById('formView');
 const themeToggle = document.getElementById('themeToggle');
@@ -58,6 +33,9 @@ let currentUser = null;
 let themeMode = 'auto';
 let currentView = null;
 let isProcessingContextMenu = false; // 标记是否正在处理右键菜单消息
+let authService = null;
+let authUI = null;
+let isAuthInitialized = false;
 
 // 检测系统主题
 function getSystemTheme() {
@@ -284,28 +262,7 @@ function unescapeHtml(text) {
 
 // --- 认证功能 ---
 
-// 登出处理（现在只是清除本地数据）
-async function handleLogout() {
-    safeShowLoading();
-    
-    // 清除本地数据
-    await chrome.storage.local.remove(['prompts']);
-    currentUser = null;
-    allPrompts = [];
-    renderPrompts([]);
-    updateFilterButtons();
-    
-    // 重新初始化，这会创建新的虚拟用户和示例数据
-    await checkUserSession();
-    
-    forceHideLoading();
-}
 
-async function checkUserSession() {
-    // 这个函数现在主要用于兼容性，实际初始化已在initializeApp中完成
-    console.log('checkUserSession: 用户会话已在initializeApp中处理');
-    return true;
-}
 
 
 // --- 数据处理 (CRUD) ---
@@ -319,18 +276,30 @@ async function loadUserPrompts(skipLoading = false) {
     if (!skipLoading) safeShowLoading();
     
     try {
-        console.log('从chrome.storage.local加载提示词...');
+        console.log('从本地存储管理器加载提示词...');
         
-        // 从chrome.storage.local获取提示词数据
-        const result = await chrome.storage.local.get(['prompts', 'loadError', 'errorMessage']);
-        let data = result.prompts || [];
+        // 使用本地存储管理器获取提示词数据
+        let data = await localStorageManager.getPrompts();
         
         console.log('成功获取提示词数据，数量:', data.length);
         
-        // 检查是否有加载错误
-        if (result.loadError) {
-            console.warn('检测到数据加载错误:', result.errorMessage);
-            showToast(result.errorMessage || '数据加载失败', 'warning');
+        // 验证数据完整性
+        const validation = DataValidator.validatePrompts(data);
+        if (!validation.isValid) {
+            console.warn('数据验证失败:', validation.errors);
+            
+            // 尝试清理和修复数据
+            const sanitizedData = DataValidator.sanitizePrompts(data);
+            if (sanitizedData.length > 0) {
+                console.log('数据已清理，保存修复后的数据');
+                await localStorageManager.savePrompts(sanitizedData);
+                data = sanitizedData;
+                showToast('数据已自动修复', 'info');
+            } else {
+                console.error('数据无法修复');
+                showToast('数据损坏，已重置为空', 'warning');
+                data = [];
+            }
         }
         
         allPrompts = data;
@@ -360,57 +329,59 @@ async function savePrompt() {
     const content = promptContentInput.value.trim();
     const category = promptCategoryInput.value.trim() || '未分类';
 
-    if (!title || !content) {
-        showToast('标题和内容不能为空！', 'warning');
-        return;
+    // 构建提示词数据对象
+    const promptData = {
+        user_id: currentUser.id || 'local_user',
+        title,
+        content,
+        category,
+    };
+
+    // 如果是更新操作，添加ID
+    if (id) {
+        promptData.id = id;
     }
 
-    // 检查内容长度（10000个字符限制）
-    if (content.length > 10000) {
-        showToast('提示词内容不能超过10000个字符！', 'warning');
+    // 使用数据验证器验证数据
+    const validation = DataValidator.validatePrompt({
+        ...promptData,
+        id: id || 'temp-id', // 临时ID用于验证
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    });
+
+    if (!validation.isValid) {
+        const errorMessage = validation.errors.join('\n');
+        showToast(`数据验证失败：\n${errorMessage}`, 'error');
         return;
     }
 
     safeShowLoading();
     
     try {
-        // 从chrome.storage.local获取现有数据
-        const result = await chrome.storage.local.get(['prompts']);
-        let prompts = result.prompts || [];
-        
-        const promptData = {
-            user_id: currentUser.id,
-            title,
-            content,
-            category,
-        };
-        
         if (id) {
             // 更新现有提示词
-            const index = prompts.findIndex(p => p.id == id);
-            if (index !== -1) {
-                prompts[index] = { ...prompts[index], ...promptData };
+            const success = await localStorageManager.updatePrompt(id, promptData);
+            if (success) {
                 console.log('更新提示词:', id);
+                showToast('提示词更新成功！', 'success');
             } else {
-                console.error('未找到要更新的提示词:', id);
                 showToast('未找到要更新的提示词', 'error');
                 forceHideLoading();
                 return;
             }
         } else {
             // 添加新提示词
-            const newPrompt = {
-                id: Date.now(),
-                ...promptData,
-                created_at: new Date().toISOString()
-            };
-            prompts.unshift(newPrompt); // 添加到开头
-            console.log('添加新提示词:', newPrompt.id);
+            const success = await localStorageManager.addPrompt(promptData);
+            if (success) {
+                console.log('添加新提示词成功');
+                showToast('提示词添加成功！', 'success');
+            } else {
+                showToast('添加提示词失败', 'error');
+                forceHideLoading();
+                return;
+            }
         }
-        
-        // 保存到chrome.storage.local
-        await chrome.storage.local.set({ prompts: prompts });
-        console.log('提示词保存成功');
         
         await loadUserPrompts();
         showView('mainView');
@@ -431,25 +402,18 @@ async function deletePrompt(promptId) {
     safeShowLoading();
     
     try {
-        // 从chrome.storage.local获取现有数据
-        const result = await chrome.storage.local.get(['prompts']);
-        let prompts = result.prompts || [];
+        // 使用本地存储管理器删除提示词
+        const success = await localStorageManager.deletePrompt(promptId);
         
-        // 删除指定的提示词
-        const filteredPrompts = prompts.filter(p => p.id != promptId);
-        
-        if (filteredPrompts.length === prompts.length) {
+        if (success) {
+            console.log('提示词删除成功:', promptId);
+            showToast('提示词删除成功！', 'success');
+            
+            // 重新加载数据并更新界面
+            await loadUserPrompts(true); // skipLoading = true，避免重复显示加载状态
+        } else {
             console.error('未找到要删除的提示词:', promptId);
             showToast('未找到要删除的提示词', 'error');
-        } else {
-            // 保存更新后的数据到chrome.storage.local
-            await chrome.storage.local.set({ prompts: filteredPrompts });
-            console.log('提示词删除成功:', promptId);
-            
-            // 更新内存中的数据并重新渲染
-            allPrompts = filteredPrompts;
-            renderPrompts(allPrompts);
-            updateFilterButtons();
         }
         
     } catch (error) {
@@ -633,26 +597,52 @@ function setupCategoryInput() {
     }
 }
 
-function handleFilter(category) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
+async function handleFilter(category) {
+    try {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
 
-    if (category === '全部') {
-        renderPrompts(allPrompts);
-    } else {
-        const filtered = allPrompts.filter(p => p.category === category);
-        renderPrompts(filtered);
+        if (category === '全部') {
+            renderPrompts(allPrompts);
+        } else {
+            // 使用 localStorageManager 的搜索功能按分类筛选
+            const filtered = await localStorageManager.searchPrompts('', category);
+            renderPrompts(filtered);
+        }
+    } catch (error) {
+        console.error('分类筛选失败:', error);
+        // 降级到本地筛选
+        if (category === '全部') {
+            renderPrompts(allPrompts);
+        } else {
+            const filtered = allPrompts.filter(p => p.category === category);
+            renderPrompts(filtered);
+        }
     }
 }
 
-function handleSearch(term) {
-    const lowerCaseTerm = term.toLowerCase();
-    const filtered = allPrompts.filter(p =>
-        p.title.toLowerCase().includes(lowerCaseTerm) ||
-        p.content.toLowerCase().includes(lowerCaseTerm) ||
-        (p.category && p.category.toLowerCase().includes(lowerCaseTerm))
-    );
-    renderPrompts(filtered);
+async function handleSearch(term) {
+    try {
+        if (!term || term.trim() === '') {
+            // 如果搜索词为空，显示所有提示词
+            renderPrompts(allPrompts);
+            return;
+        }
+        
+        // 使用 localStorageManager 的搜索功能
+        const searchResults = await localStorageManager.searchPrompts(term.trim());
+        renderPrompts(searchResults);
+    } catch (error) {
+        console.error('搜索失败:', error);
+        // 降级到本地搜索
+        const lowerCaseTerm = term.toLowerCase();
+        const filtered = allPrompts.filter(p =>
+            p.title.toLowerCase().includes(lowerCaseTerm) ||
+            p.content.toLowerCase().includes(lowerCaseTerm) ||
+            (p.category && p.category.toLowerCase().includes(lowerCaseTerm))
+        );
+        renderPrompts(filtered);
+    }
 }
 
 
@@ -916,7 +906,7 @@ function setupEventListeners() {
         if (message.type === 'ADD_FROM_CONTEXT_MENU' && message.data?.content) {
             console.log('收到右键菜单消息，内容:', message.data.content);
             
-            // 设置标志，防止checkUserSession的延迟检查干扰
+            // 设置标志，防止处理过程中的干扰
             isProcessingContextMenu = true;
             
             // 等待应用完全初始化后再处理
@@ -992,18 +982,36 @@ async function handleDownloadTemplate() {
 // 导出提示词
 async function handleExport() {
     try {
-        if (allPrompts.length === 0) {
+        safeShowLoading();
+        
+        // 使用 localStorageManager 导出数据
+        const exportData = await localStorageManager.exportData();
+        
+        if (!exportData.prompts || exportData.prompts.length === 0) {
             showToast('没有可导出的提示词', 'warning');
             return;
         }
         
-        safeShowLoading();
-        const result = await window.JSONUtils.exportToJSON(allPrompts);
-        if (result.success) {
-            showToast(result.message, 'success');
-        } else {
-            showToast(result.message, 'error');
-        }
+        // 创建下载链接
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        
+        // 生成文件名
+        const now = new Date();
+        const timestamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
+        const filename = `Prompt管理助手_提示词_${timestamp}.json`;
+        
+        // 创建下载链接并触发下载
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        showToast(`导出成功！文件已保存为：${filename}`, 'success');
     } catch (error) {
         console.error('导出失败:', error);
         showToast('导出失败，请稍后再试', 'error');
@@ -1030,37 +1038,50 @@ async function handleFileImport(event) {
             return;
         }
         
-        // 导入数据
-        const importResult = await window.JSONUtils.importFromJSON(file);
+        // 读取文件内容
+        const fileContent = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsText(file);
+        });
         
-        if (!importResult.success) {
-            showToast(importResult.message || '导入失败', 'error');
+        // 解析JSON数据
+        let importData;
+        try {
+            importData = JSON.parse(fileContent);
+        } catch (parseError) {
+            showToast('JSON文件格式错误，请检查文件内容', 'error');
             return;
         }
         
-        const { prompts: importedPrompts, errors, total, imported } = importResult;
-        
-        if (imported === 0) {
-            showToast(`导入完成：共 ${total} 条记录，全部导入失败。请检查JSON格式是否正确。`, 'error');
-            if (errors && errors.length > 0) {
-                const downloadFailed = await showCustomConfirm('是否下载失败记录？');
-                if (downloadFailed) {
-                    await window.JSONUtils.exportFailedRecords(errors);
-                }
-            }
+        // 验证导入数据格式
+        const validation = DataValidator.validateImportData(importData);
+        if (!validation.isValid) {
+            const errorMessage = validation.errors.slice(0, 3).join('\n'); // 只显示前3个错误
+            showToast(`数据格式验证失败：\n${errorMessage}`, 'error');
             return;
         }
+        
+        // 获取提示词数组
+        const importedPrompts = importData.prompts || importData;
+        if (!Array.isArray(importedPrompts) || importedPrompts.length === 0) {
+            showToast('导入文件中没有找到有效的提示词数据', 'warning');
+            return;
+        }
+        
+        // 清理和标准化导入的数据
+        const sanitizedPrompts = DataValidator.sanitizePrompts(importedPrompts);
         
         // 获取现有提示词
-        const result = await chrome.storage.local.get(['prompts']);
-        let existingPrompts = result.prompts || [];
+        const existingPrompts = await localStorageManager.getPrompts();
         
         // 处理重名提示词的更新策略
         let addedCount = 0;
         let updatedCount = 0;
         const finalPrompts = [...existingPrompts];
         
-        importedPrompts.forEach(newPrompt => {
+        for (const newPrompt of sanitizedPrompts) {
             // 查找是否存在同名提示词
             const existingIndex = finalPrompts.findIndex(existing => 
                 existing.title.trim().toLowerCase() === newPrompt.title.trim().toLowerCase()
@@ -1068,27 +1089,33 @@ async function handleFileImport(event) {
             
             if (existingIndex !== -1) {
                 // 更新现有提示词
-                finalPrompts[existingIndex] = {
-                    ...finalPrompts[existingIndex],
+                const success = await localStorageManager.updatePrompt(finalPrompts[existingIndex].id, {
+                    content: newPrompt.content,
+                    category: newPrompt.category
+                });
+                if (success) {
+                    updatedCount++;
+                    // 更新本地数组以保持一致性
+                    finalPrompts[existingIndex] = {
+                        ...finalPrompts[existingIndex],
+                        content: newPrompt.content,
+                        category: newPrompt.category,
+                        updated_at: new Date().toISOString()
+                    };
+                }
+            } else {
+                // 添加新提示词
+                const success = await localStorageManager.addPrompt({
+                    title: newPrompt.title,
                     content: newPrompt.content,
                     category: newPrompt.category,
-                    updatedAt: new Date().toISOString()
-                };
-                updatedCount++;
-            } else {
-                // 添加新提示词到开头
-                finalPrompts.unshift({
-                    ...newPrompt,
-                    id: Date.now() + Math.random(),
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
+                    user_id: currentUser.id || 'local_user'
                 });
-                addedCount++;
+                if (success) {
+                    addedCount++;
+                }
             }
-        });
-        
-        // 保存到chrome.storage.local
-        await chrome.storage.local.set({ prompts: finalPrompts });
+        }
         
         // 重新加载提示词列表
         await loadUserPrompts();
@@ -1097,23 +1124,17 @@ async function handleFileImport(event) {
         settingsOverlay.style.display = 'none';
         
         // 显示导入结果
-        let message = `导入完成：\n共计 ${total} 条记录\n新增 ${addedCount} 条`;
+        let message = `导入完成：\n共计 ${sanitizedPrompts.length} 条记录\n新增 ${addedCount} 条`;
         if (updatedCount > 0) {
             message += `\n更新 ${updatedCount} 条（同名覆盖）`;
         }
-        if (errors && errors.length > 0) {
-            message += `\n失败 ${errors.length} 条`;
+        
+        const failedCount = sanitizedPrompts.length - addedCount - updatedCount;
+        if (failedCount > 0) {
+            message += `\n失败 ${failedCount} 条`;
         }
         
         showToast(message, addedCount > 0 || updatedCount > 0 ? 'success' : 'warning');
-        
-        // 如果有失败记录，询问是否下载
-        if (errors && errors.length > 0) {
-            const downloadFailed = await showCustomConfirm('是否下载失败记录？');
-            if (downloadFailed) {
-                await window.JSONUtils.exportFailedRecords(errors);
-            }
-        }
         
     } catch (error) {
         console.error('导入失败:', error);
@@ -1143,11 +1164,40 @@ function safeShowLoading() {
     loadingTimeout = setTimeout(() => {
         console.log('Loading超时，强制隐藏');
         forceHideLoading();
-        // 如果没有用户登录，显示登录界面
-        if (!currentUser) {
-            showView('authView');
-        }
     }, 10000);
+}
+
+// 初始化认证服务
+async function initializeAuth() {
+    try {
+        // 检查认证服务类是否可用
+        if (typeof AuthService === 'undefined') {
+            console.warn('AuthService 未找到，跳过认证初始化');
+            return;
+        }
+        
+        if (typeof AuthUI === 'undefined') {
+            console.warn('AuthUI 未找到，跳过认证UI初始化');
+            return;
+        }
+        
+        // 初始化认证服务
+        authService = new AuthService();
+        await authService.initialize();
+        
+        // 初始化认证UI
+        authUI = new AuthUI();
+        await authUI.initialize(authService);
+        
+        // 用户按钮由AuthUI动态创建，无需手动显示
+        
+        isAuthInitialized = true;
+        console.log('认证服务初始化完成');
+        
+    } catch (error) {
+        console.error('认证服务初始化失败:', error);
+        // 认证失败不影响主要功能
+    }
 }
 
 async function initializeApp() {
@@ -1165,6 +1215,25 @@ async function initializeApp() {
                 }
             }, 100);
         }
+        
+        // 初始化本地存储管理器
+        if (typeof LocalStorageManager !== 'undefined') {
+            window.localStorageManager = new LocalStorageManager();
+            console.log('LocalStorageManager 初始化完成');
+        } else {
+            console.error('LocalStorageManager 未找到');
+        }
+        
+        // 初始化数据验证器
+        if (typeof DataValidator !== 'undefined') {
+            window.dataValidator = new DataValidator();
+            console.log('DataValidator 初始化完成');
+        } else {
+            console.error('DataValidator 未找到');
+        }
+        
+        // 初始化认证服务
+        await initializeAuth();
         
         // 创建虚拟用户，立即可用
         currentUser = {
@@ -1196,9 +1265,34 @@ async function initializeApp() {
     }
 }
 
+// OAuth 回调消息监听器
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === 'oauth_result') {
+        console.log('收到OAuth认证结果:', request.data);
+        
+        // 如果认证服务已初始化，处理认证结果
+        if (authService && typeof authService.handleOAuthCallback === 'function') {
+            authService.handleOAuthCallback(request.data)
+                .then(result => {
+                    console.log('OAuth认证处理完成:', result);
+                    // 注意：不需要手动更新用户状态，因为authService的状态变化监听器会自动处理
+                    // 这样可以避免重复更新和竞态条件
+                })
+                .catch(error => {
+                    console.error('OAuth认证处理失败:', error);
+                });
+        }
+        
+        sendResponse({ success: true });
+    }
+});
+
 // 立即显示界面，不等待任何操作
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM加载完成，立即初始化应用');
+    // 首先执行数据迁移（如果需要）
+    await performDataMigration();
+    
     initializeApp();
 });
 

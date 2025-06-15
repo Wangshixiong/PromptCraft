@@ -129,13 +129,385 @@
         .dark-mode .btn:hover {
             background-color: rgba(248, 250, 252, 0.1);
         }
-        
-        #logoutBtn {
-            color: var(--danger);
+
+        /* 用户图标相关样式 */
+        .user-icon-container {
+            position: relative;
+            display: inline-block;
         }
-        
-        #logoutBtn:hover {
-             background-color: rgba(239, 68, 68, 0.1);
+
+        .user-avatar-img {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .sync-status-dot {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #94a3b8;
+            border: 2px solid var(--background-light);
+            z-index: 10;
+        }
+
+        .dark-mode .sync-status-dot {
+            border-color: var(--background-dark);
+        }
+
+        .sync-status-dot.syncing {
+            background-color: #3b82f6;
+            animation: pulse 1.5s infinite;
+        }
+
+        .sync-status-dot.success {
+            background-color: #10b981;
+        }
+
+        .sync-status-dot.error {
+            background-color: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* 登录弹窗样式 */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .login-modal {
+            background-color: var(--background-light);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .dark-mode .login-modal {
+            background-color: var(--background-dark);
+        }
+
+        .login-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .dark-mode .login-header {
+            border-bottom-color: var(--border-dark);
+        }
+
+        .login-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        .dark-mode .login-header h3 {
+            color: var(--text-dark);
+        }
+
+        .login-close {
+            background: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: var(--transition);
+        }
+
+        .dark-mode .login-close {
+            color: var(--text-dark);
+        }
+
+        .login-close:hover {
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+
+        .login-body {
+            padding: 20px;
+        }
+
+        .login-description {
+            margin-bottom: 24px;
+        }
+
+        .login-description p {
+            margin: 0 0 8px 0;
+            color: var(--text-light);
+            line-height: 1.5;
+        }
+
+        .dark-mode .login-description p {
+            color: var(--text-dark);
+        }
+
+        .privacy-note {
+            font-size: 12px;
+            color: #64748b !important;
+        }
+
+        .dark-mode .privacy-note {
+            color: #94a3b8 !important;
+        }
+
+        .login-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .login-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px 20px;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            background-color: var(--card-light);
+            color: var(--text-light);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .dark-mode .login-btn {
+            border-color: var(--border-dark);
+            background-color: var(--card-dark);
+            color: var(--text-dark);
+        }
+
+        .login-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .login-btn.loading {
+            pointer-events: none;
+        }
+
+        .github-btn {
+            background-color: #24292e;
+            color: white;
+            border-color: #24292e;
+        }
+
+        .github-btn:hover {
+            background-color: #1a1e22;
+        }
+
+        .google-btn {
+            background-color: #4285f4;
+            color: white;
+            border-color: #4285f4;
+        }
+
+        .google-btn:hover {
+            background-color: #3367d6;
+        }
+
+        .login-footer {
+            text-align: center;
+        }
+
+        .login-footer p {
+            margin: 0;
+            font-size: 11px;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        .dark-mode .login-footer p {
+            color: #94a3b8;
+        }
+
+        /* 用户菜单样式 */
+        .user-menu {
+            background-color: var(--background-light);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            min-width: 250px;
+            overflow: hidden;
+        }
+
+        .dark-mode .user-menu {
+            background-color: var(--background-dark);
+            border-color: var(--border-dark);
+        }
+
+        .user-menu-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .dark-mode .user-menu-header {
+            border-bottom-color: var(--border-dark);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            overflow: hidden;
+        }
+
+        .user-avatar .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dark-mode .user-name {
+            color: var(--text-dark);
+        }
+
+        .user-email {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dark-mode .user-email {
+            color: #94a3b8;
+        }
+
+        .user-provider {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .dark-mode .user-provider {
+            color: #64748b;
+        }
+
+        .user-menu-actions {
+            padding: 8px;
+        }
+
+        .user-menu-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border: none;
+            background: none;
+            color: var(--text-light);
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: var(--transition);
+        }
+
+        .dark-mode .user-menu-btn {
+            color: var(--text-dark);
+        }
+
+        .user-menu-btn:hover {
+            background-color: var(--card-light);
+        }
+
+        .dark-mode .user-menu-btn:hover {
+            background-color: var(--card-dark);
+        }
+
+        .user-menu-btn i {
+            width: 16px;
+            text-align: center;
+        }
+
+        /* Toast 消息样式 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10001;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-success {
+            background-color: #10b981;
+        }
+
+        .toast-error {
+            background-color: #ef4444;
+        }
+
+        .toast-info {
+            background-color: #3b82f6;
         }
 
         .search-container {
@@ -517,71 +889,7 @@
             transform: scale(1.03);
         }
 
-        .auth-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 20px;
-            text-align: center;
-        }
 
-        .auth-icon {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-            color: white;
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 24px;
-            font-size: 32px;
-        }
-
-        .auth-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-            -webkit-background-clip: text;
-            background-clip: text; /* ✅ 修复：添加标准属性 */
-            -webkit-text-fill-color: transparent;
-        }
-
-        .auth-description {
-            color: var(--text-light);
-            margin-bottom: 32px;
-            line-height: 1.6;
-            max-width: 320px;
-        }
-
-        .dark-mode .auth-description {
-            color: var(--text-dark);
-        }
-
-        .github-btn {
-            background-color: #333;
-            color: white;
-            border: none;
-            padding: 14px 24px;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            transition: var(--transition);
-            width: 100%;
-            max-width: 280px;
-            justify-content: center;
-        }
-
-        .github-btn:hover {
-            background-color: #444;
-            transform: translateY(-2px);
-        }
 
         .form-container-wrapper {
             flex: 1;
@@ -1249,14 +1557,7 @@
 </head>
 <body>
     <div class="sidebar">
-        <!-- 认证视图 (已隐藏) -->
-        <div class="view" id="authView" style="display: none;">
-            <div class="auth-container">
-                <div class="auth-icon"><i class="fas fa-magic-wand-sparkles"></i></div>
-                <h1 class="auth-title">Prompt管理助手</h1>
-                <p class="auth-description">本地版本，无需登录即可使用。</p>
-            </div>
-        </div>
+
 
         <!-- 主视图 -->
         <div class="view" id="mainView">
@@ -1434,8 +1735,14 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- 关键改动：为脚本添加 defer 属性 -->
-    <script src="lib/supabase.js" defer></script>
     <script src="lib/json-utils.js" defer></script>
+    <script src="lib/uuid-utils.js" defer></script>
+    <script src="lib/data-validator.js" defer></script>
+    <script src="lib/local-storage.js" defer></script>
+    <script src="lib/data-migration.js" defer></script>
+    <script src="lib/auth-config.js" defer></script>
+    <script src="lib/auth-service.js" defer></script>
+    <script src="lib/auth-ui.js" defer></script>
     <script src="sidepanel.js" defer></script>
 </body>
 </html>

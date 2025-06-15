@@ -4,16 +4,21 @@
     "version": "0.1.9",
     "description": "一个安全、可靠、可跨设备同步的个人提示词管理工具。",
     "permissions": [
-    "storage",
-    "sidePanel",
-    "contextMenus",
-    "activeTab",
-    "identity"
-  ],
-    "host_permissions": [
-      "https://uwgxhtrbixsdabjvuuaj.supabase.co/*",
-      "https://*.supabase.co/*"
+        "storage",
+        "sidePanel",
+        "contextMenus",
+        "activeTab",
+        "identity"
     ],
+    "host_permissions": [
+        "https://*.supabase.co/*",
+        "https://github.com/*",
+        "https://accounts.google.com/*"
+    ],
+    "oauth2": {
+        "client_id": "placeholder",
+        "scopes": ["openid", "email", "profile"]
+    },
     "icons": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
@@ -47,9 +52,12 @@
     ],
   "web_accessible_resources": [
     {
-      "resources": ["default-prompts.json"],
+      "resources": ["default-prompts.json", "lib/supabase.min.js"],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
 }
   

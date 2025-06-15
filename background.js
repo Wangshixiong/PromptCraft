@@ -20,12 +20,13 @@ async function loadDefaultPromptsToMemory() {
         
         const defaultPrompts = await response.json();
         
-        // 为每个提示词添加完整的数据结构
-        const processedPrompts = defaultPrompts.map((prompt, index) => ({
+        // 为每个提示词添加完整的数据结构，保持原有UUID不变
+        const processedPrompts = defaultPrompts.map(prompt => ({
             ...prompt,
-            id: Date.now() + index,
+            // 保持原有的UUID，不要重新生成
             user_id: 'local-user',
-            created_at: new Date().toISOString()
+            created_at: prompt.created_at || new Date().toISOString(),
+            updated_at: prompt.updated_at || new Date().toISOString()
         }));
         
         // 将处理后的数据保存到chrome.storage.local
@@ -34,6 +35,30 @@ async function loadDefaultPromptsToMemory() {
             promptcraft_has_data: true,
             themeMode: 'auto' // 默认主题设置
         });
+
+// OAuth 认证回调处理
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.type === 'oauth_callback') {
+    // 处理 OAuth 回调
+    console.log('OAuth callback received:', request.data);
+    
+    // 将回调数据转发给侧边栏
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        if (tab.url && tab.url.includes('sidepanel.html')) {
+          chrome.tabs.sendMessage(tab.id, {
+            type: 'oauth_result',
+            data: request.data
+          }).catch(() => {
+            // 忽略发送失败的错误（可能是标签页已关闭）
+          });
+        }
+      });
+    });
+    
+    sendResponse({ success: true });
+  }
+});
         
         console.log('PromptCraft: Default prompts loaded successfully, count:', processedPrompts.length);
         
