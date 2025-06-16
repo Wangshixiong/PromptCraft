@@ -1,7 +1,7 @@
 {
   "name": "prompt-manager-extension",
-  "version": "0.1.9",
-  "description": "一个安全、可靠、可跨设备同步的个人提示词管理工具",
+  "version": "0.5.0",
+  "description": "一个安全、可靠的本地提示词管理工具",
   "main": "src/background.js",
   "scripts": {
     "build": "echo 'Build script placeholder'",
@@ -10,14 +10,12 @@
   "keywords": [
     "chrome-extension",
     "prompt-manager",
-    "supabase",
+    "local-storage",
     "productivity"
   ],
   "author": "Your Name",
   "license": "MIT",
-  "dependencies": {
-    "@supabase/supabase-js": "^2.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {},
   "repository": {
     "type": "git",

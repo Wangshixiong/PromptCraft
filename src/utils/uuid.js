@@ -68,34 +68,7 @@ function generateUUIDWithMath() {
     });
 }
 
-/**
- * 生成短UUID（8位）
- * @returns {string} 8位短UUID
- */
-function generateShortUUID() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    
-    for (let i = 0; i < 8; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    
-    console.log('生成短UUID:', result);
-    return result;
-}
 
-/**
- * 生成时间戳UUID（包含时间信息）
- * @returns {string} 时间戳UUID
- */
-function generateTimestampUUID() {
-    const timestamp = Date.now().toString(36);
-    const randomPart = Math.random().toString(36).substr(2, 9);
-    const uuid = `${timestamp}-${randomPart}`;
-    
-    console.log('生成时间戳UUID:', uuid);
-    return uuid;
-}
 
 /**
  * 验证UUID格式是否正确
@@ -133,17 +106,20 @@ if (typeof module !== 'undefined' && module.exports) {
     // Node.js环境
     module.exports = {
         generateUUID,
-        generateShortUUID,
-        generateTimestampUUID,
+        generatePrefixedUUID,
+        isValidUUID
+    };
+} else if (typeof window !== 'undefined') {
+    // 浏览器环境
+    window.UUIDUtils = {
+        generateUUID,
         generatePrefixedUUID,
         isValidUUID
     };
 } else {
-    // 浏览器环境
-    window.UUIDUtils = {
+    // Service Worker环境
+    globalThis.UUIDUtils = {
         generateUUID,
-        generateShortUUID,
-        generateTimestampUUID,
         generatePrefixedUUID,
         isValidUUID
     };

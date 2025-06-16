@@ -9,11 +9,13 @@ function exportToJSON(prompts) {
             exportTime: new Date().toISOString(),
             version: '1.0',
             prompts: prompts.map(prompt => ({
+                id: prompt.id || '',
+                created_at: prompt.created_at || new Date().toISOString(),
+                updated_at: prompt.updated_at || new Date().toISOString(),
                 title: prompt.title || '',
                 content: prompt.content || '',
                 category: prompt.category || '',
-                createdAt: prompt.created_at || new Date().toISOString(),
-                updatedAt: prompt.updated_at || new Date().toISOString()
+                is_deleted: prompt.is_deleted || false
             }))
         };
         
@@ -54,18 +56,22 @@ function downloadTemplate() {
             version: '1.0',
             prompts: [
                 {
+                    id: 'example-id-1',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
                     title: '示例提示词标题',
                     content: '这里是提示词的具体内容，请详细描述您的需求...',
                     category: '工作',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
+                    is_deleted: false
                 },
                 {
+                    id: 'example-id-2',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
                     title: '另一个示例',
                     content: '您可以添加更多的提示词条目...',
                     category: '学习',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
+                    is_deleted: false
                 }
             ]
         };
@@ -127,11 +133,13 @@ function importFromJSON(file) {
                     
                     // 创建提示词对象
                     const validPrompt = {
+                        id: prompt.id || '', // 如果有id则保留，否则在添加时会自动生成
                         title: prompt.title.trim(),
                         content: prompt.content.trim(),
                         category: (prompt.category || '未分类').trim(),
-                        createdAt: prompt.createdAt || new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
+                        created_at: prompt.created_at || prompt.createdAt || new Date().toISOString(),
+                        updated_at: prompt.updated_at || prompt.updatedAt || new Date().toISOString(),
+                        is_deleted: prompt.is_deleted || false
                     };
                     
                     validPrompts.push(validPrompt);

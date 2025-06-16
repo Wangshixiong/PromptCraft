@@ -1,0 +1,24 @@
+FR-1: 标准化数据模型
+描述: 为确保功能的稳定和未来扩展性，所有提示词数据需遵循一个标准化的、包含元数据的数据模型。
+实现要点:
+每条提示词（Prompt）记录必须是一个包含以下字段的JavaScript对象：
+id (String): 唯一标识符。
+created_at (String): 符合ISO 8601格式的创建时间戳。
+updated_at (String): 符合ISO 8601格式的最后更新时间戳。
+title (String): 标题。
+content (String): 内容。
+category (String): 分类。
+is_deleted (Boolean): 软删除标记，默认为 false。
+对项目中的静态默认提示词文件（如 assets/data/default-prompts.json）进行一次性手动更新，将其中的所有 id 值替换为预先生成的、固定的UUID v4值。
+此结构是应用内所有数据操作的基础。
+验收标准:
+代码中定义了清晰的、可复用的提示词对象结构。
+默认提示词文件中的所有记录都拥有一个固定的UUID id。
+FR-2: 唯一ID生成器
+描述: 应用需要一个可靠的机制来为每条新记录生成唯一的ID。
+实现要点:
+在 src/utils/ 中封装一个ID生成函数。
+该函数应生成 UUID v4 版本的ID。
+所有创建新提示词的地方都必须调用此函数来生成 id。
+验收标准:
+可以稳定地生成符合规范的UUID。

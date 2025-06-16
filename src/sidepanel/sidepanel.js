@@ -1,35 +1,16 @@
 // sidepanel.js
 
-// *****************************************************************************
-// * 指令：请在此处填入您的 Supabase 配置                  *
-// *****************************************************************************
-//                                                                             *
-// 1. 访问 https://app.supabase.com/ 登录并进入您的项目。                         *
-// 2. 在左侧菜单中，点击 "Project Settings" (齿轮图标)。                           *
-// 3. 选择 "API" 选项卡。                                                      *
-// 4. 在 "Project API keys" 部分，找到 "anon" "public" key 并复制它。            *
-// 5. 将复制的 key 粘贴到下面的 `supabaseKey` 变量中。                           *
-// 6. 在 "Configuration" 部分，找到您的项目 URL 并复制它。                       *
-// 7. 将复制的 URL 粘贴到下面的 `supabaseUrl` 变量中。                           *
-//                                                                             *
-// *****************************************************************************
-
-const supabaseUrl = 'https://uwgxhtrbixsdabjvuuaj.supabase.co'; // 您已填写的示例
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3Z3hodHJiaXhzZGFianZ1dWFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0NzQ0NzUsImV4cCI6MjA2NTA1MDQ3NX0.6R4t3Bxy6g-ajI1Fym-RWmZgIvlAGLxy6uV1wbTULN0'; // 您已填写的示例
-
-
-// -----------------------------------------------------------------------------
-// 请不要修改下面的代码
-// -----------------------------------------------------------------------------
-
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+/**
+ * PromptCraft - 本地提示词管理工具
+ * 版本: 0.5.0
+ * 描述: 纯本地存储的提示词管理扩展，无需登录，保护隐私
+ */
 
 // DOM 元素引用
 const loadingOverlay = document.getElementById('loadingOverlay');
-const authView = document.getElementById('authView');
+// 移除了认证视图相关的DOM引用
 const mainView = document.getElementById('mainView');
 const formView = document.getElementById('formView');
-const themeToggle = document.getElementById('themeToggle');
 const addPromptBtn = document.getElementById('addPromptBtn');
 const searchInput = document.getElementById('searchInput');
 const promptsContainer = document.getElementById('promptsContainer');
@@ -75,18 +56,19 @@ function applyTheme(mode) {
         document.body.classList.remove('dark-mode');
     }
     
-    // 更新图标 - 修复逻辑：浅色模式显示月亮（点击切换到深色），深色模式显示太阳（点击切换到浅色）
-    const icon = themeToggle.querySelector('i');
-    if (mode === 'auto') {
-        icon.className = 'fas fa-adjust';
-        themeToggle.title = '主题：跟随系统';
-    } else if (isDark) {
-        icon.className = 'fas fa-sun';
-        themeToggle.title = '主题：深色模式（点击切换到浅色）';
-    } else {
-        icon.className = 'fas fa-moon';
-        themeToggle.title = '主题：浅色模式（点击切换到深色）';
-    }
+    // 更新主题选择器状态
+    updateThemeSelector(mode);
+}
+
+// 更新主题选择器状态
+function updateThemeSelector(mode) {
+    const themeOptions = document.querySelectorAll('.theme-option');
+    themeOptions.forEach(option => {
+        option.classList.remove('active');
+        if (option.dataset.theme === mode) {
+            option.classList.add('active');
+        }
+    });
 }
 
 // --- 实用工具函数 ---
@@ -291,27 +273,26 @@ function unescapeHtml(text) {
 
 // --- 认证功能 ---
 
-// 登出处理（现在只是清除本地数据）
-async function handleLogout() {
+// 清除所有数据的处理函数
+async function clearAllData() {
+    const isConfirmed = await showCustomConfirm('您确定要清除所有提示词数据吗？此操作无法撤销。');
+    if (!isConfirmed) return;
+    
     safeShowLoading();
     
-    // 清除本地数据
-    await chrome.storage.local.remove(['prompts']);
-    currentUser = null;
-    allPrompts = [];
-    renderPrompts([]);
-    updateFilterButtons();
-    
-    // 重新初始化，这会创建新的虚拟用户和示例数据
-    await checkUserSession();
+    try {
+        // 使用数据服务清除本地数据
+        await dataService.clearAllPrompts();
+        allPrompts = [];
+        renderPrompts([]);
+        updateFilterButtons();
+        showToast('所有数据已清除', 'success');
+    } catch (error) {
+        console.error('清除数据失败:', error);
+        showToast('清除数据失败，请稍后再试', 'error');
+    }
     
     forceHideLoading();
-}
-
-async function checkUserSession() {
-    // 这个函数现在主要用于兼容性，实际初始化已在initializeApp中完成
-    console.log('checkUserSession: 用户会话已在initializeApp中处理');
-    return true;
 }
 
 
@@ -326,21 +307,26 @@ async function loadUserPrompts(skipLoading = false) {
     if (!skipLoading) safeShowLoading();
     
     try {
-        console.log('从chrome.storage.local加载提示词...');
+        console.log('使用数据服务加载提示词...');
         
-        // 从chrome.storage.local获取提示词数据
-        const result = await chrome.storage.local.get(['prompts', 'loadError', 'errorMessage']);
-        let data = result.prompts || [];
+        // 使用数据服务获取提示词数据
+        const data = await dataService.getAllPrompts();
         
         console.log('成功获取提示词数据，数量:', data.length);
         
         // 检查是否有加载错误
-        if (result.loadError) {
-            console.warn('检测到数据加载错误:', result.errorMessage);
-            showToast(result.errorMessage || '数据加载失败', 'warning');
+        const errorInfo = await dataService.getLoadError();
+        if (errorInfo.hasError) {
+            console.warn('检测到数据加载错误:', errorInfo.message);
+            showToast(errorInfo.message || '数据加载失败', 'warning');
         }
         
-        allPrompts = data;
+        // 按创建时间降序排序，新建的提示词在最上方
+        allPrompts = data.sort((a, b) => {
+            const timeA = new Date(a.created_at || a.createdAt || 0).getTime();
+            const timeB = new Date(b.created_at || b.createdAt || 0).getTime();
+            return timeB - timeA; // 降序排序，最新的在前面
+        });
         console.log('渲染提示词列表...');
         renderPrompts(allPrompts);
         updateFilterButtons();
@@ -381,45 +367,37 @@ async function savePrompt() {
     safeShowLoading();
     
     try {
-        // 从chrome.storage.local获取现有数据
-        const result = await chrome.storage.local.get(['prompts']);
-        let prompts = result.prompts || [];
-        
         const promptData = {
             user_id: currentUser.id,
             title,
             content,
-            category,
+            category
         };
         
         if (id) {
             // 更新现有提示词
-            const index = prompts.findIndex(p => p.id == id);
-            if (index !== -1) {
-                prompts[index] = { ...prompts[index], ...promptData };
-                console.log('更新提示词:', id);
-            } else {
-                console.error('未找到要更新的提示词:', id);
-                showToast('未找到要更新的提示词', 'error');
-                forceHideLoading();
-                return;
-            }
+            await dataService.updatePrompt(id, promptData);
+            console.log('更新提示词:', id);
         } else {
             // 添加新提示词
-            const newPrompt = {
-                id: Date.now(),
+            const newPrompt = await dataService.addPrompt({
                 ...promptData,
-                created_at: new Date().toISOString()
-            };
-            prompts.unshift(newPrompt); // 添加到开头
+                is_deleted: false
+            });
             console.log('添加新提示词:', newPrompt.id);
         }
         
-        // 保存到chrome.storage.local
-        await chrome.storage.local.set({ prompts: prompts });
         console.log('提示词保存成功');
         
-        await loadUserPrompts();
+        // 显示成功提示
+        if (id) {
+            showToast('提示词更新成功', 'success');
+        } else {
+            showToast('提示词添加成功', 'success');
+        }
+        
+        // 重新加载数据以确保数据同步
+        await loadUserPrompts(true);
         showView('mainView');
         
     } catch (error) {
@@ -438,25 +416,15 @@ async function deletePrompt(promptId) {
     safeShowLoading();
     
     try {
-        // 从chrome.storage.local获取现有数据
-        const result = await chrome.storage.local.get(['prompts']);
-        let prompts = result.prompts || [];
+        // 使用数据服务删除提示词
+        const success = await dataService.deletePrompt(promptId);
         
-        // 删除指定的提示词
-        const filteredPrompts = prompts.filter(p => p.id != promptId);
-        
-        if (filteredPrompts.length === prompts.length) {
-            console.error('未找到要删除的提示词:', promptId);
-            showToast('未找到要删除的提示词', 'error');
-        } else {
-            // 保存更新后的数据到chrome.storage.local
-            await chrome.storage.local.set({ prompts: filteredPrompts });
+        if (success) {
             console.log('提示词删除成功:', promptId);
+            showToast('删除成功', 'success');
             
-            // 更新内存中的数据并重新渲染
-            allPrompts = filteredPrompts;
-            renderPrompts(allPrompts);
-            updateFilterButtons();
+            // 重新加载数据以确保数据同步
+            await loadUserPrompts(true);
         }
         
     } catch (error) {
@@ -797,19 +765,19 @@ function addCardEventListeners() {
 function setupEventListeners() {
 
 
-    // 主题切换
-    themeToggle.addEventListener('click', () => {
-        // 循环切换：auto -> light -> dark -> auto
-        if (themeMode === 'auto') {
-            themeMode = 'light';
-        } else if (themeMode === 'light') {
-            themeMode = 'dark';
-        } else {
-            themeMode = 'auto';
+    // 主题选择器事件处理
+    document.addEventListener('click', (e) => {
+        const themeOption = e.target.closest('.theme-option');
+        if (themeOption) {
+            const selectedTheme = themeOption.dataset.theme;
+            if (selectedTheme !== themeMode) {
+                themeMode = selectedTheme;
+                applyTheme(themeMode);
+                dataService.setThemeMode(themeMode).catch(error => {
+                    console.error('保存主题模式失败:', error);
+                });
+            }
         }
-        
-        applyTheme(themeMode);
-        chrome.storage.local.set({ themeMode });
     });
 
     // 监听系统主题变化
@@ -920,6 +888,16 @@ function setupEventListeners() {
     fileInput.addEventListener('change', handleFileImport);
     
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        // 处理数据变更通知
+        if (message.type === 'DATA_CHANGED') {
+            console.log('收到数据变更通知，自动刷新界面');
+            // 重新加载提示词数据并更新界面
+            loadUserPrompts(false).catch(error => {
+                console.error('自动刷新界面失败:', error);
+            });
+            return;
+        }
+        
         if (message.type === 'ADD_FROM_CONTEXT_MENU' && message.data?.content) {
             console.log('收到右键菜单消息，内容:', message.data.content);
             
@@ -1059,8 +1037,7 @@ async function handleFileImport(event) {
         }
         
         // 获取现有提示词
-        const result = await chrome.storage.local.get(['prompts']);
-        let existingPrompts = result.prompts || [];
+        let existingPrompts = await dataService.getAllPrompts();
         
         // 处理重名提示词的更新策略
         let addedCount = 0;
@@ -1079,23 +1056,24 @@ async function handleFileImport(event) {
                     ...finalPrompts[existingIndex],
                     content: newPrompt.content,
                     category: newPrompt.category,
-                    updatedAt: new Date().toISOString()
+                    updated_at: new Date().toISOString()
                 };
                 updatedCount++;
             } else {
                 // 添加新提示词到开头
                 finalPrompts.unshift({
                     ...newPrompt,
-                    id: Date.now() + Math.random(),
+                    id: UUIDUtils.generateUUID(),
                     created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
+                    updated_at: new Date().toISOString(),
+                    is_deleted: false
                 });
                 addedCount++;
             }
         });
         
-        // 保存到chrome.storage.local
-        await chrome.storage.local.set({ prompts: finalPrompts });
+        // 使用数据服务保存
+        await dataService.setAllPrompts(finalPrompts);
         
         // 重新加载提示词列表
         await loadUserPrompts();
@@ -1150,9 +1128,9 @@ function safeShowLoading() {
     loadingTimeout = setTimeout(() => {
         console.log('Loading超时，强制隐藏');
         forceHideLoading();
-        // 如果没有用户登录，显示登录界面
+        // 如果没有用户设置，显示主界面
         if (!currentUser) {
-            showView('authView');
+            showView('mainView');
         }
     }, 10000);
 }
@@ -1180,15 +1158,14 @@ async function initializeApp() {
         };
         
         // 立即获取主题设置并应用
-        const { themeMode: savedThemeMode } = await chrome.storage.local.get('themeMode');
-        themeMode = savedThemeMode || 'auto';
+        themeMode = await dataService.getThemeMode();
         applyTheme(themeMode);
 
         // 设置事件监听器
         setupEventListeners();
         setupCategoryInput();
         
-        // 从chrome.storage.local获取数据后再渲染
+        // 使用数据服务获取数据后再渲染
         await loadUserPrompts(true); // 跳过loading显示，因为有骨架屏
         
     } catch (error) {

@@ -1,12 +1,17 @@
 // background.js
 
+// 导入UUID工具模块和数据服务模块
+importScripts('utils/uuid.js');
+importScripts('utils/data-service.js');
+
 // 从default-prompts.json加载默认提示词数据
 async function loadDefaultPromptsToMemory() {
     try {
         // 检查是否已经初始化过
-        const result = await chrome.storage.local.get(['prompts', 'promptcraft_has_data']);
-        if (result.promptcraft_has_data) {
-            console.log('PromptCraft: Already initialized, prompts count:', result.prompts?.length || 0);
+        const hasData = await dataService.hasData();
+        if (hasData) {
+            const prompts = await dataService.getAllPrompts();
+            console.log('PromptCraft: Already initialized, prompts count:', prompts.length);
             return;
         }
         
@@ -26,19 +31,19 @@ async function loadDefaultPromptsToMemory() {
         const defaultPrompts = await response.json();
         
         // 为每个提示词添加完整的数据结构
-        const processedPrompts = defaultPrompts.map((prompt, index) => ({
+        const processedPrompts = defaultPrompts.map((prompt) => ({
             ...prompt,
-            id: Date.now() + index,
+            id: prompt.id || UUIDUtils.generateUUID(), // 使用现有id或生成新的UUID
             user_id: 'local-user',
-            created_at: new Date().toISOString()
+            created_at: prompt.created_at || new Date().toISOString(),
+            updated_at: prompt.updated_at || new Date().toISOString(),
+            is_deleted: prompt.is_deleted || false
         }));
         
-        // 将处理后的数据保存到chrome.storage.local
-        await chrome.storage.local.set({ 
-            prompts: processedPrompts,
-            promptcraft_has_data: true,
-            themeMode: 'auto' // 默认主题设置
-        });
+        // 将处理后的数据保存到存储
+        await dataService.setAllPrompts(processedPrompts);
+        await dataService.setHasData(true);
+        await dataService.setThemeMode('auto'); // 默认主题设置
         
         console.log('PromptCraft: Default prompts loaded successfully, count:', processedPrompts.length);
         
@@ -49,13 +54,10 @@ async function loadDefaultPromptsToMemory() {
         console.error('PromptCraft: Error stack:', error.stack);
         
         // 如果加载失败，设置空数据但标记为已初始化
-        await chrome.storage.local.set({ 
-            prompts: [],
-            promptcraft_has_data: true,
-            loadError: true,
-            errorMessage: `加载默认提示词失败: ${error.message}`,
-            themeMode: 'auto'
-        });
+        await dataService.setAllPrompts([]);
+        await dataService.setHasData(true);
+        await dataService.setLoadError(true, `加载默认提示词失败: ${error.message}`);
+        await dataService.setThemeMode('auto');
         console.log('PromptCraft: Error state saved, extension will show empty list');
     }
 }
@@ -132,19 +134,26 @@ chrome.runtime.onStartup.addListener(async () => {
   // 监听来自content script的消息
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'getPrompts') {
-      // 从storage中获取提示词数据
-      chrome.storage.local.get(['prompts', 'loadError', 'errorMessage'], (result) => {
-        if (result.loadError) {
-          sendResponse({ 
-            prompts: [], 
-            loadError: true, 
-            errorMessage: result.errorMessage || '加载默认提示词失败' 
-          });
-        } else {
-          const prompts = result.prompts || [];
-          sendResponse({ prompts: prompts });
+      // 从数据服务中获取提示词数据
+      (async () => {
+        try {
+          const loadError = await dataService.getLoadError();
+        if (loadError.hasError) {
+            const errorMessage = loadError.message;
+            sendResponse({ 
+              prompts: [], 
+              loadError: true, 
+              errorMessage: errorMessage || '加载默认提示词失败' 
+            });
+          } else {
+            const prompts = await dataService.getAllPrompts();
+            sendResponse({ prompts: prompts });
+          }
+        } catch (error) {
+          console.error('Error getting prompts:', error);
+          sendResponse({ prompts: [], loadError: true, errorMessage: '获取提示词失败' });
         }
-      });
+      })();
       return true; // 保持消息通道开放以支持异步响应
     }
   });

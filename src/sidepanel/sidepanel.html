@@ -1105,6 +1105,66 @@
             font-size: 12px;
         }
 
+        /* 主题选择器样式 */
+        .theme-selector {
+            display: flex;
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 4px;
+            gap: 4px;
+            margin-bottom: 20px;
+        }
+
+        .dark-mode .theme-selector {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+        }
+
+        .theme-option {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+            background: transparent;
+            color: var(--text-light);
+            min-height: 40px;
+            gap: 8px;
+        }
+
+        .dark-mode .theme-option {
+            color: var(--text-dark);
+        }
+
+        .theme-option:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .theme-option.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .theme-option.active:hover {
+            background: var(--primary-dark);
+        }
+
+        .theme-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .theme-label {
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
         /* Toast 提示样式 */
         .toast-container {
             position: fixed;
@@ -1237,6 +1297,30 @@
             transform: scale(1.1);
         }
 
+        .data-storage-notice {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background-color: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-secondary-light);
+        }
+
+        .dark-mode .data-storage-notice {
+            background-color: var(--card-dark);
+            border-color: var(--border-dark);
+            color: var(--text-secondary-dark);
+        }
+
+        .data-storage-notice i {
+            color: var(--primary-color);
+            font-size: 14px;
+        }
+
         /* 移除原有的设置按钮样式，使用新的卡片样式 */
         .settings-buttons {
             display: block;
@@ -1253,14 +1337,7 @@
 </head>
 <body>
     <div class="sidebar">
-        <!-- 认证视图 (已隐藏) -->
-        <div class="view" id="authView" style="display: none;">
-            <div class="auth-container">
-                <div class="auth-icon"><i class="fas fa-magic-wand-sparkles"></i></div>
-                <h1 class="auth-title">Prompt管理助手</h1>
-                <p class="auth-description">本地版本，无需登录即可使用。</p>
-            </div>
-        </div>
+
 
         <!-- 主视图 -->
         <div class="view" id="mainView">
@@ -1270,7 +1347,6 @@
                     <div class="logo-text">Prompt管理助手</div>
                 </div>
                 <div class="controls">
-                    <button class="btn" id="themeToggle"><i class="fas fa-moon"></i></button>
                     <button class="btn" id="settingsBtn" title="设置"><i class="fas fa-cog"></i></button>
                 </div>
             </div>
@@ -1411,6 +1487,29 @@
             </div>
             <div class="settings-body">
                 <div class="settings-section">
+                    <h4>外观设置</h4>
+                    <div class="theme-selector">
+                        <div class="theme-option" data-theme="light">
+                            <div class="theme-icon">
+                                <i class="fas fa-sun"></i>
+                            </div>
+                            <span class="theme-label">浅色</span>
+                        </div>
+                        <div class="theme-option" data-theme="dark">
+                            <div class="theme-icon">
+                                <i class="fas fa-moon"></i>
+                            </div>
+                            <span class="theme-label">深色</span>
+                        </div>
+                        <div class="theme-option active" data-theme="auto">
+                            <div class="theme-icon">
+                                <i class="fas fa-desktop"></i>
+                            </div>
+                            <span class="theme-label">系统</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-section">
                     <h4>数据管理</h4>
                     <div class="data-management-grid">
                         <div class="data-card import" id="importBtn">
@@ -1426,6 +1525,10 @@
                             <div class="data-card-title">导出提示词</div>
                         </div>
                     </div>
+                    <div class="data-storage-notice">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>所有数据仅保存在本地设备</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1438,8 +1541,10 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- 关键改动：为脚本添加 defer 属性 -->
-    <script src="../../lib/supabase.min.js" defer></script>
-    <script src="../utils/json-utils.js" defer></script>
-    <script src="sidepanel.js" defer></script>
+
+    <script src="../utils/uuid.js" defer></script>
+<script src="../utils/data-service.js" defer></script>
+<script src="../utils/json-utils.js" defer></script>
+<script src="sidepanel.js" defer></script>
 </body>
 </html>
