@@ -13,7 +13,12 @@ async function loadDefaultPromptsToMemory() {
         console.log('PromptCraft: First time installation, loading default prompts...');
         
         // 从default-prompts.json文件加载默认数据
-        const response = await fetch(chrome.runtime.getURL('default-prompts.json'));
+        const fileUrl = chrome.runtime.getURL('assets/data/default-prompts.json');
+        console.log('PromptCraft: Attempting to fetch from URL:', fileUrl);
+        
+        const response = await fetch(fileUrl);
+        console.log('PromptCraft: Fetch response status:', response.status, response.statusText);
+        
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -39,6 +44,10 @@ async function loadDefaultPromptsToMemory() {
         
     } catch (error) {
         console.error('PromptCraft: Failed to load default prompts:', error);
+        console.error('PromptCraft: Error type:', error.constructor.name);
+        console.error('PromptCraft: Error message:', error.message);
+        console.error('PromptCraft: Error stack:', error.stack);
+        
         // 如果加载失败，设置空数据但标记为已初始化
         await chrome.storage.local.set({ 
             prompts: [],

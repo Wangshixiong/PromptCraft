@@ -15,15 +15,15 @@
       "https://*.supabase.co/*"
     ],
     "icons": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
     },
     "side_panel": {
-      "default_path": "sidepanel.html"
+      "default_path": "src/sidepanel/sidepanel.html"
     },
     "background": {
-      "service_worker": "background.js"
+      "service_worker": "src/background.js"
     },
     "action": {
       "default_title": "打开 Prompt管理助手"
@@ -40,14 +40,18 @@
   "content_scripts": [
         {
             "matches": ["<all_urls>"],
-            "js": ["content_script.js"],
+            "js": ["src/content_script.js"],
             "run_at": "document_end",
             "all_frames": true
         }
     ],
   "web_accessible_resources": [
     {
-      "resources": ["default-prompts.json"],
+      "resources": [
+        "assets/data/default-prompts.json",
+        "lib/supabase.min.js",
+        "src/utils/json-utils.js"
+      ],
       "matches": ["<all_urls>"]
     }
   ]

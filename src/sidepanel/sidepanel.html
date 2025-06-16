@@ -6,6 +6,7 @@
     <title>PromptCraft - 提示词管理工具</title>
     <!-- 样式部分保持不变，为节省空间已折叠 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="sidepanel.css">
     <style>
         :root {
             --primary-color: #6366f1;
@@ -744,13 +745,16 @@
         }
         
         .view {
-            display: none !important;
+            display: none;
             height: 100%;
             flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.2s ease;
         }
 
         .view.active {
-            display: flex !important;
+            display: flex;
+            opacity: 1;
         }
 
         @keyframes fadeIn {
@@ -1434,8 +1438,8 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- 关键改动：为脚本添加 defer 属性 -->
-    <script src="lib/supabase.js" defer></script>
-    <script src="lib/json-utils.js" defer></script>
+    <script src="../../lib/supabase.min.js" defer></script>
+    <script src="../utils/json-utils.js" defer></script>
     <script src="sidepanel.js" defer></script>
 </body>
 </html>

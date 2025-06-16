@@ -246,16 +246,23 @@ function showView(viewId) {
         targetView.classList.add('active');
         currentView = viewId;
         
+        // 强制重绘以确保样式生效
+        targetView.offsetHeight;
+        
         // 检查视图是否实际显示
         setTimeout(() => {
-            const isVisible = targetView.offsetWidth > 0 && targetView.offsetHeight > 0;
-            console.log(`视图 ${viewId} 是否可见: ${isVisible}`);
+            const computedStyle = window.getComputedStyle(targetView);
+            const isVisible = computedStyle.display !== 'none' && targetView.offsetWidth > 0 && targetView.offsetHeight > 0;
+            console.log(`视图 ${viewId} 显示状态: display=${computedStyle.display}, visible=${isVisible}`);
             if (!isVisible) {
-                console.warn(`警告：视图 ${viewId} 可能未正确显示，确保active类已添加`);
-                // 确保active类已正确添加
-                targetView.classList.add('active');
+                console.warn(`警告：视图 ${viewId} 可能未正确显示，尝试重新应用样式`);
+                // 重新应用active类
+                targetView.classList.remove('active');
+                setTimeout(() => {
+                    targetView.classList.add('active');
+                }, 10);
             }
-        }, 100);
+        }, 150);
         
         console.log(`成功切换到视图: ${viewId}`);
         return true;
