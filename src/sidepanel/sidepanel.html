@@ -182,14 +182,18 @@
 
         .filter-container {
             display: flex;
+            flex-wrap: wrap;
             gap: 8px;
             margin-bottom: 16px;
-            overflow-x: auto;
-            padding-bottom: 4px;
+            max-height: 120px; /* 增加高度以容纳更多分类 */
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 4px 0;
         }
 
+        /* 分类容器滚动条样式 - 与提示词内容保持一致 */
         .filter-container::-webkit-scrollbar {
-            height: 4px;
+            width: 8px;
         }
 
         .filter-container::-webkit-scrollbar-track {
@@ -197,8 +201,111 @@
         }
 
         .filter-container::-webkit-scrollbar-thumb {
-            background: var(--primary-light);
-            border-radius: 2px;
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 4px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        .filter-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.8);
+            background-clip: content-box;
+        }
+
+        /* 自定义确认弹窗样式 */
+        .confirm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .confirm-modal {
+            background: var(--background-light);
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 400px;
+            width: 90%;
+            margin: 20px;
+            border: 1px solid var(--border-light);
+        }
+
+        .dark-mode .confirm-modal {
+            background: var(--background-dark);
+            border-color: var(--border-dark);
+        }
+
+        .confirm-header {
+            padding: 20px 20px 0 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .confirm-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .confirm-content {
+            padding: 16px 20px;
+        }
+
+        .confirm-content p {
+            margin: 0;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            white-space: pre-line;
+        }
+
+        .confirm-actions {
+            padding: 0 20px 20px 20px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .confirm-cancel-btn, .confirm-ok-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            min-width: 80px;
+        }
+
+        .confirm-cancel-btn {
+            background: var(--card-light);
+            color: var(--text-light);
+            border: 1px solid var(--border-light);
+        }
+
+        .dark-mode .confirm-cancel-btn {
+            background: var(--card-dark);
+            color: var(--text-dark);
+            border-color: var(--border-dark);
+        }
+
+        .confirm-cancel-btn:hover {
+            background: var(--bg-hover);
+        }
+
+        .confirm-ok-btn {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .confirm-ok-btn:hover {
+            background: var(--primary-dark);
         }
 
         .filter-btn {
@@ -663,7 +770,34 @@
 
         .form-textarea {
             min-height: 120px;
-            resize: vertical;
+            max-height: calc(100vh - 500px); /* 最大高度为视窗高度减去其他元素空间，确保保存按钮不超出侧边栏 */
+            resize: none; /* 禁用手动调整大小 */
+            overflow-y: auto; /* 超出时显示垂直滚动条 */
+            transition: height 0.2s ease; /* 高度变化时的平滑过渡 */
+        }
+
+        /* 自定义textarea滚动条样式 */
+        .form-textarea::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .form-textarea::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .form-textarea::-webkit-scrollbar-thumb {
+            background: var(--primary-light);
+            border-radius: 3px;
+            opacity: 0.6;
+        }
+
+        .form-textarea::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-color);
+            opacity: 0.8;
+        }
+
+        .dark-mode .form-textarea::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
         }
 
         .form-actions {
@@ -1551,6 +1685,23 @@
 
     <!-- Toast 提示容器 -->
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 自定义确认弹窗 -->
+    <div class="confirm-overlay" id="confirmOverlay" style="display: none;">
+        <div class="confirm-modal">
+            <div class="confirm-header">
+                <i class="fas fa-exclamation-triangle" style="color: #f59e0b; margin-right: 8px;"></i>
+                <h3 id="confirmTitle">确认操作</h3>
+            </div>
+            <div class="confirm-content">
+                <p id="confirmMessage">您确定要执行此操作吗？</p>
+            </div>
+            <div class="confirm-actions">
+                <button class="confirm-cancel-btn" id="confirmCancelBtn">取消</button>
+                <button class="confirm-ok-btn" id="confirmOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
 
     <!-- 关键改动：为脚本添加 defer 属性 -->
 

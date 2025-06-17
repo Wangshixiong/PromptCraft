@@ -33,12 +33,41 @@ const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
 const fileInput = document.getElementById('fileInput');
 
 
+/**
+ * @brief 自动调整textarea高度以适应内容
+ * @param {HTMLTextAreaElement} textarea - 需要调整高度的textarea元素
+ */
+function autoResizeTextarea(textarea) {
+    // 重置高度为最小值，以便正确计算scrollHeight
+    textarea.style.height = '120px';
+    
+    // 计算内容所需的高度
+    const scrollHeight = textarea.scrollHeight;
+    const maxHeight = parseInt(getComputedStyle(textarea).maxHeight);
+    
+    // 设置新高度，不超过最大高度
+    if (scrollHeight <= maxHeight) {
+        textarea.style.height = scrollHeight + 'px';
+    } else {
+        textarea.style.height = maxHeight + 'px';
+    }
+}
+
 // 全局状态
 let allPrompts = [];
 let currentUser = null;
 let themeMode = 'auto';
 let currentView = null;
 let isProcessingContextMenu = false; // 标记是否正在处理右键菜单消息
+
+// 统一的排序函数：按创建时间降序排序，最新的在前面
+function sortPromptsByCreatedTime(prompts) {
+    return prompts.sort((a, b) => {
+        const timeA = new Date(a.created_at || a.createdAt || 0).getTime();
+        const timeB = new Date(b.created_at || b.createdAt || 0).getTime();
+        return timeB - timeA; // 降序排序，最新的在前面
+    });
+}
 
 // 检测系统主题
 function getSystemTheme() {
@@ -76,89 +105,151 @@ function updateThemeSelector(mode) {
 const showLoading = () => loadingOverlay.style.display = 'flex';
 const hideLoading = () => loadingOverlay.style.display = 'none';
 
+/**
+ * 智能修复右键菜单文本格式
+ * 解决从网页选中文本时换行符丢失的问题，支持多种文本格式
+ * @param {string} text - 原始文本
+ * @returns {string} - 格式修复后的文本
+ */
+function formatContextMenuText(text) {
+    if (!text || typeof text !== 'string') {
+        return text;
+    }
+    
+    let formattedText = text;
+    
+    // 1. 处理HTML实体字符
+    const htmlEntities = {
+        '&nbsp;': ' ',
+        '&amp;': '&',
+        '&lt;': '<',
+        '&gt;': '>',
+        '&quot;': '"',
+        '&#39;': "'",
+        '&hellip;': '...',
+        '&mdash;': '—',
+        '&ndash;': '–'
+    };
+    
+    Object.keys(htmlEntities).forEach(entity => {
+        formattedText = formattedText.replace(new RegExp(entity, 'g'), htmlEntities[entity]);
+    });
+    
+    // 2. 检测并处理Markdown格式
+    const hasMarkdown = /\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|#{1,6}\s/.test(formattedText);
+    
+    if (hasMarkdown) {
+        // Markdown格式处理
+        formattedText = formattedText.replace(/(\*\*[^*]+\*\*)\s+/g, '$1\n\n');
+        formattedText = formattedText.replace(/(\*\*[^*]+：\*\*)\s+/g, '$1\n\n');
+        formattedText = formattedText.replace(/(\*\*[^*]+:\*\*)\s+/g, '$1\n\n');
+        formattedText = formattedText.replace(/\s+(\*\s+|\-\s+|\d+\.\s+)/g, '\n$1');
+    }
+    
+    // 3. 智能段落分割 - 基于标点符号和语义
+    // 处理中文标点后的段落分割
+    formattedText = formattedText.replace(/([。！？])\s*([^\s。！？])/g, '$1\n\n$2');
+    
+    // 处理英文句号后的段落分割（大写字母开头）
+    formattedText = formattedText.replace(/([.!?])\s+([A-Z][a-z])/g, '$1\n\n$2');
+    
+    // 处理冒号后的内容（通常是解释或列表）
+    formattedText = formattedText.replace(/([：:])\s*([^\s：:])/g, '$1\n\n$2');
+    
+    // 4. 处理列表项（支持多种列表格式）
+    // 数字列表：1. 2. 3. 或 1) 2) 3)
+    formattedText = formattedText.replace(/\s+(\d+[.).]\s+)/g, '\n$1');
+    
+    // 符号列表：* - • ○ ▪ ▫
+    formattedText = formattedText.replace(/\s+([*\-•○▪▫]\s+)/g, '\n$1');
+    
+    // 5. 处理特殊格式标识
+    // 处理括号内的标注
+    formattedText = formattedText.replace(/\s+(\([^)]+\))\s*/g, ' $1\n\n');
+    
+    // 处理引用格式
+    formattedText = formattedText.replace(/\s+(>\s+)/g, '\n$1');
+    
+    // 6. 智能检测段落边界
+    // 检测可能的段落标题（全大写、数字编号等）
+    formattedText = formattedText.replace(/\s+([A-Z][A-Z\s]{2,}[A-Z])\s+/g, '\n\n$1\n\n');
+    
+    // 检测编号标题（如：第一章、Chapter 1等）
+    formattedText = formattedText.replace(/\s+(第[一二三四五六七八九十\d]+[章节部分])\s+/g, '\n\n$1\n\n');
+    formattedText = formattedText.replace(/\s+(Chapter\s+\d+|Section\s+\d+)\s+/gi, '\n\n$1\n\n');
+    
+    // 7. 处理特殊的网页文本模式
+    // 处理可能的表格数据（制表符分隔）
+    formattedText = formattedText.replace(/\t+/g, ' | ');
+    
+    // 处理连续的空格（可能来自网页布局）
+    formattedText = formattedText.replace(/[ \u00A0]{3,}/g, '\n\n');
+    
+    // 8. 清理和规范化
+    // 清理多余的空格
+    formattedText = formattedText.replace(/[ \t]+/g, ' ');
+    
+    // 规范化换行符（最多保留两个连续换行）
+    formattedText = formattedText.replace(/\n{3,}/g, '\n\n');
+    
+    // 清理行首行尾空格
+    formattedText = formattedText.split('\n').map(line => line.trim()).join('\n');
+    
+    // 去除开头和结尾的空白字符
+    formattedText = formattedText.trim();
+    
+    // 9. 最后的智能优化
+    // 如果文本很短且没有明显的段落结构，保持原样
+    if (formattedText.length < 100 && !formattedText.includes('\n\n')) {
+        return text.trim();
+    }
+    
+    return formattedText;
+}
+
 // 自定义确认弹窗
-function showCustomConfirm(message) {
+function showCustomConfirm(message, title = '确认操作') {
     return new Promise((resolve) => {
-        // 创建弹窗容器
-        const overlay = document.createElement('div');
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-        `;
+        const overlay = document.getElementById('confirmOverlay');
+        const titleElement = document.getElementById('confirmTitle');
+        const messageElement = document.getElementById('confirmMessage');
+        const cancelBtn = document.getElementById('confirmCancelBtn');
+        const okBtn = document.getElementById('confirmOkBtn');
         
-        const modal = document.createElement('div');
-        modal.style.cssText = `
-            background: var(--background-light);
-            border-radius: 12px;
-            padding: 24px;
-            max-width: 300px;
-            width: 90%;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            color: var(--text-light);
-        `;
-        
-        // 检查是否为暗色模式
-        if (document.body.classList.contains('dark-mode')) {
-            modal.style.background = 'var(--background-dark)';
-            modal.style.color = 'var(--text-dark)';
+        if (!overlay || !titleElement || !messageElement || !cancelBtn || !okBtn) {
+            console.error('确认弹窗元素未找到');
+            resolve(false);
+            return;
         }
         
-        const isDarkMode = document.body.classList.contains('dark-mode');
-        const cancelBtnColor = isDarkMode ? 'white' : 'var(--text-light)';
-        const cancelBorderColor = isDarkMode ? 'var(--border-dark)' : 'var(--border-light)';
+        // 设置内容
+        titleElement.textContent = title;
+        messageElement.textContent = message;
         
-        modal.innerHTML = `
-            <div style="margin-bottom: 20px; font-size: 16px; line-height: 1.5;">${message}</div>
-            <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                <button id="cancelBtn" style="
-                    padding: 8px 16px;
-                    border: 1px solid ${cancelBorderColor};
-                    background: transparent;
-                    color: ${cancelBtnColor};
-                    border-radius: 6px;
-                    cursor: pointer;
-                    font-size: 14px;
-                ">取消</button>
-                <button id="confirmBtn" style="
-                    padding: 8px 16px;
-                    border: none;
-                    background: var(--danger);
-                    color: white;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    font-size: 14px;
-                ">确定</button>
-            </div>
-        `;
+        // 显示弹窗
+        overlay.style.display = 'flex';
         
-        overlay.appendChild(modal);
-        document.body.appendChild(overlay);
+        // 清除之前的事件监听器
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        const newOkBtn = okBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        okBtn.parentNode.replaceChild(newOkBtn, okBtn);
         
-        // 事件监听
-        modal.querySelector('#confirmBtn').onclick = () => {
-            // document.body.removeChild(overlay);
-            overlay && overlay.remove()
+        // 添加事件监听器
+        newOkBtn.onclick = () => {
+            overlay.style.display = 'none';
             resolve(true);
         };
         
-        modal.querySelector('#cancelBtn').onclick = () => {
-            // document.body.removeChild(overlay);
-            overlay && overlay.remove()
+        newCancelBtn.onclick = () => {
+            overlay.style.display = 'none';
             resolve(false);
         };
         
+        // 点击遮罩层关闭
         overlay.onclick = (e) => {
             if (e.target === overlay) {
-                // document.body.removeChild(overlay);
-                overlay && overlay.remove()
+                overlay.style.display = 'none';
                 resolve(false);
             }
         };
@@ -322,11 +413,7 @@ async function loadUserPrompts(skipLoading = false) {
         }
         
         // 按创建时间降序排序，新建的提示词在最上方
-        allPrompts = data.sort((a, b) => {
-            const timeA = new Date(a.created_at || a.createdAt || 0).getTime();
-            const timeB = new Date(b.created_at || b.createdAt || 0).getTime();
-            return timeB - timeA; // 降序排序，最新的在前面
-        });
+        allPrompts = sortPromptsByCreatedTime(data);
         console.log('渲染提示词列表...');
         renderPrompts(allPrompts);
         updateFilterButtons();
@@ -733,6 +820,8 @@ function addCardEventListeners() {
                 promptCategoryInput.style.display = 'block';
                 formTitle.textContent = '编辑提示词';
                 showView('formView');
+                // 调整textarea高度以适应内容
+                autoResizeTextarea(promptContentInput);
             }
         });
     });
@@ -787,7 +876,8 @@ function setupEventListeners() {
         }
     });
     
-    addPromptBtn.addEventListener('click', () => {
+    // 重置表单为新建状态
+    function resetForm() {
         promptIdInput.value = '';
         promptTitleInput.value = '';
         promptContentInput.value = '';
@@ -796,6 +886,12 @@ function setupEventListeners() {
         promptCategorySelect.style.display = 'none';
         promptCategoryInput.style.display = 'block';
         formTitle.textContent = '添加新提示词';
+        // 重置textarea高度
+        autoResizeTextarea(promptContentInput);
+    }
+
+    addPromptBtn.addEventListener('click', () => {
+        resetForm();
         showView('formView');
     });
 
@@ -832,6 +928,7 @@ function setupEventListeners() {
     
     // 字符计数功能
     const characterCountElement = document.getElementById('characterCount');
+    
     promptContentInput.addEventListener('input', () => {
         const currentLength = promptContentInput.value.length;
         characterCountElement.textContent = `${currentLength} / 10000`;
@@ -844,7 +941,13 @@ function setupEventListeners() {
         } else {
             characterCountElement.style.color = '#64748b'; // 默认灰色
         }
+        
+        // 自动调整textarea高度
+        autoResizeTextarea(promptContentInput);
     });
+    
+    // 页面加载时也调整一次高度（用于编辑现有提示词的情况）
+    autoResizeTextarea(promptContentInput);
     
     // 初始化字符计数显示
     const updateCharacterCount = () => {
@@ -905,37 +1008,68 @@ function setupEventListeners() {
             isProcessingContextMenu = true;
             
             // 等待应用完全初始化后再处理
-            const waitForInitialization = () => {
+            const waitForInitialization = async () => {
                 // 检查必要的元素是否存在
                 if (currentUser && addPromptBtn && promptContentInput) {
                     console.log('应用已初始化完成，开始处理右键添加提示词');
                     
+                 // 检查是否正在编辑现有提示词
+                 const isEditing = promptIdInput.value && promptIdInput.value.trim() !== '';
+                 
                  if (currentView !== 'formView') {
+                     // 不在表单视图，直接切换并填充
                      showView('formView');
                      // 使用 requestAnimationFrame 确保 DOM 更新后再填充
                      requestAnimationFrame(() => {
-                         promptContentInput.value = message.data.content;
+                         // 确保是新建状态
+                         resetForm();
+                         promptContentInput.value = formatContextMenuText(message.data.content);
                          promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
                          console.log('通过 rAF 切换到添加界面并填充内容');
                          
                          // 处理完成后重置标志
                          setTimeout(() => {
                              isProcessingContextMenu = false;
-                         }, 1000); // 1秒后重置标志，确保不会影响后续操作
+                         }, 1000);
                          
                          sendResponse({ status: "success", message: "Content received and form populated via rAF after view switch." });
                      });
+                 } else if (isEditing) {
+                     // 正在编辑状态，询问用户是否要放弃当前编辑
+                     const userConfirm = await showCustomConfirm('💡 是否要放弃当前编辑并创建新的提示词？');
+                     if (userConfirm) {
+                         requestAnimationFrame(() => {
+                             // 重置表单为新建状态
+                             resetForm();
+                             promptContentInput.value = formatContextMenuText(message.data.content);
+                             promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
+                             console.log('用户确认放弃编辑，创建新提示词');
+                             
+                             setTimeout(() => {
+                                 isProcessingContextMenu = false;
+                             }, 1000);
+                             
+                             sendResponse({ status: "success", message: "User confirmed to abandon edit and create new prompt." });
+                         });
+                     } else {
+                         console.log('用户取消了右键添加操作');
+                         setTimeout(() => {
+                             isProcessingContextMenu = false;
+                         }, 100);
+                         sendResponse({ status: "cancelled", message: "User cancelled the operation." });
+                     }
                  } else {
-                     // 如果已经是 formView，也使用 rAF 确保一致性并处理可能的快速切换场景
+                     // 在表单视图但不是编辑状态，直接填充
                      requestAnimationFrame(() => {
-                         promptContentInput.value = message.data.content;
+                         // 确保是新建状态
+                         resetForm();
+                         promptContentInput.value = formatContextMenuText(message.data.content);
                          promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
                          console.log('已在添加界面，通过 rAF 填充内容');
                          
-                         // 处理完成后重置标志
                          setTimeout(() => {
                              isProcessingContextMenu = false;
-                         }, 1000); // 1秒后重置标志，确保不会影响后续操作
+                         }, 1000);
                          
                          sendResponse({ status: "success", message: "Content received and form populated via rAF in existing view." });
                      });
@@ -949,6 +1083,8 @@ function setupEventListeners() {
             
             // 开始等待初始化完成
             waitForInitialization();
+            
+
         }
         return true; 
     });

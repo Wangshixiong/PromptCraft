@@ -459,7 +459,9 @@ html body #promptcraft-quick-invoke-container .promptcraft-help-keys { display: 
         // 监听来自background的消息
         if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
             chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-                if (message.action === 'promptsUpdated') {
+                // 监听数据变更通知，保持与数据服务的消息类型一致
+                if (message.type === 'DATA_CHANGED') {
+                    console.log('PromptCraft: 收到数据变更通知，重新加载提示词');
                     loadPrompts();
                 }
             });
@@ -1380,6 +1382,15 @@ html body #promptcraft-quick-invoke-container .promptcraft-help-keys { display: 
         }
     }
 
+    // 统一的排序函数：按创建时间降序排序，最新的在前面
+    function sortPromptsByCreatedTime(prompts) {
+        return prompts.sort((a, b) => {
+            const timeA = new Date(a.created_at || a.createdAt || 0).getTime();
+            const timeB = new Date(b.created_at || b.createdAt || 0).getTime();
+            return timeB - timeA; // 降序排序，最新的在前面
+        });
+    }
+
     // 应用所有筛选条件
     function applyFilters() {
         let filtered = [...state.prompts];
@@ -1398,6 +1409,9 @@ html body #promptcraft-quick-invoke-container .promptcraft-help-keys { display: 
                 (prompt.category && prompt.category.toLowerCase().includes(term))
             );
         }
+
+        // 按创建时间降序排序，确保与侧边栏显示顺序一致
+        filtered = sortPromptsByCreatedTime(filtered);
 
         state.filteredPrompts = filtered;
         state.selectedIndex = 0;
