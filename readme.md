@@ -438,7 +438,7 @@ SOFTWARE.
 
 **💬 有问题或建议？欢迎提交Issue或Pull Request**
 
-**📧 联系我们: [wangwnehua0205@gmail.com](mailto:wangwnehua0205@gmail.com)**
+**📧 联系我们: [wenhua0205@163.com](mailto:wenhua0205@163.com)**
 
 </div>
 
