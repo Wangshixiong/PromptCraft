@@ -1228,8 +1228,15 @@
             color: var(--success);
         }
 
-        /* 数据管理区域重新设计 - 三个按钮一行排列 */
+        /* 数据管理区域重新设计 - 与外观设置协调统一 */
         .data-management-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* 数据管理行布局 - 与主题选择器高度协调 */
+        .data-management-row {
             display: flex;
             gap: 8px;
         }
@@ -1237,19 +1244,19 @@
         .data-card {
             background: var(--card-light);
             border: 1px solid var(--border-light);
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 12px 8px;
             cursor: pointer;
             transition: var(--transition);
             text-align: center;
             position: relative;
             overflow: hidden;
-            flex: 1;
-            min-height: 75px;
+            min-height: 72px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            flex: 1;
         }
 
         .dark-mode .data-card {
@@ -1258,8 +1265,8 @@
         }
 
         .data-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
             border-color: var(--primary-color);
         }
 
@@ -1282,32 +1289,33 @@
         }
 
         .data-card-icon {
-            font-size: 18px;
-            margin-bottom: 4px;
+            font-size: 20px;
+            margin-bottom: 6px;
             display: block;
-            transition: transform 0.2s ease;
+            transition: transform 0.3s ease;
         }
 
         .data-card-title {
-            font-size: 11px;
-            font-weight: 500;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 0;
             line-height: 1.2;
         }
 
         .data-card:hover .data-card-icon {
-            transform: scale(1.1);
+            transform: scale(1.08);
         }
 
         .data-storage-notice {
-            margin-top: 16px;
-            padding: 12px 16px;
+            margin-top: 12px;
+            padding: 10px 12px;
             background-color: var(--card-light);
             border: 1px solid var(--border-light);
             border-radius: 8px;
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-secondary-light);
         }
 
@@ -1319,7 +1327,7 @@
 
         .data-storage-notice i {
             color: var(--primary-color);
-            font-size: 14px;
+            font-size: 13px;
         }
 
         /* 移除原有的设置按钮样式，使用新的卡片样式 */
@@ -1513,17 +1521,20 @@
                 <div class="settings-section">
                     <h4>数据管理</h4>
                     <div class="data-management-grid">
-                        <div class="data-card import" id="importBtn">
-                            <i class="fas fa-file-import data-card-icon"></i>
-                            <div class="data-card-title">导入提示词</div>
-                        </div>
-                        <div class="data-card template" id="downloadTemplateBtn">
-                            <i class="fas fa-download data-card-icon"></i>
-                            <div class="data-card-title">下载模板</div>
-                        </div>
-                        <div class="data-card export" id="exportBtn">
-                            <i class="fas fa-file-export data-card-icon"></i>
-                            <div class="data-card-title">导出提示词</div>
+                        <!-- 单行布局：导入、下载模板、导出 -->
+                        <div class="data-management-row">
+                            <div class="data-card import" id="importBtn">
+                                <i class="fas fa-file-import data-card-icon"></i>
+                                <div class="data-card-title">导入提示词</div>
+                            </div>
+                            <div class="data-card template" id="downloadTemplateBtn">
+                                <i class="fas fa-download data-card-icon"></i>
+                                <div class="data-card-title">下载模板</div>
+                            </div>
+                            <div class="data-card export" id="exportBtn">
+                                <i class="fas fa-file-export data-card-icon"></i>
+                                <div class="data-card-title">导出提示词</div>
+                            </div>
                         </div>
                     </div>
                     <div class="data-storage-notice">

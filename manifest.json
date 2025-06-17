@@ -1,11 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Prompt管理助手",
-<<<<<<< HEAD
-    "version": "0.1.4",
-=======
     "version": "0.5.1",
->>>>>>> chonggoujiegou
     "description": "一个安全、可靠、可跨设备同步的个人提示词管理工具。",
     "permissions": [
     "storage",
