@@ -1228,25 +1228,28 @@
             color: var(--success);
         }
 
-        /* 数据管理区域重新设计 */
+        /* 数据管理区域重新设计 - 三个按钮一行排列 */
         .data-management-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: auto auto;
-            gap: 12px;
+            display: flex;
+            gap: 8px;
         }
 
         .data-card {
             background: var(--card-light);
             border: 1px solid var(--border-light);
-            border-radius: 12px;
-            padding: 12px;
+            border-radius: 10px;
+            padding: 12px 8px;
             cursor: pointer;
             transition: var(--transition);
             text-align: center;
             position: relative;
             overflow: hidden;
-            min-height: 80px;
+            flex: 1;
+            min-height: 75px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .dark-mode .data-card {
@@ -1256,7 +1259,7 @@
 
         .data-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
             border-color: var(--primary-color);
         }
 
@@ -1273,25 +1276,23 @@
         }
 
         .data-card.export {
-            grid-column: 1 / -1;
             background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
             color: white;
             border: none;
         }
 
         .data-card-icon {
-            font-size: 24px;
-            margin-bottom: 8px;
+            font-size: 18px;
+            margin-bottom: 4px;
             display: block;
+            transition: transform 0.2s ease;
         }
 
         .data-card-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 4px;
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 1.2;
         }
-
-
 
         .data-card:hover .data-card-icon {
             transform: scale(1.1);
