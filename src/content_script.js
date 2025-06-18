@@ -21,6 +21,9 @@
         style.id = 'promptcraft-quick-invoke-styles';
         // 在iFrame中确保样式优先级
         style.setAttribute('data-promptcraft', 'true');
+        
+        // 获取并应用主题
+        applyThemeToStyles(style);
         style.textContent = `
 /* =================================================================== */
 /* == PromptCraft UI - 最终优化版CSS（解决优先级、布局和颜色问题） == */
@@ -47,6 +50,7 @@ html body #promptcraft-quick-invoke-container {
     --border-light: #e5e7eb;
     --border-dark: #4b5563;
     --hover-light: #f3f4f6;
+    --hover-dark: #374151;
     --selected-light: #eef2ff; /* 浅色模式选中色 - 淡靛蓝 */
     --selected-dark: var(--primary-color); /* 深色模式选中色 - 统一使用主色调 */
     --shadow-light: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
@@ -79,14 +83,12 @@ html body #promptcraft-quick-invoke-container {
     padding: 0 12px; /* 设置主容器的左右内边距为12px */
 }
 
-/* 深色模式总容器 */
-@media (prefers-color-scheme: dark) {
-    html body #promptcraft-quick-invoke-container {
-        background: rgba(31, 41, 55, 0.85);
-        border-color: var(--border-dark);
-        color: var(--text-dark);
-        box-shadow: var(--shadow-dark);
-    }
+/* 深色模式总容器 - 通过data-theme属性控制 */
+html body #promptcraft-quick-invoke-container[data-theme="dark"] {
+    background: rgba(31, 41, 55, 0.85);
+    border-color: var(--border-dark);
+    color: var(--text-dark);
+    box-shadow: var(--shadow-dark);
 }
 
 /* 动画 */
@@ -100,11 +102,9 @@ html body #promptcraft-quick-invoke-container .promptcraft-category-filter {
     background: transparent;
     flex-shrink: 0;
 }
-@media (prefers-color-scheme: dark) {
-    html body #promptcraft-quick-invoke-container .promptcraft-search-container,
-    html body #promptcraft-quick-invoke-container .promptcraft-category-filter {
-        border-bottom-color: var(--border-dark);
-    }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-search-container,
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-category-filter {
+    border-bottom-color: var(--border-dark);
 }
 
 /* 搜索输入框 */
@@ -119,12 +119,10 @@ html body #promptcraft-quick-invoke-container .promptcraft-search-input {
     outline: none;
     box-shadow: none;
 }
-@media (prefers-color-scheme: dark) {
-    html body #promptcraft-quick-invoke-container .promptcraft-search-input {
-        background: var(--card-dark);
-        border-color: var(--border-dark);
-        color: var(--text-dark);
-    }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-search-input {
+    background: var(--card-dark);
+    border-color: var(--border-dark);
+    color: var(--text-dark);
 }
 
 /* 分类标签 */
@@ -143,17 +141,15 @@ html body #promptcraft-quick-invoke-container .promptcraft-category-tab.active {
     border-color: var(--primary-color);
     font-weight: 600;
 }
-@media (prefers-color-scheme: dark) {
-    html body #promptcraft-quick-invoke-container .promptcraft-category-tab {
-        background: var(--card-dark);
-        border-color: var(--border-dark);
-        color: var(--text-secondary-dark);
-    }
-    html body #promptcraft-quick-invoke-container .promptcraft-category-tab.active {
-        background: var(--primary-light);
-        color: var(--background-dark);
-        border-color: var(--primary-light);
-    }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-category-tab {
+    background: var(--card-dark);
+    border-color: var(--border-dark);
+    color: #ffffff;
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-category-tab.active {
+    background: var(--primary-light);
+    color: var(--background-dark);
+    border-color: var(--primary-light);
 }
 
 /* --- 核心修复：列表布局问题 --- */
@@ -189,24 +185,22 @@ html body #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected 
     color: var(--primary-dark);
 }
 
-/* 深色模式 */
-@media (prefers-color-scheme: dark) {
-    html body #promptcraft-quick-invoke-container .promptcraft-prompt-item:hover {
-        background-color: var(--hover-dark);
-    }
-    html body #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected {
-        background-color: var(--selected-dark);
-        border-color: var(--primary-light);
-    }
-    html body #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected .promptcraft-prompt-title,
-    html body #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected .promptcraft-prompt-preview,
-    html body #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected .promptcraft-prompt-category .category {
-        color: white;
-    }
-    html body #promptcraft-quick-invoke-container .promptcraft-prompt-item.selected .promptcraft-prompt-category .category {
-        background-color: rgba(255,255,255,0.1);
-        border-color: rgba(255,255,255,0.2);
-    }
+/* 深色模式 - 通过data-theme属性控制 */
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-item:hover {
+    background-color: var(--hover-dark);
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-item.selected {
+    background-color: var(--selected-dark);
+    border-color: var(--primary-light);
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-item.selected .promptcraft-prompt-title,
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-item.selected .promptcraft-prompt-preview,
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-item.selected .promptcraft-prompt-category .category {
+    color: white;
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-item.selected .promptcraft-prompt-category .category {
+    background-color: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.2);
 }
 
 /* 卡片内部元素样式 */
@@ -215,10 +209,8 @@ html body #promptcraft-quick-invoke-container .promptcraft-prompt-title { font-w
 html body #promptcraft-quick-invoke-container .promptcraft-prompt-preview { font-size: 13px; color: var(--text-secondary-light); line-height: 1.5; max-height: 40px; overflow: hidden; }
 html body #promptcraft-quick-invoke-container .promptcraft-prompt-category .category { font-size: 11px; padding: 2px 8px; border-radius: 10px; background-color: var(--card-light); border: 1px solid var(--border-light); }
 
-@media (prefers-color-scheme: dark) {
-    html body #promptcraft-quick-invoke-container .promptcraft-prompt-preview { color: var(--text-secondary-dark); }
-    html body #promptcraft-quick-invoke-container .promptcraft-prompt-category .category { background-color: var(--card-dark); border-color: var(--border-dark); }
-}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-preview { color: var(--text-secondary-dark); }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-category .category { background-color: var(--card-dark); border-color: var(--border-dark); }
 
 /* 底部帮助文本 */
 html body #promptcraft-quick-invoke-container .promptcraft-help-text {
@@ -229,17 +221,13 @@ html body #promptcraft-quick-invoke-container .promptcraft-help-text {
     border-top: 1px solid var(--border-light);
     flex-shrink: 0;
 }
-@media (prefers-color-scheme: dark) {
-    html body #promptcraft-quick-invoke-container .promptcraft-help-text {
-        color: var(--text-secondary-dark);
-        border-top-color: var(--border-dark);
-    }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-help-text {
+    color: var(--text-secondary-dark);
+    border-top-color: var(--border-dark);
 }
 /* ... 其他帮助文本样式 ... */
 html body #promptcraft-quick-invoke-container .promptcraft-help-keys { display: inline-block; padding: 1px 5px; border-radius: 4px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); }
-@media (prefers-color-scheme: dark) {
-    html body #promptcraft-quick-invoke-container .promptcraft-help-keys { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
-}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-help-keys { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
 `;
 
         document.head.appendChild(style);
@@ -250,17 +238,27 @@ html body #promptcraft-quick-invoke-container .promptcraft-help-keys { display: 
                 // 在iFrame中，添加更高优先级的滚动条隐藏规则
                 if (style.sheet) {
                     style.sheet.insertRule(`
-                        html body #promptcraft-quick-invoke-container .promptcraft-prompt-list {
-                            scrollbar-width: none !important;
-                            -ms-overflow-style: none !important;
+                        html body #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar {
+                            width: 6px;
                         }
                     `, 0);
 
                     style.sheet.insertRule(`
-                        html body #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar {
-                            display: none !important;
-                            width: 0 !important;
-                            height: 0 !important;
+                        html body #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar-track {
+                            background: transparent;
+                        }
+                    `, 0);
+
+                    style.sheet.insertRule(`
+                        html body #promptcraft-quick-invoke-container .promptcraft-prompt-list::-webkit-scrollbar-thumb {
+                            background: var(--primary-color);
+                            border-radius: 3px;
+                        }
+                    `, 0);
+
+                    style.sheet.insertRule(`
+                        html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-list::-webkit-scrollbar-thumb {
+                            background: var(--primary-light);
                         }
                     `, 0);
                 }
@@ -1183,6 +1181,10 @@ html body #promptcraft-quick-invoke-container .promptcraft-help-keys { display: 
                 }
             });
 
+            // 应用主题并设置监听器
+            updateUITheme();
+            setupThemeListener();
+
             // 自动聚焦搜索框
             setTimeout(() => {
                 try {
@@ -1780,4 +1782,114 @@ html body #promptcraft-quick-invoke-container .promptcraft-help-keys { display: 
         init();
     }
 
-})();
+// 主题管理功能
+    let currentThemeMode = 'auto';
+    
+    /**
+     * 获取主题模式
+     * @returns {Promise<string>} 主题模式 ('auto', 'light', 'dark')
+     */
+    async function getThemeMode() {
+        try {
+            const result = await new Promise((resolve) => {
+                chrome.storage.local.get(['themeMode'], resolve);
+            });
+            return result.themeMode || 'auto';
+        } catch (error) {
+            console.error('PromptCraft: 获取主题模式失败:', error);
+            return 'auto';
+        }
+    }
+    
+    /**
+     * 获取系统主题
+     * @returns {string} 'light' 或 'dark'
+     */
+    function getSystemTheme() {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    
+    /**
+     * 获取实际应用的主题
+     * @param {string} themeMode 主题模式设置
+     * @returns {string} 'light' 或 'dark'
+     */
+    function getEffectiveTheme(themeMode) {
+        if (themeMode === 'auto') {
+            return getSystemTheme();
+        }
+        return themeMode;
+    }
+    
+    /**
+     * 应用主题到样式
+     * @param {HTMLStyleElement} styleElement 样式元素
+     */
+    async function applyThemeToStyles(styleElement) {
+        try {
+            currentThemeMode = await getThemeMode();
+            const effectiveTheme = getEffectiveTheme(currentThemeMode);
+            
+            // 根据主题模式修改CSS
+            if (effectiveTheme === 'dark') {
+                // 强制应用深色主题
+                styleElement.setAttribute('data-theme', 'dark');
+            } else {
+                // 强制应用浅色主题
+                styleElement.setAttribute('data-theme', 'light');
+            }
+            
+            console.log('PromptCraft: 应用主题模式:', currentThemeMode, '实际主题:', effectiveTheme);
+        } catch (error) {
+            console.error('PromptCraft: 应用主题失败:', error);
+        }
+    }
+    
+    /**
+     * 更新UI主题
+     */
+    async function updateUITheme() {
+        if (!state.uiContainer) return;
+        
+        try {
+            currentThemeMode = await getThemeMode();
+            const effectiveTheme = getEffectiveTheme(currentThemeMode);
+            
+            // 更新UI容器的主题属性
+            if (effectiveTheme === 'dark') {
+                state.uiContainer.setAttribute('data-theme', 'dark');
+            } else {
+                state.uiContainer.setAttribute('data-theme', 'light');
+            }
+            
+            console.log('PromptCraft: 更新UI主题:', currentThemeMode, '实际主题:', effectiveTheme);
+        } catch (error) {
+            console.error('PromptCraft: 更新UI主题失败:', error);
+        }
+    }
+    
+    /**
+     * 监听主题变化
+     */
+    function setupThemeListener() {
+        // 监听chrome.storage变化
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+            chrome.storage.onChanged.addListener((changes, namespace) => {
+                if (namespace === 'local' && changes.themeMode) {
+                    console.log('PromptCraft: 检测到主题模式变化:', changes.themeMode.newValue);
+                    updateUITheme();
+                }
+            });
+        }
+        
+        // 监听系统主题变化（当设置为auto时）
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        mediaQuery.addEventListener('change', () => {
+            if (currentThemeMode === 'auto') {
+                console.log('PromptCraft: 检测到系统主题变化');
+                updateUITheme();
+            }
+        });
+    }
+
+    })();

@@ -322,20 +322,30 @@ function showView(viewId) {
         // 强制重绘以确保样式生效
         targetView.offsetHeight;
         
-        // 检查视图是否实际显示
+        // 检查视图是否实际显示（改进版本，避免不必要的警告）
         setTimeout(() => {
+            // 确保元素仍然存在且是当前视图
+            if (!targetView.parentNode || currentView !== viewId) {
+                return;
+            }
+            
             const computedStyle = window.getComputedStyle(targetView);
             const isVisible = computedStyle.display !== 'none' && targetView.offsetWidth > 0 && targetView.offsetHeight > 0;
             console.log(`视图 ${viewId} 显示状态: display=${computedStyle.display}, visible=${isVisible}`);
-            if (!isVisible) {
+            
+            // 只有在确实有问题时才显示警告和重试
+            if (!isVisible && targetView.classList.contains('active')) {
                 console.warn(`警告：视图 ${viewId} 可能未正确显示，尝试重新应用样式`);
                 // 重新应用active类
                 targetView.classList.remove('active');
-                setTimeout(() => {
-                    targetView.classList.add('active');
-                }, 10);
+                // 使用requestAnimationFrame确保DOM更新
+                requestAnimationFrame(() => {
+                    if (currentView === viewId) {
+                        targetView.classList.add('active');
+                    }
+                });
             }
-        }, 150);
+        }, 200); // 增加延迟时间，确保CSS动画完成
         
         console.log(`成功切换到视图: ${viewId}`);
         return true;
