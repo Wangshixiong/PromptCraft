@@ -111,7 +111,9 @@ body.dark-mode {
     justify-content: center;
     cursor: pointer;
     color: var(--text-light);
-    transition: var(--transition);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
 }
 
 .dark-mode .btn {
@@ -120,10 +122,39 @@ body.dark-mode {
 
 .btn:hover {
     background-color: rgba(99, 102, 241, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
 }
 
 .dark-mode .btn:hover {
     background-color: rgba(248, 250, 252, 0.1);
+    box-shadow: 0 2px 8px rgba(248, 250, 252, 0.1);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(99, 102, 241, 0.1);
+}
+
+/* 设置按钮特殊样式 */
+#settingsBtn {
+    position: relative;
+}
+
+#settingsBtn:hover {
+    color: var(--primary-color);
+}
+
+.dark-mode #settingsBtn:hover {
+    color: var(--primary-color);
+}
+
+#settingsBtn svg {
+    transition: transform 0.3s ease;
+}
+
+#settingsBtn:hover svg {
+    transform: rotate(90deg);
 }
 
 #logoutBtn {
@@ -132,6 +163,147 @@ body.dark-mode {
 
 #logoutBtn:hover {
     background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* 用户头像样式 - 保留用于设置页面 */
+.user-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* 下拉菜单项样式 - 保留用于设置页面 */
+.dropdown-item {
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    color: var(--text-light);
+    text-align: left;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+}
+
+.dark-mode .dropdown-item {
+    color: var(--text-dark);
+}
+
+.dropdown-item:hover {
+    background-color: rgba(99, 102, 241, 0.1);
+}
+
+.dark-mode .dropdown-item:hover {
+    background-color: rgba(248, 250, 252, 0.1);
+}
+
+.google-signin-btn {
+    background: white;
+    color: #757575 !important;
+    border: 1px solid #dadce0;
+    font-weight: 500;
+    padding: 12px 24px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode .google-signin-btn {
+    background: var(--card-dark);
+    color: var(--text-dark) !important;
+    border-color: var(--border-dark);
+}
+
+.google-signin-btn:hover {
+    background: #f8f9fa !important;
+    border-color: #dadce0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.dark-mode .google-signin-btn:hover {
+    background: var(--background-dark) !important;
+    border-color: var(--border-dark);
+}
+
+.google-signin-btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.logout-btn {
+    background: white;
+    color: var(--danger) !important;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode .logout-btn {
+    background: var(--card-dark);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.logout-btn:hover {
+    background: rgba(239, 68, 68, 0.05) !important;
+    border-color: rgba(239, 68, 68, 0.3);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+    transform: translateY(-1px);
+}
+
+.dark-mode .logout-btn:hover {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.logout-btn i {
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.user-info {
+    padding: 8px 16px;
+}
+
+.user-email {
+    font-size: 13px;
+    color: var(--text-light);
+    opacity: 0.8;
+    word-break: break-all;
+}
+
+.dark-mode .user-email {
+    color: var(--text-dark);
+}
+
+.dropdown-divider {
+    height: 1px;
+    background-color: var(--border-light);
+    margin: 8px 0;
+}
+
+.dark-mode .dropdown-divider {
+    background-color: var(--border-dark);
 }
 
 /* 搜索容器样式 */
@@ -206,6 +378,300 @@ body.dark-mode {
 .filter-container::-webkit-scrollbar-thumb:hover {
     background: rgba(156, 163, 175, 0.8);
     background-clip: content-box;
+}
+
+/* 设置页面新增样式 */
+/* 账户与同步模块 */
+.auth-section {
+    margin-top: 16px;
+}
+
+.auth-content {
+    padding: 20px;
+    background: var(--card-light);
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+    transition: var(--transition);
+}
+
+.dark-mode .auth-content {
+    background: var(--card-dark);
+    border-color: var(--border-dark);
+}
+
+.auth-info {
+    margin-bottom: 16px;
+}
+
+.auth-description {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* 用户信息卡片 */
+.user-info-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: var(--background-light);
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+}
+
+.dark-mode .user-info-card {
+    background: var(--background-dark);
+    border-color: var(--border-dark);
+}
+
+.user-avatar-container {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+}
+
+.user-avatar-large {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-light);
+}
+
+.dark-mode .user-avatar-large {
+    border-color: var(--border-dark);
+}
+
+.default-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+}
+
+.user-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-status {
+    font-size: 12px;
+    color: var(--success);
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+/* 同步控制 */
+.sync-controls {
+    margin-bottom: 20px;
+}
+
+.sync-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: var(--background-light);
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+    margin-bottom: 12px;
+}
+
+.dark-mode .sync-option {
+    background: var(--background-dark);
+    border-color: var(--border-dark);
+}
+
+.sync-info {
+    flex: 1;
+}
+
+.sync-label {
+    font-weight: 500;
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.sync-description {
+    font-size: 12px;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.sync-toggle {
+    position: relative;
+}
+
+.sync-toggle input[type="checkbox"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-label {
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    background-color: var(--border-light);
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.dark-mode .toggle-label {
+    background-color: var(--border-dark);
+}
+
+.toggle-label:before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    background-color: white;
+    transition: var(--transition);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input[type="checkbox"]:checked + .toggle-label {
+    background-color: var(--primary-color);
+}
+
+input[type="checkbox"]:checked + .toggle-label:before {
+    transform: translateX(20px);
+}
+
+input[type="checkbox"]:disabled + .toggle-label {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.sync-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.sync-status i {
+    color: var(--primary-color);
+    font-size: 14px;
+}
+
+.sync-status span {
+    font-size: 13px;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* 设置模块标题样式 */
+.settings-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.settings-section h4 i {
+    font-size: 16px;
+    color: var(--primary-color);
+}
+
+/* 关于模块样式 */
+.about-content {
+    padding: 20px;
+    background: var(--card-light);
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+}
+
+.dark-mode .about-content {
+    background: var(--card-dark);
+    border-color: var(--border-dark);
+}
+
+.version-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.dark-mode .version-info {
+    border-bottom-color: var(--border-dark);
+}
+
+.version-label {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.version-number {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-size: 14px;
+    color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.1);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.help-links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.help-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--background-light);
+    border-radius: 8px;
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: var(--transition);
+    font-size: 14px;
+}
+
+.dark-mode .help-link {
+    background: var(--background-dark);
+    border-color: var(--border-dark);
+}
+
+.help-link:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.help-link i {
+    font-size: 16px;
+    opacity: 0.8;
 }
 
 /* 确认弹窗样式 */
@@ -1483,9 +1949,5 @@ body.dark-mode .filter-btn:hover {
 }
 
 .settings-row {
-    display: none;
-}
-
-.settings-btn {
     display: none;
 }

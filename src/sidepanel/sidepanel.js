@@ -59,6 +59,7 @@ let currentUser = null;
 let themeMode = 'auto';
 let currentView = null;
 let isProcessingContextMenu = false; // 标记是否正在处理右键菜单消息
+let authServiceInstance = null; // 认证服务实例
 
 // 统一的排序函数：按创建时间降序排序，最新的在前面
 function sortPromptsByCreatedTime(prompts) {
@@ -998,6 +999,27 @@ function setupEventListeners() {
         fileInput.click();
     });
     
+    // 设置页面中的Google登录按钮
+    const googleSignInBtn = document.getElementById('googleSignInBtn');
+    if (googleSignInBtn) {
+        googleSignInBtn.addEventListener('click', handleGoogleSignIn);
+    }
+    
+    // 设置页面中的退出登录按钮
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+    
+    // 帮助按钮事件监听器
+    const helpBtn = document.getElementById('helpBtn');
+    if (helpBtn) {
+        helpBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            showToast('帮助文档功能即将推出', 'info');
+        });
+    }
+    
     fileInput.addEventListener('change', handleFileImport);
     
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -1311,6 +1333,11 @@ async function initializeApp() {
         setupEventListeners();
         setupCategoryInput();
         
+        // 初始化认证服务（异步，不阻塞主流程）
+        initializeAuthService().catch(error => {
+            console.error('认证服务初始化失败，但不影响本地功能:', error);
+        });
+        
         // 使用数据服务获取数据后再渲染
         await loadUserPrompts(true); // 跳过loading显示，因为有骨架屏
         
@@ -1323,6 +1350,207 @@ async function initializeApp() {
         if (promptsContainer) {
             promptsContainer.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #64748b;"><i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; color: #ef4444;"></i><h3>加载失败</h3><p>请刷新页面重试</p></div>`;
         }
+    }
+}
+
+// --- 认证相关函数 ---
+
+/**
+ * 通过 script 标签加载认证服务
+ */
+function loadAuthServiceScript() {
+    return new Promise((resolve, reject) => {
+        // 检查是否已经加载过该脚本
+        const existingScript = document.querySelector('script[src="../utils/auth-service.js"]');
+        if (existingScript) {
+            console.log('认证服务脚本已存在，跳过重复加载');
+            resolve();
+            return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = '../utils/auth-service.js';
+        script.onload = () => {
+            console.log('认证服务脚本加载成功');
+            resolve();
+        };
+        script.onerror = (error) => {
+            console.error('认证服务脚本加载失败:', error);
+            reject(error);
+        };
+        document.head.appendChild(script);
+    });
+}
+
+/**
+ * 初始化认证服务
+ */
+async function initializeAuthService() {
+    try {
+        console.log('开始初始化认证服务...');
+        
+        // 检查是否已经初始化过
+        if (authServiceInstance && typeof authServiceInstance.getSession === 'function') {
+            console.log('认证服务已经初始化');
+            return;
+        }
+        
+        // 检查全局 authService 是否可用
+        if (typeof window.authService !== 'undefined') {
+            authServiceInstance = window.authService;
+            console.log('使用全局 authService');
+        } else {
+            // 只使用 script 标签加载，避免重复加载
+            console.log('通过 script 标签加载 authService');
+            await loadAuthServiceScript();
+            authServiceInstance = window.authService;
+        }
+        
+        if (!authServiceInstance || typeof authServiceInstance.getSession !== 'function') {
+            throw new Error('无法加载认证服务或服务对象无效');
+        }
+        
+        console.log('authService 加载成功:', authServiceInstance);
+        
+        // 认证消息监听已移除，现在直接在 sidepanel 中处理认证
+        
+        // 监听认证状态变化
+        if (authServiceInstance.onAuthStateChange) {
+            authServiceInstance.onAuthStateChange((event, session) => {
+                console.log('认证状态变化:', event, session?.user?.email);
+                updateUIForAuthState(session);
+            });
+        }
+        
+        // 检查当前认证状态
+        const { session } = await authServiceInstance.getSession();
+        updateUIForAuthState(session);
+        
+        console.log('认证服务初始化完成');
+    } catch (error) {
+        console.error('认证服务初始化失败:', error);
+        // 认证服务失败不影响本地功能
+        updateUIForAuthState(null);
+    }
+}
+
+/**
+ * 处理Google登录
+ */
+async function handleGoogleSignIn() {
+    console.log('handleGoogleSignIn 函数被调用');
+    try {
+        console.log('authService 状态:', authService);
+        if (!authService) {
+            console.error('认证服务未初始化');
+            showToast('认证服务未初始化', 'error');
+            return;
+        }
+        
+        console.log('开始 Google 登录流程');
+        showLoading();
+        const result = await authServiceInstance.signInWithGoogle();
+        
+        if (result && result.success) {
+            console.log('登录成功:', result.user.email);
+            showToast('登录成功！', 'success');
+            // 更新UI状态
+            updateUIForAuthState(result.session);
+            // 关闭下拉菜单
+            const userDropdown = document.getElementById('userDropdown');
+            if (userDropdown) {
+                userDropdown.classList.remove('show');
+            }
+        }
+    } catch (error) {
+        console.error('Google登录失败:', error);
+        showToast('登录失败: ' + error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+/**
+ * 处理退出登录
+ */
+async function handleLogout() {
+    try {
+        if (!authService) {
+            showToast('认证服务未初始化', 'error');
+            return;
+        }
+        
+        showLoading();
+        await authServiceInstance.signOut();
+        showToast('已退出登录', 'success');
+        
+        // 用户下拉菜单已移除，无需关闭
+    } catch (error) {
+        console.error('退出登录失败:', error);
+        showToast('退出失败: ' + error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+/**
+ * 根据认证状态更新UI
+ * @param {Object|null} session - 用户会话信息
+ */
+function updateUIForAuthState(session) {
+    // 设置页面元素
+    const loggedOutSection = document.getElementById('loggedOutSection');
+    const loggedInSection = document.getElementById('loggedInSection');
+    const userAvatarSettings = document.getElementById('userAvatarSettings');
+    const defaultUserIconSettings = document.getElementById('defaultUserIconSettings');
+    const userEmailSettings = document.getElementById('userEmailSettings');
+    
+    if (session && session.user) {
+        // 已登录状态
+        const user = session.user;
+        
+        // 更新设置页面中的用户信息
+        if (loggedInSection) loggedInSection.style.display = 'block';
+        if (loggedOutSection) loggedOutSection.style.display = 'none';
+        
+        // 更新设置页面中的用户头像
+        if (userAvatarSettings && user.user_metadata?.avatar_url) {
+            userAvatarSettings.src = user.user_metadata.avatar_url;
+            userAvatarSettings.style.display = 'block';
+            if (defaultUserIconSettings) defaultUserIconSettings.style.display = 'none';
+        } else {
+            if (userAvatarSettings) userAvatarSettings.style.display = 'none';
+            if (defaultUserIconSettings) defaultUserIconSettings.style.display = 'block';
+        }
+        
+        // 更新设置页面中的用户邮箱
+        if (userEmailSettings) {
+            userEmailSettings.textContent = user.email || '未知用户';
+        }
+        
+        // 更新全局用户状态
+        currentUser = {
+            id: user.id,
+            email: user.email,
+            avatar_url: user.user_metadata?.avatar_url
+        };
+        
+        console.log('用户已登录:', currentUser);
+    } else {
+        // 未登录状态
+        // 更新设置页面状态
+        if (loggedOutSection) loggedOutSection.style.display = 'block';
+        if (loggedInSection) loggedInSection.style.display = 'none';
+        
+        // 保持本地用户状态以确保本地功能正常
+        if (!currentUser) {
+            currentUser = {
+                id: 'local-user',
+                email: 'local@example.com'
+            };
+        }
+        
+        console.log('用户未登录，使用本地模式');
     }
 }
 

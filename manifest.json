@@ -1,13 +1,14 @@
 {
     "manifest_version": 3,
     "name": "Prompt管理助手",
-    "version": "0.5.2",
+    "version": "0.9.0",
     "description": "一个安全、可靠、可跨设备同步的个人提示词管理工具。",
     "permissions": [
     "storage",
     "sidePanel",
     "contextMenus",
-    "activeTab"
+    "activeTab",
+    "identity"
   ],
     "icons": {
       "16": "assets/icons/icon16.png",
@@ -45,7 +46,9 @@
       "resources": [
         "assets/icons/*",
         "assets/data/*",
-        "src/utils/*"
+        "src/utils/*",
+        "src/content/content.css",
+        "src/libs/supabase.min.js"
       ],
       "matches": ["<all_urls>"]
     }

@@ -4,6 +4,10 @@
 importScripts('utils/uuid.js');
 importScripts('utils/data-service.js');
 
+// 导入 Supabase 库和认证处理器
+importScripts('libs/supabase.min.js');
+importScripts('background/auth-handler.js');
+
 // 从default-prompts.json加载默认提示词数据
 async function loadDefaultPromptsToMemory() {
     try {
