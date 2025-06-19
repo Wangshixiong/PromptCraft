@@ -60,6 +60,7 @@ let themeMode = 'auto';
 let currentView = null;
 let isProcessingContextMenu = false; // 标记是否正在处理右键菜单消息
 let authServiceInstance = null; // 认证服务实例
+let syncServiceInstance = null; // 同步服务实例
 
 // 统一的排序函数：按创建时间降序排序，最新的在前面
 function sortPromptsByCreatedTime(prompts) {
@@ -472,17 +473,22 @@ async function savePrompt() {
             category
         };
         
+        let savedPrompt;
         if (id) {
             // 更新现有提示词
-            await dataService.updatePrompt(id, promptData);
+            savedPrompt = await dataService.updatePrompt(id, promptData);
             console.log('更新提示词:', id);
+            // 同步到云端
+            await syncUpdatePrompt({ id, ...promptData });
         } else {
             // 添加新提示词
-            const newPrompt = await dataService.addPrompt({
+            savedPrompt = await dataService.addPrompt({
                 ...promptData,
                 is_deleted: false
             });
-            console.log('添加新提示词:', newPrompt.id);
+            console.log('添加新提示词:', savedPrompt.id);
+            // 同步到云端
+            await syncAddPrompt(savedPrompt);
         }
         
         console.log('提示词保存成功');
@@ -520,6 +526,9 @@ async function deletePrompt(promptId) {
         if (success) {
             console.log('提示词删除成功:', promptId);
             showToast('删除成功', 'success');
+            
+            // 同步到云端
+            await syncDeletePrompt(promptId);
             
             // 重新加载数据以确保数据同步
             await loadUserPrompts(true);
@@ -863,7 +872,20 @@ function addCardEventListeners() {
 }
 
 function setupEventListeners() {
-
+    // 监听数据变更事件，实现实时界面刷新
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            if (message.type === 'DATA_CHANGED') {
+                console.log('收到数据变更通知，刷新界面');
+                // 异步刷新界面，避免阻塞
+                setTimeout(() => {
+                    loadUserPrompts(true).catch(error => {
+                        console.error('数据变更后刷新界面失败:', error);
+                    });
+                }, 100);
+            }
+        });
+    }
 
     // 主题选择器事件处理
     document.addEventListener('click', (e) => {
@@ -992,6 +1014,12 @@ function setupEventListeners() {
         }
     });
     
+    // 同步开关事件监听
+    const syncToggle = document.getElementById('syncToggle');
+    if (syncToggle) {
+        syncToggle.addEventListener('change', handleSyncToggle);
+    }
+    
     // 导入导出功能
     downloadTemplateBtn.addEventListener('click', handleDownloadTemplate);
     exportBtn.addEventListener('click', handleExport);
@@ -1023,15 +1051,6 @@ function setupEventListeners() {
     fileInput.addEventListener('change', handleFileImport);
     
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        // 处理数据变更通知
-        if (message.type === 'DATA_CHANGED') {
-            console.log('收到数据变更通知，自动刷新界面');
-            // 重新加载提示词数据并更新界面
-            loadUserPrompts(false).catch(error => {
-                console.error('自动刷新界面失败:', error);
-            });
-            return;
-        }
         
         if (message.type === 'ADD_FROM_CONTEXT_MENU' && message.data?.content) {
             console.log('收到右键菜单消息，内容:', message.data.content);
@@ -1536,6 +1555,9 @@ function updateUIForAuthState(session) {
         };
         
         console.log('用户已登录:', currentUser);
+        
+        // 初始化同步服务
+        initializeSyncService();
     } else {
         // 未登录状态
         // 更新设置页面状态
@@ -1550,12 +1572,208 @@ function updateUIForAuthState(session) {
             };
         }
         
+        // 停止同步服务
+        if (syncServiceInstance) {
+            syncServiceInstance = null;
+        }
+        updateSyncUI('disabled', '同步已禁用');
+        
         console.log('用户未登录，使用本地模式');
     }
 }
 
-// 立即显示界面，不等待任何操作
-document.addEventListener('DOMContentLoaded', () => {
+/**
+ * 初始化同步服务
+ */
+async function initializeSyncService() {
+    try {
+        if (!authServiceInstance || !window.supabase) {
+            console.log('认证服务或Supabase未初始化，跳过同步服务初始化');
+            return;
+        }
+        
+        // 动态加载同步服务
+        await loadSyncServiceScript();
+        
+        if (window.SyncService) {
+            syncServiceInstance = new window.SyncService(
+                authServiceInstance,
+                dataService,
+                window.supabase
+            );
+            
+            // 监听同步状态变化
+            syncServiceInstance.onSyncStatusChange((status, message) => {
+                updateSyncUI(status, message);
+            });
+            
+            // 初始化同步服务
+            await syncServiceInstance.initialize();
+            
+            // 设置DataService的同步服务引用
+            dataService.setSyncService(syncServiceInstance);
+            
+            console.log('同步服务初始化成功，已与数据服务集成');
+        }
+    } catch (error) {
+        console.error('同步服务初始化失败:', error);
+        updateSyncUI('error', '同步服务初始化失败');
+    }
+}
+
+/**
+ * 加载同步服务脚本
+ */
+function loadSyncServiceScript() {
+    return new Promise((resolve, reject) => {
+        // 检查是否已经加载
+        const existingScript = document.querySelector('script[src="../utils/sync-service.js"]');
+        if (existingScript) {
+            resolve();
+            return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = '../utils/sync-service.js';
+        script.onload = () => {
+            console.log('同步服务脚本加载成功');
+            resolve();
+        };
+        script.onerror = () => {
+            console.error('同步服务脚本加载失败');
+            reject(new Error('同步服务脚本加载失败'));
+        };
+        document.head.appendChild(script);
+    });
+}
+
+/**
+ * 更新同步UI状态
+ * @param {string} status - 同步状态: 'idle', 'syncing', 'success', 'error', 'disabled'
+ * @param {string} message - 状态消息
+ */
+function updateSyncUI(status, message) {
+    const syncStatusIcon = document.querySelector('.sync-status-icon');
+    const syncStatusText = document.querySelector('.sync-status-text');
+    const syncIndicator = document.getElementById('syncIndicator');
+    const syncToggle = document.getElementById('syncToggle');
+    
+    if (!syncStatusIcon || !syncStatusText) return;
+    
+    // 清除所有状态类
+    syncStatusIcon.className = 'fas sync-status-icon';
+    syncStatusText.className = 'sync-status-text';
+    
+    switch (status) {
+        case 'syncing':
+            syncStatusIcon.classList.add('fa-sync-alt', 'fa-spin', 'syncing');
+            syncStatusText.classList.add('syncing');
+            syncStatusText.textContent = message || '正在同步...';
+            if (syncIndicator) syncIndicator.style.display = 'flex';
+            break;
+            
+        case 'success':
+            syncStatusIcon.classList.add('fa-check-circle', 'success');
+            syncStatusText.classList.add('success');
+            syncStatusText.textContent = message || '同步成功';
+            if (syncIndicator) syncIndicator.style.display = 'none';
+            // 只在同步完成时显示toast，避免重复提示
+            if (message && message.includes('同步完成')) {
+                showToast('云端同步完成，数据已更新', 'success');
+            }
+            break;
+            
+        case 'error':
+            syncStatusIcon.classList.add('fa-exclamation-circle', 'error');
+            syncStatusText.classList.add('error');
+            syncStatusText.textContent = message || '同步失败';
+            if (syncIndicator) syncIndicator.style.display = 'none';
+            break;
+            
+        case 'disabled':
+            syncStatusIcon.classList.add('fa-times-circle');
+            syncStatusText.textContent = message || '同步已禁用';
+            if (syncIndicator) syncIndicator.style.display = 'none';
+            if (syncToggle) syncToggle.checked = false;
+            break;
+            
+        default: // 'idle'
+            syncStatusIcon.classList.add('fa-check-circle', 'success');
+            syncStatusText.classList.add('success');
+            syncStatusText.textContent = message || '同步已启用';
+            if (syncIndicator) syncIndicator.style.display = 'none';
+            if (syncToggle) syncToggle.checked = true;
+            break;
+    }
+ }
+
+/**
+ * 处理同步开关切换
+ */
+async function handleSyncToggle(event) {
+    const isEnabled = event.target.checked;
+    
+    try {
+        if (isEnabled) {
+            if (!syncServiceInstance) {
+                await initializeSyncService();
+            }
+            if (syncServiceInstance) {
+                updateSyncUI('syncing', '正在启用同步...');
+                await syncServiceInstance.performFullSync();
+                updateSyncUI('success', '同步已启用');
+            }
+        } else {
+            updateSyncUI('disabled', '同步已禁用');
+        }
+    } catch (error) {
+        console.error('同步开关操作失败:', error);
+        updateSyncUI('error', '同步操作失败');
+        event.target.checked = !isEnabled; // 恢复开关状态
+    }
+}
+
+/**
+ * 集成同步到数据操作 - 添加提示词
+ */
+async function syncAddPrompt(promptData) {
+    if (syncServiceInstance && currentUser && currentUser.id !== 'local-user') {
+        try {
+            await syncServiceInstance.createPrompt(promptData);
+        } catch (error) {
+            console.error('同步添加提示词失败:', error);
+        }
+    }
+}
+
+/**
+ * 集成同步到数据操作 - 更新提示词
+ */
+async function syncUpdatePrompt(promptData) {
+    if (syncServiceInstance && currentUser && currentUser.id !== 'local-user') {
+        try {
+            await syncServiceInstance.updatePrompt(promptData);
+        } catch (error) {
+            console.error('同步更新提示词失败:', error);
+        }
+    }
+}
+
+/**
+ * 集成同步到数据操作 - 删除提示词
+ */
+async function syncDeletePrompt(promptId) {
+    if (syncServiceInstance && currentUser && currentUser.id !== 'local-user') {
+        try {
+            await syncServiceInstance.deletePrompt(promptId);
+        } catch (error) {
+            console.error('同步删除提示词失败:', error);
+        }
+    }
+}
+ 
+ // 立即显示界面，不等待任何操作
+ document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM加载完成，立即初始化应用');
     initializeApp();
 });

@@ -580,6 +580,70 @@ input[type="checkbox"]:disabled + .toggle-label {
     font-weight: 500;
 }
 
+/* 同步指示器样式 */
+.sync-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(251, 191, 36, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.sync-indicator i {
+    color: #f59e0b;
+    font-size: 12px;
+}
+
+.sync-indicator span {
+    font-size: 12px;
+    color: #f59e0b;
+    font-weight: 500;
+}
+
+/* 同步状态图标样式 */
+.sync-status-icon {
+    transition: var(--transition);
+}
+
+.sync-status-icon.syncing {
+    color: #f59e0b !important;
+    animation: pulse 2s infinite;
+}
+
+.sync-status-icon.success {
+    color: #10b981 !important;
+}
+
+.sync-status-icon.error {
+    color: #ef4444 !important;
+}
+
+/* 同步状态文本样式 */
+.sync-status-text.syncing {
+    color: #f59e0b !important;
+}
+
+.sync-status-text.success {
+    color: #10b981 !important;
+}
+
+.sync-status-text.error {
+    color: #ef4444 !important;
+}
+
+/* 脉冲动画 */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
 /* 设置模块标题样式 */
 .settings-section h4 {
     display: flex;

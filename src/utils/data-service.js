@@ -1,26 +1,36 @@
 /**
- * 数据服务模块 (Data Service)
- * 统一管理所有与 chrome.storage.local 的交互
- * 实现单一数据源 (Single Source of Truth) 架构
+ * 数据服务模块
+ * 负责管理Chrome插件的本地数据存储，包括提示词、主题设置等
+ * 提供统一的数据访问接口，支持数据验证、错误处理和变更通知
+ * 集成云端同步功能，确保数据在本地和云端的一致性
  * 
- * 功能说明：
- * - 封装所有 chrome.storage.local 的读写操作
- * - 提供统一的数据访问接口
- * - 实现错误处理和版本管理
- * - 确保数据状态的一致性和可预测性
+ * 主要功能：
+ * - 提示词的增删改查操作
+ * - 主题设置管理
+ * - 错误状态管理
+ * - 数据状态跟踪
+ * - 存储使用情况监控
+ * - 数据变更通知
+ * - 云端同步集成
  * 
- * @version 1.0.0
  * @author PromptCraft Team
+ * @version 1.1.0
  */
 
 // 数据存储的键名常量
 const STORAGE_KEYS = {
-    PROMPTS: 'prompts',
+    PROMPTS: 'prompts',                    // 用户的个人提示词
+    DEFAULT_TEMPLATES_LOADED: 'default_templates_loaded',  // 是否已加载默认模板
     SCHEMA_VERSION: 'schema_version',
     THEME_MODE: 'themeMode',
     HAS_DATA: 'promptcraft_has_data',
     LOAD_ERROR: 'loadError',
-    ERROR_MESSAGE: 'errorMessage'
+    ERROR_MESSAGE: 'errorMessage',
+    // 同步状态相关
+    SYNC_STATUS: 'syncStatus',
+    LAST_SYNC_TIME: 'lastSyncTime',
+    SYNC_QUEUE: 'syncQueue',
+    SYNC_RETRY_COUNT: 'syncRetryCount'
 };
 
 // 当前数据模式版本
@@ -34,6 +44,16 @@ class DataService {
     constructor() {
         this.isInitialized = false;
         this.initPromise = null;
+        this.syncService = null; // 同步服务实例
+    }
+
+    /**
+     * 设置同步服务实例
+     * @param {Object} syncService - 同步服务实例
+     */
+    setSyncService(syncService) {
+        this.syncService = syncService;
+        console.log('DataService: 同步服务已设置');
     }
 
     /**
@@ -213,6 +233,9 @@ class DataService {
             await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: prompts });
             console.log('添加提示词成功:', newPrompt.id);
 
+            // 触发云端同步
+            await this._triggerSync('create', newPrompt);
+
             return newPrompt;
         } catch (error) {
             console.error('添加提示词失败:', error);
@@ -254,6 +277,78 @@ class DataService {
             await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: prompts });
             console.log('更新提示词成功:', id);
 
+            // 触发云端同步
+            await this._triggerSync('update', updatedPrompt);
+
+            return updatedPrompt;
+        } catch (error) {
+            console.error('更新提示词失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 保存提示词（智能判断新增或更新）
+     * @param {Object} promptData - 提示词数据
+     * @returns {Promise<Object>} 保存后的提示词对象
+     */
+    async savePrompt(promptData) {
+        await this.initialize();
+        try {
+            // 验证必填字段
+            if (!promptData.title || !promptData.content) {
+                throw new Error('标题和内容为必填字段');
+            }
+
+            const prompts = await this.getAllPrompts();
+            const existingIndex = prompts.findIndex(p => p.id === promptData.id);
+
+            if (existingIndex !== -1) {
+                // 更新现有提示词
+                const updatedPrompt = {
+                    ...prompts[existingIndex],
+                    ...promptData,
+                    updated_at: new Date().toISOString()
+                };
+                
+                prompts[existingIndex] = updatedPrompt;
+                await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: prompts });
+                console.log('更新提示词成功:', promptData.id);
+                
+                // 触发数据变更通知，让界面刷新
+                this._notifyDataChange(prompts);
+                
+                // 不触发同步，因为这通常是从云端同步过来的数据
+                return updatedPrompt;
+            } else {
+                // 添加新提示词
+                const newPrompt = {
+                    ...promptData,
+                    id: promptData.id || this._generateId(),
+                    created_at: promptData.created_at || new Date().toISOString(),
+                    updated_at: promptData.updated_at || new Date().toISOString()
+                };
+                
+                prompts.push(newPrompt);
+                await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: prompts });
+                console.log('添加提示词成功:', newPrompt.id);
+                
+                // 触发数据变更通知，让界面刷新
+                this._notifyDataChange(prompts);
+                
+                // 不触发同步，因为这通常是从云端同步过来的数据
+                return newPrompt;
+            }
+        } catch (error) {
+            console.error('保存提示词失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 触发云端同步
+            await this._triggerSync('update', updatedPrompt);
+
             return updatedPrompt;
         } catch (error) {
             console.error('更新提示词失败:', error);
@@ -264,17 +359,26 @@ class DataService {
     /**
      * 删除提示词
      * @param {string} id - 提示词ID
+     * @param {boolean} throwOnNotFound - 找不到时是否抛出错误，默认true
      * @returns {Promise<boolean>} 是否删除成功
      */
-    async deletePrompt(id) {
+    async deletePrompt(id, throwOnNotFound = true) {
         await this.initialize();
         try {
             const prompts = await this.getAllPrompts();
             const index = prompts.findIndex(p => p.id === id);
 
             if (index === -1) {
-                throw new Error(`未找到ID为 ${id} 的提示词`);
+                if (throwOnNotFound) {
+                    throw new Error(`未找到ID为 ${id} 的提示词`);
+                } else {
+                    console.log(`提示词 ${id} 不存在，跳过删除`);
+                    return false;
+                }
             }
+
+            // 获取要删除的提示词信息（用于同步）
+            const deletedPrompt = prompts[index];
 
             // 删除提示词
             prompts.splice(index, 1);
@@ -282,6 +386,14 @@ class DataService {
             // 保存到存储
             await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: prompts });
             console.log('删除提示词成功:', id);
+            
+            // 触发数据变更通知，让界面刷新（无论是用户删除还是云端同步删除）
+            this._notifyDataChange(prompts);
+
+            // 触发云端同步（只有在用户主动删除时才触发）
+            if (throwOnNotFound) {
+                await this._triggerSync('delete', { id, ...deletedPrompt });
+            }
 
             return true;
         } catch (error) {
@@ -475,16 +587,147 @@ class DataService {
         }
     }
 
+    // ==================== 同步状态管理接口 ====================
+
+    /**
+     * 获取同步状态
+     * @returns {Promise<string>} 同步状态 ('idle', 'syncing', 'success', 'error')
+     */
+    async getSyncStatus() {
+        await this.initialize();
+        try {
+            const result = await this._getFromStorage([STORAGE_KEYS.SYNC_STATUS]);
+            return result[STORAGE_KEYS.SYNC_STATUS] || 'idle';
+        } catch (error) {
+            console.error('获取同步状态失败:', error);
+            return 'idle';
+        }
+    }
+
+    /**
+     * 设置同步状态
+     * @param {string} status - 同步状态
+     * @returns {Promise<void>}
+     */
+    async setSyncStatus(status) {
+        await this.initialize();
+        try {
+            await this._setToStorage({ [STORAGE_KEYS.SYNC_STATUS]: status });
+            console.log('设置同步状态:', status);
+        } catch (error) {
+            console.error('设置同步状态失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 获取最后同步时间
+     * @returns {Promise<string|null>} 最后同步时间的ISO字符串
+     */
+    async getLastSyncTime() {
+        await this.initialize();
+        try {
+            const result = await this._getFromStorage([STORAGE_KEYS.LAST_SYNC_TIME]);
+            return result[STORAGE_KEYS.LAST_SYNC_TIME] || null;
+        } catch (error) {
+            console.error('获取最后同步时间失败:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 设置最后同步时间
+     * @param {string} timestamp - ISO时间戳
+     * @returns {Promise<void>}
+     */
+    async setLastSyncTime(timestamp) {
+        await this.initialize();
+        try {
+            await this._setToStorage({ [STORAGE_KEYS.LAST_SYNC_TIME]: timestamp });
+            console.log('设置最后同步时间:', timestamp);
+        } catch (error) {
+            console.error('设置最后同步时间失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 获取同步队列
+     * @returns {Promise<Array>} 待同步的操作队列
+     */
+    async getSyncQueue() {
+        await this.initialize();
+        try {
+            const result = await this._getFromStorage([STORAGE_KEYS.SYNC_QUEUE]);
+            return result[STORAGE_KEYS.SYNC_QUEUE] || [];
+        } catch (error) {
+            console.error('获取同步队列失败:', error);
+            return [];
+        }
+    }
+
+    /**
+     * 设置同步队列
+     * @param {Array} queue - 同步队列
+     * @returns {Promise<void>}
+     */
+    async setSyncQueue(queue) {
+        await this.initialize();
+        try {
+            await this._setToStorage({ [STORAGE_KEYS.SYNC_QUEUE]: queue });
+            console.log('设置同步队列，项目数:', queue.length);
+        } catch (error) {
+            console.error('设置同步队列失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 添加操作到同步队列
+     * @param {Object} operation - 同步操作对象
+     * @returns {Promise<void>}
+     */
+    async addToSyncQueue(operation) {
+        try {
+            const queue = await this.getSyncQueue();
+            queue.push({
+                ...operation,
+                timestamp: new Date().toISOString(),
+                retryCount: 0
+            });
+            await this.setSyncQueue(queue);
+        } catch (error) {
+            console.error('添加到同步队列失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 从同步队列移除操作
+     * @param {string} operationId - 操作ID
+     * @returns {Promise<void>}
+     */
+    async removeFromSyncQueue(operationId) {
+        try {
+            const queue = await this.getSyncQueue();
+            const filteredQueue = queue.filter(op => op.id !== operationId);
+            await this.setSyncQueue(filteredQueue);
+        } catch (error) {
+            console.error('从同步队列移除操作失败:', error);
+            throw error;
+        }
+    }
+
     // ==================== 工具方法 ====================
 
     /**
      * 生成唯一ID
-     * @returns {string} 唯一标识符
+     * @returns {string} 唯一ID
      * @private
      */
     _generateId() {
-        // 使用时间戳 + 随机数生成简单的唯一ID
-        return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+        // 使用项目中的UUID工具模块
+        return UUIDUtils.generateUUID();
     }
 
     /**
@@ -538,6 +781,222 @@ class DataService {
     removeStorageChangeListener(callback) {
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
             chrome.storage.onChanged.removeListener(callback);
+        }
+    }
+
+    /**
+     * 触发云端同步
+     * @param {string} operation - 操作类型 ('create', 'update', 'delete')
+     * @param {Object} promptData - 提示词数据
+     * @private
+     */
+    async _triggerSync(operation, promptData) {
+        try {
+            // 检查是否有同步服务实例
+            if (!this.syncService) {
+                console.debug('DataService: 同步服务未设置，添加到队列等待后续同步');
+                await this._addToSyncQueue(operation, promptData);
+                return;
+            }
+
+            // 检查用户是否已登录（避免本地用户触发同步）
+            if (!this.syncService || !this.syncService.authService) {
+                console.debug('DataService: 同步服务或认证服务未设置，跳过同步');
+                return;
+            }
+            
+            const currentUser = await this.syncService.authService.getCurrentUser();
+            if (!currentUser || currentUser.id === 'local-user') {
+                console.debug('DataService: 用户未登录或为本地用户，跳过同步');
+                return;
+            }
+
+            // 设置同步状态为进行中
+            await this.setSyncStatus('syncing');
+
+            // 异步执行同步操作，不阻塞UI
+            this._performSyncOperation(operation, promptData)
+                .then(async () => {
+                    await this.setSyncStatus('success');
+                    await this.setLastSyncTime(new Date().toISOString());
+                    console.log('DataService: 同步操作成功完成');
+                })
+                .catch(async (error) => {
+                    await this.setSyncStatus('error');
+                    console.error('DataService: 同步操作失败:', error);
+                    // 添加到重试队列
+                    await this._addToSyncQueue(operation, promptData, error.message);
+                });
+
+        } catch (error) {
+            // 同步失败不应该影响本地操作
+            console.error('DataService: 触发同步失败:', error);
+            await this.setSyncStatus('error');
+        }
+    }
+
+    /**
+     * 执行具体的同步操作
+     * @param {string} operation - 操作类型
+     * @param {Object} promptData - 提示词数据
+     * @private
+     */
+    async _performSyncOperation(operation, promptData) {
+        switch (operation) {
+            case 'create':
+                await this.syncService.createPrompt(promptData);
+                console.log('DataService: 创建提示词同步成功');
+                break;
+            case 'update':
+                await this.syncService.updatePrompt(promptData);
+                console.log('DataService: 更新提示词同步成功');
+                break;
+            case 'delete':
+                await this.syncService.deletePrompt(promptData.id);
+                console.log('DataService: 删除提示词同步成功');
+                break;
+            default:
+                throw new Error(`未知的同步操作类型: ${operation}`);
+        }
+    }
+
+    /**
+     * 添加操作到同步队列（内部方法）
+     * @param {string} operation - 操作类型
+     * @param {Object} promptData - 提示词数据
+     * @param {string} errorMessage - 错误信息（可选）
+     * @private
+     */
+    async _addToSyncQueue(operation, promptData, errorMessage = null) {
+        try {
+            const operationId = this._generateId();
+            const queueItem = {
+                id: operationId,
+                operation,
+                promptData,
+                errorMessage,
+                timestamp: new Date().toISOString(),
+                retryCount: 0
+            };
+            
+            await this.addToSyncQueue(queueItem);
+            console.log('DataService: 操作已添加到同步队列:', operationId);
+        } catch (error) {
+            console.error('DataService: 添加到同步队列失败:', error);
+        }
+    }
+
+    /**
+     * 检查是否已加载默认模板
+     * @returns {Promise<boolean>}
+     */
+    async isDefaultTemplatesLoaded() {
+        await this.initialize();
+        try {
+            const result = await this._getFromStorage([STORAGE_KEYS.DEFAULT_TEMPLATES_LOADED]);
+            return result[STORAGE_KEYS.DEFAULT_TEMPLATES_LOADED] || false;
+        } catch (error) {
+            console.error('检查默认模板加载状态失败:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 标记默认模板已加载
+     * @returns {Promise<void>}
+     */
+    async setDefaultTemplatesLoaded() {
+        await this.initialize();
+        try {
+            await this._setToStorage({ [STORAGE_KEYS.DEFAULT_TEMPLATES_LOADED]: true });
+            console.log('已标记默认模板为已加载');
+        } catch (error) {
+            console.error('标记默认模板加载状态失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 将默认提示词复制到用户区域
+     * @param {Array} defaultPrompts - 默认提示词数组
+     * @returns {Promise<void>}
+     */
+    async copyDefaultPromptsToUserArea(defaultPrompts) {
+        await this.initialize();
+        try {
+            // 获取现有的用户提示词
+            const existingPrompts = await this.getAllPrompts();
+            
+            // 检查哪些默认提示词还没有被复制过
+            const existingIds = new Set(existingPrompts.map(p => p.id));
+            const newDefaultPrompts = defaultPrompts.filter(prompt => !existingIds.has(prompt.id));
+            
+            if (newDefaultPrompts.length === 0) {
+                console.log('所有默认提示词已存在，无需复制');
+                return;
+            }
+            
+            // 保留默认提示词的原始ID，只补充必要字段
+            const userPrompts = newDefaultPrompts.map(prompt => ({
+                ...prompt,
+                // 保留原始ID，不重新生成
+                user_id: 'local-user',
+                // 保留原始时间戳或使用当前时间
+                created_at: prompt.created_at || new Date().toISOString(),
+                updated_at: prompt.updated_at || new Date().toISOString(),
+                is_deleted: false,
+                source: 'default_template' // 标记来源为默认模板
+            }));
+            
+            // 合并现有提示词和新的默认提示词
+            const allPrompts = [...existingPrompts, ...userPrompts];
+            
+            // 保存到用户区域
+            await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: allPrompts });
+            
+            console.log('默认提示词已复制到用户区域:', userPrompts.length, '条');
+        } catch (error) {
+            console.error('复制默认提示词到用户区域失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 数据迁移：处理现有用户数据到新结构
+     * @returns {Promise<void>}
+     */
+    async migrateExistingUserData() {
+        await this.initialize();
+        try {
+            // 检查是否已经迁移过
+            const isTemplatesLoaded = await this.isDefaultTemplatesLoaded();
+            if (isTemplatesLoaded) {
+                console.log('数据已迁移，跳过迁移过程');
+                return;
+            }
+            
+            // 获取现有数据
+            const existingPrompts = await this.getAllPrompts();
+            
+            if (existingPrompts.length > 0) {
+                // 为现有数据添加source标记，表示这些是用户数据
+                const migratedPrompts = existingPrompts.map(prompt => ({
+                    ...prompt,
+                    source: prompt.source || 'user_created', // 标记为用户创建的数据
+                    user_id: prompt.user_id || 'local-user'
+                }));
+                
+                // 保存迁移后的数据
+                await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: migratedPrompts });
+                
+                console.log('现有用户数据迁移完成:', migratedPrompts.length, '条');
+            }
+            
+            // 标记迁移完成（但不标记默认模板已加载，让后续流程处理默认模板）
+            console.log('用户数据迁移流程完成');
+        } catch (error) {
+            console.error('用户数据迁移失败:', error);
+            throw error;
         }
     }
 

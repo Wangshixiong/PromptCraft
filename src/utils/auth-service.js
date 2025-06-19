@@ -182,12 +182,26 @@ async function isAuthenticated() {
     }
 }
 
+/**
+ * 获取当前用户信息
+ */
+async function getCurrentUser() {
+    try {
+        const { session, user } = await getSession();
+        return user;
+    } catch (error) {
+        console.error('获取当前用户失败:', error);
+        return null;
+    }
+}
+
 // 导出认证服务对象
 const authService = {
     signInWithGoogle,
     signOut,
     getSession,
     isAuthenticated,
+    getCurrentUser,
     onAuthStateChange: (callback) => supabaseClient.auth.onAuthStateChange(callback),
     // 暴露 Supabase 客户端以供其他用途
     client: supabaseClient
@@ -196,6 +210,7 @@ const authService = {
 // 确保全局可访问
 if (typeof window !== 'undefined') {
     window.authService = authService;
+    window.supabase = supabaseClient;
 }
 
 // CommonJS 导出

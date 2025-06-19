@@ -34,22 +34,28 @@ async function loadDefaultPromptsToMemory() {
         
         const defaultPrompts = await response.json();
         
-        // 为每个提示词添加完整的数据结构
-        const processedPrompts = defaultPrompts.map((prompt) => ({
-            ...prompt,
-            id: prompt.id || UUIDUtils.generateUUID(), // 使用现有id或生成新的UUID
-            user_id: 'local-user',
-            created_at: prompt.created_at || new Date().toISOString(),
-            updated_at: prompt.updated_at || new Date().toISOString(),
-            is_deleted: prompt.is_deleted || false
-        }));
+        // 首先进行数据迁移（处理现有用户数据）
+        await dataService.migrateExistingUserData();
         
-        // 将处理后的数据保存到存储
-        await dataService.setAllPrompts(processedPrompts);
+        // 检查是否已经加载过默认模板
+        const isTemplatesLoaded = await dataService.isDefaultTemplatesLoaded();
+        
+        if (!isTemplatesLoaded) {
+            // 将默认提示词复制到用户区域（生成新的用户ID）
+            await dataService.copyDefaultPromptsToUserArea(defaultPrompts);
+            
+            // 标记默认模板已加载
+            await dataService.setDefaultTemplatesLoaded();
+            
+            console.log('PromptCraft: Default prompts copied to user area, count:', defaultPrompts.length);
+        } else {
+            console.log('PromptCraft: Default templates already loaded, skipping...');
+        }
+        
         await dataService.setHasData(true);
         await dataService.setThemeMode('auto'); // 默认主题设置
         
-        console.log('PromptCraft: Default prompts loaded successfully, count:', processedPrompts.length);
+        console.log('PromptCraft: Initialization completed successfully');
         
     } catch (error) {
         console.error('PromptCraft: Failed to load default prompts:', error);

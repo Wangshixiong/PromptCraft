@@ -201,16 +201,20 @@
                                 <div class="sync-option">
                                     <div class="sync-info">
                                         <span class="sync-label">云端数据同步</span>
-                                        <span class="sync-description">下个版本即将推出</span>
+                                        <span class="sync-description">自动同步您的提示词数据</span>
                                     </div>
                                     <div class="sync-toggle">
-                                        <input type="checkbox" id="syncToggle" disabled>
+                                        <input type="checkbox" id="syncToggle" checked>
                                         <label for="syncToggle" class="toggle-label"></label>
                                     </div>
                                 </div>
                                 <div class="sync-status" id="syncStatus">
-                                    <i class="fas fa-info-circle"></i>
-                                    <span>云同步功能正在开发中，敬请期待</span>
+                                    <i class="fas fa-check-circle sync-status-icon"></i>
+                                    <span class="sync-status-text">同步已启用</span>
+                                    <div class="sync-indicator" id="syncIndicator" style="display: none;">
+                                        <i class="fas fa-sync-alt fa-spin"></i>
+                                        <span>正在同步...</span>
+                                    </div>
                                 </div>
                             </div>
                             <button class="logout-btn" id="logoutBtn">
