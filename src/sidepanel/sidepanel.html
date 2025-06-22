@@ -22,9 +22,7 @@
                 </div>
                 <div class="controls">
                     <button class="btn settings-btn" id="settingsBtn" title="设置">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="settings-icon">
-                            <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
-                        </svg>
+                        <i class="fas fa-cog settings-icon"></i>
                     </button>
                 </div>
             </div>
@@ -166,60 +164,41 @@
             <div class="settings-body">
                 <!-- 账户与同步模块 -->
                 <div class="settings-section">
-                    <h4><i class="fas fa-user-shield"></i> 账户与同步</h4>
-                    <div class="auth-section">
-                        <!-- 未登录状态 -->
-                        <div class="auth-content" id="loggedOutSection">
-                            <div class="auth-info">
-                                <p class="auth-description">登录后可启用云端数据同步功能</p>
+                    <h4><i class="fas fa-user"></i> 账户与同步</h4>
+                    
+                    <!-- 未登录状态 -->
+                    <div id="loggedOutSection">
+                        <button class="google-signin-btn" id="googleSignInBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" class="google-icon">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                            <span class="btn-text">使用 Google 登录</span>
+                        </button>
+                    </div>
+                    
+                    <!-- 已登录状态 -->
+                    <div id="loggedInSection" style="display: none;">
+                        <div class="user-info-card">
+                            <div class="user-avatar" id="userAvatar" style="display: none;">
+                                <img class="avatar-img" alt="用户头像">
                             </div>
-                            <button class="google-signin-btn" id="googleSignInBtn">
-                                <svg width="18" height="18" viewBox="0 0 24 24" style="margin-right: 8px;">
-                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                                </svg>
-                                使用 Google 登录
-                            </button>
+                            <div class="default-avatar" id="defaultAvatar">
+                                AI
+                            </div>
+                            <div class="user-info">
+                                <div class="user-name" id="userName" title="AI PM">AI PM</div>
+                                <div class="user-email" id="userEmail" title="pm@example.com">pm@example.com</div>
+                            </div>
+                            <button class="logout-btn" id="logoutBtn">退出登录</button>
                         </div>
-                        <!-- 已登录状态 -->
-                        <div class="auth-content" id="loggedInSection" style="display: none;">
-                            <div class="user-info-card">
-                                <div class="user-avatar-container">
-                                    <img id="userAvatarSettings" class="user-avatar-large" style="display: none;" alt="用户头像">
-                                    <div id="defaultUserIconSettings" class="default-avatar">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                </div>
-                                <div class="user-details">
-                                    <div class="user-email" id="userEmailSettings"></div>
-                                    <div class="user-status">已登录</div>
-                                </div>
-                            </div>
-                            <div class="sync-controls">
-                                <div class="sync-option">
-                                    <div class="sync-info">
-                                        <span class="sync-label">云端数据同步</span>
-                                        <span class="sync-description">自动同步您的提示词数据</span>
-                                    </div>
-                                    <div class="sync-toggle">
-                                        <input type="checkbox" id="syncToggle" checked>
-                                        <label for="syncToggle" class="toggle-label"></label>
-                                    </div>
-                                </div>
-                                <div class="sync-status" id="syncStatus">
-                                    <i class="fas fa-check-circle sync-status-icon"></i>
-                                    <span class="sync-status-text">同步已启用</span>
-                                    <div class="sync-indicator" id="syncIndicator" style="display: none;">
-                                        <i class="fas fa-sync-alt fa-spin"></i>
-                                        <span>正在同步...</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <button class="logout-btn" id="logoutBtn">
-                                <i class="fas fa-sign-out-alt"></i>
-                                退出登录
+                        
+                        <div class="sync-section">
+                            <div class="sync-time" id="syncTime">最后同步时间: 尚未同步</div>
+                            <button class="manual-sync-btn" id="manualSyncBtn" title="手动同步">
+                                <i class="fas fa-sync-alt"></i>
                             </button>
                         </div>
                     </div>
@@ -269,10 +248,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="data-storage-notice">
-                        <i class="fas fa-shield-alt"></i>
-                        <span>当前版本数据仅保存在本地设备</span>
-                    </div>
+
                 </div>
                 
                 <!-- 关于模块 -->

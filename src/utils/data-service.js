@@ -45,6 +45,8 @@ class DataService {
         this.isInitialized = false;
         this.initPromise = null;
         this.syncService = null; // 同步服务实例
+        this.batchMode = false; // 批量操作模式
+        this.pendingNotifications = []; // 待发送的通知队列
     }
 
     /**
@@ -129,10 +131,11 @@ class DataService {
     /**
      * 向存储中写入数据的底层方法
      * @param {Object} data - 要写入的数据
+     * @param {boolean} [notifyChange=true] - 是否触发数据变更通知
      * @returns {Promise<void>}
      * @private
      */
-    async _setToStorage(data) {
+    async _setToStorage(data, notifyChange = true) {
         return new Promise((resolve, reject) => {
             try {
                 chrome.storage.local.set(data, () => {
@@ -142,8 +145,10 @@ class DataService {
                         reject(error);
                         return;
                     }
-                    // 数据设置成功后，发送变更通知
-                    this._notifyDataChange(data);
+                    // 根据参数决定是否发送变更通知
+                    if (notifyChange) {
+                        this._notifyDataChange(data);
+                    }
                     resolve();
                 });
             } catch (error) {
@@ -447,7 +452,15 @@ class DataService {
                 };
             });
 
-            await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: validatedPrompts });
+            // 在批量模式下，禁用自动通知，手动控制通知时机
+            const shouldNotify = !this.batchMode;
+            await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: validatedPrompts }, shouldNotify);
+            
+            // 如果不在批量模式下，手动触发数据变更通知
+            if (shouldNotify) {
+                this._notifyDataChange({ [STORAGE_KEYS.PROMPTS]: validatedPrompts });
+            }
+            
             console.log('批量设置提示词成功:', validatedPrompts.length, '条');
         } catch (error) {
             console.error('批量设置提示词失败:', error);
@@ -1001,11 +1014,77 @@ class DataService {
     }
 
     /**
+     * 启用批量操作模式
+     * 在批量操作模式下，数据变更通知会被缓存，直到调用flushNotifications
+     */
+    enableBatchMode() {
+        this.batchMode = true;
+        this.pendingNotifications = [];
+        console.log('批量操作模式已启用');
+    }
+
+    /**
+     * 禁用批量操作模式并发送所有待发送的通知
+     */
+    disableBatchMode() {
+        this.batchMode = false;
+        this.flushNotifications();
+        console.log('批量操作模式已禁用');
+    }
+
+    /**
+     * 发送所有待发送的通知
+     */
+    flushNotifications() {
+        if (this.pendingNotifications.length > 0) {
+            const notificationCount = this.pendingNotifications.length;
+            
+            // 无论缓存了多少个通知，只发送一次 DATA_CHANGED 消息
+            // 这样可以避免重复的 UI 刷新
+            const mergedData = { prompts: true }; // 简化的通知数据
+            
+            // 发送合并后的通知
+            this._sendNotification(mergedData);
+            this.pendingNotifications = [];
+            console.log(`已发送合并的数据变更通知 (合并了 ${notificationCount} 个待发送通知)`);
+        }
+    }
+
+    /**
      * 发送数据变更通知
      * @param {Object} changedData 变更的数据
      * @private
      */
     _notifyDataChange(changedData) {
+        if (this.batchMode) {
+            // 批量模式下，缓存通知
+            // 改进的去重逻辑：检查是否已经有 DATA_CHANGED 类型的通知
+            const hasDataChangeNotification = this.pendingNotifications.some(
+                notification => notification.type === 'DATA_CHANGED'
+            );
+            
+            if (!hasDataChangeNotification) {
+                this.pendingNotifications.push({
+                    type: 'DATA_CHANGED',
+                    data: changedData,
+                    timestamp: Date.now()
+                });
+                console.debug('数据变更通知已缓存（批量模式）');
+            } else {
+                console.debug('DATA_CHANGED 通知已存在，跳过重复缓存（批量模式）');
+            }
+        } else {
+            // 立即发送通知
+            this._sendNotification(changedData);
+        }
+    }
+
+    /**
+     * 实际发送通知的方法
+     * @param {Object} changedData 变更的数据
+     * @private
+     */
+    _sendNotification(changedData) {
         try {
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
                 // 发送数据变更通知给所有监听的组件

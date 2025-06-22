@@ -310,6 +310,10 @@ class SyncService {
         
         try {
             console.log('开始执行完整同步...');
+            
+            // 启用批量操作模式，避免多次UI刷新
+            this.dataService.enableBatchMode();
+            
             this._updateSyncStatus(SYNC_STATUS.SYNCING);
             
             // 1. 检查用户认证状态
@@ -369,9 +373,6 @@ class SyncService {
             console.log('完整同步完成:', syncResults);
             this._updateSyncStatus(SYNC_STATUS.SUCCESS, '同步完成');
             
-            // 6. 触发数据变更通知，让界面刷新
-            this._notifyDataChanged('SYNC_COMPLETED', syncResults);
-            
             return {
                 success: true,
                 results: syncResults,
@@ -383,6 +384,11 @@ class SyncService {
             this._updateSyncStatus(SYNC_STATUS.ERROR);
             throw new Error(`同步失败: ${error.message}`);
         } finally {
+            // 禁用批量模式并发送合并的数据变更通知
+            this.dataService.disableBatchMode();
+            
+            // 发送同步完成的特殊通知（不重复发送DATA_CHANGED）
+            this._notifyDataChanged('SYNC_COMPLETED', { timestamp: Date.now() });
             // 释放同步状态锁
             this.isSyncing = false;
             console.log('完整同步状态锁已释放');
@@ -1083,9 +1089,9 @@ class SyncService {
     _notifyDataChanged(operation, data) {
         try {
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-                // 发送数据变更通知给所有监听的组件
+                // 发送同步状态通知给所有监听的组件
                 chrome.runtime.sendMessage({
-                    type: 'DATA_CHANGED',
+                    type: 'SYNC_STATUS_CHANGED',
                     operation: operation,
                     data: data,
                     timestamp: Date.now()
@@ -1095,7 +1101,7 @@ class SyncService {
                         // 静默处理错误，避免控制台噪音
                     }
                 });
-                console.log('已发送数据变更通知:', operation);
+                console.log('已发送同步状态通知:', operation);
             }
         } catch (error) {
             // 静默处理错误，避免影响主要功能

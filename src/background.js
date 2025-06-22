@@ -468,18 +468,25 @@ chrome.runtime.onStartup.addListener(async () => {
           }
           
           console.log('Background: 开始执行Google登录流程...');
-          const result = await authServiceInstance.signInWithGoogle();
+          
+          // 创建进度回调函数
+          const progressCallback = message.progressCallback ? (stage, progressMessage) => {
+            // 向sidepanel发送进度更新
+            chrome.runtime.sendMessage({
+              type: 'LOGIN_PROGRESS',
+              stage: stage,
+              message: progressMessage
+            }).catch(err => {
+              console.log('Background: 发送登录进度消息失败（可能sidepanel未打开）:', err);
+            });
+          } : null;
+          
+          const result = await authServiceInstance.signInWithGoogle(progressCallback);
           
           if (result && result.success) {
             console.log('Background: Google登录成功，用户:', result.user.email);
             
-            // 向 sidepanel 发送UI更新指令
-            chrome.runtime.sendMessage({
-              type: 'UPDATE_AUTH_UI',
-              session: result.session
-            }).catch(err => {
-              console.log('Background: 发送UI更新消息失败（可能sidepanel未打开）:', err);
-            });
+            // UI更新由sync-service的认证状态监听器统一处理，避免重复发送
             
             sendResponse({
               success: true,
@@ -525,13 +532,7 @@ chrome.runtime.onStartup.addListener(async () => {
            
            console.log('Background: 退出登录成功');
            
-           // 向 sidepanel 发送UI更新指令
-           chrome.runtime.sendMessage({
-             type: 'UPDATE_AUTH_UI',
-             session: null
-           }).catch(err => {
-             console.log('Background: 发送UI更新消息失败（可能sidepanel未打开）:', err);
-           });
+           // UI更新由sync-service的认证状态监听器统一处理，避免重复发送
            
            sendResponse({
              success: true
@@ -547,6 +548,38 @@ chrome.runtime.onStartup.addListener(async () => {
            }).catch(err => {
              console.log('Background: 发送退出错误消息失败（可能sidepanel未打开）:', err);
            });
+           
+           sendResponse({
+             success: false,
+             error: error.message
+           });
+         }
+       })();
+       
+       return true;
+     }
+     
+     // 处理MANUAL_SYNC请求（手动同步）
+     if (message.type === 'MANUAL_SYNC') {
+       console.log('Background: 收到MANUAL_SYNC消息请求');
+       
+       (async () => {
+         try {
+           if (!syncServiceInstance) {
+             throw new Error('同步服务未初始化');
+           }
+           
+           console.log('Background: 开始执行手动同步...');
+           await syncServiceInstance.performFullSync();
+           
+           console.log('Background: 手动同步完成');
+           
+           sendResponse({
+             success: true
+           });
+           
+         } catch (error) {
+           console.error('Background: 手动同步失败:', error);
            
            sendResponse({
              success: false,
