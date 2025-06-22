@@ -1035,15 +1035,17 @@ if (typeof module !== 'undefined' && module.exports) {
     // Node.js 环境
     module.exports = { DataService, dataService };
 } else if (typeof window !== 'undefined') {
-    // 浏览器环境
-    window.DataService = DataService;
-    window.dataService = dataService;
-    
-    // 提供向后兼容的函数接口
-    window.getAllPrompts = () => dataService.getAllPrompts();
-    window.addPrompt = (promptData) => dataService.addPrompt(promptData);
-    window.updatePrompt = (id, updates) => dataService.updatePrompt(id, updates);
-    window.deletePrompt = (id) => dataService.deletePrompt(id);
+    // 将服务实例暴露到全局作用域
+// 在 Chrome 扩展环境中，background.js 没有 window 对象，使用 globalThis
+const globalScope = typeof window !== 'undefined' ? window : globalThis;
+globalScope.DataService = DataService;
+globalScope.dataService = dataService;
+
+// 为了向后兼容，暴露一些常用方法
+globalScope.getAllPrompts = () => dataService.getAllPrompts();
+globalScope.addPrompt = (promptData) => dataService.addPrompt(promptData);
+globalScope.updatePrompt = (id, updates) => dataService.updatePrompt(id, updates);
+globalScope.deletePrompt = (id) => dataService.deletePrompt(id);
 } else {
     // Service Worker环境
     globalThis.DataService = DataService;

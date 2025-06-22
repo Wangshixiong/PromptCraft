@@ -22,12 +22,11 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 /**
- * 使用 Google OAuth 进行登录 - Chrome 扩展标准实现
- * 使用 chrome.identity.launchWebAuthFlow 进行认证
+ * 使用 Google 登录
  */
 async function signInWithGoogle() {
     try {
-        console.log('开始 Google 登录流程');
+        console.log('开始 Google 登录流程...');
         
         // 1. 获取 Chrome 扩展的重定向 URL
         const redirectURL = chrome.identity.getRedirectURL();
@@ -54,10 +53,18 @@ async function signInWithGoogle() {
 
         // 3. 使用 chrome.identity.launchWebAuthFlow 进行认证
         return new Promise((resolve, reject) => {
+            // 设置超时处理，防止认证流程卡死
+            const timeoutId = setTimeout(() => {
+                reject(new Error('认证超时，请重试'));
+            }, 60000); // 60秒超时
+            
             chrome.identity.launchWebAuthFlow({
                 url: data.url,
                 interactive: true
             }, async (responseUrl) => {
+                // 清除超时定时器
+                clearTimeout(timeoutId);
+                
                 if (chrome.runtime.lastError) {
                     console.error('认证流程失败:', chrome.runtime.lastError);
                     reject(new Error(chrome.runtime.lastError.message));
@@ -81,6 +88,12 @@ async function signInWithGoogle() {
                     const error = hashParams.get('error');
                     const errorDescription = hashParams.get('error_description');
                     
+                    console.log('解析到的令牌信息:', {
+                        hasAccessToken: !!accessToken,
+                        hasRefreshToken: !!refreshToken,
+                        error: error
+                    });
+                    
                     if (error) {
                         console.error('OAuth 认证失败:', error, errorDescription);
                         reject(new Error(`认证失败: ${error} - ${errorDescription}`));
@@ -88,9 +101,12 @@ async function signInWithGoogle() {
                     }
                     
                     if (!accessToken || !refreshToken) {
+                        console.error('令牌缺失 - accessToken:', !!accessToken, 'refreshToken:', !!refreshToken);
                         reject(new Error('未能获取到有效的认证令牌'));
                         return;
                     }
+                    
+                    console.log('开始设置 Supabase 会话...');
                     
                     // 5. 设置 Supabase 会话
                     const { data: sessionData, error: sessionError } = await supabaseClient.auth.setSession({
@@ -104,7 +120,19 @@ async function signInWithGoogle() {
                         return;
                     }
                     
+                    if (!sessionData || !sessionData.session || !sessionData.user) {
+                        console.error('会话数据无效:', sessionData);
+                        reject(new Error('会话设置成功但数据无效'));
+                        return;
+                    }
+                    
                     console.log('用户认证成功:', sessionData.user.email);
+                    console.log('会话设置完成，会话ID:', sessionData.session.access_token.substring(0, 20) + '...');
+                    
+                    // 确保认证状态变化事件能够正确触发
+                    setTimeout(() => {
+                        console.log('延迟触发认证状态检查...');
+                    }, 100);
                     
                     resolve({
                         success: true,
@@ -209,8 +237,10 @@ const authService = {
 
 // 确保全局可访问
 if (typeof window !== 'undefined') {
-    window.authService = authService;
-    window.supabase = supabaseClient;
+    // 在 Chrome 扩展环境中，background.js 没有 window 对象，使用 globalThis
+    const globalScope = typeof window !== 'undefined' ? window : globalThis;
+    globalScope.authService = authService;
+    globalScope.supabase = supabaseClient;
 }
 
 // CommonJS 导出

@@ -8,6 +8,9 @@ importScripts('utils/data-service.js');
 importScripts('libs/supabase.min.js');
 importScripts('background/auth-handler.js');
 
+// 导入同步服务
+importScripts('utils/sync-service.js');
+
 // 从default-prompts.json加载默认提示词数据
 async function loadDefaultPromptsToMemory() {
     try {
@@ -141,8 +144,9 @@ chrome.runtime.onStartup.addListener(async () => {
     chrome.sidePanel.open({ windowId: tab.windowId });
   });
   
-  // 监听来自content script的消息
+  // 监听来自content script和sidepanel的消息
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    // 处理content script的getPrompts请求（保持向后兼容）
     if (message.action === 'getPrompts') {
       // 从数据服务中获取提示词数据
       (async () => {
@@ -166,5 +170,445 @@ chrome.runtime.onStartup.addListener(async () => {
       })();
       return true; // 保持消息通道开放以支持异步响应
     }
-  });
+    
+    // 处理sidepanel的GET_ALL_PROMPTS请求（新的消息驱动架构）
+    if (message.type === 'GET_ALL_PROMPTS') {
+      console.log('PromptCraft: 收到GET_ALL_PROMPTS消息请求');
+      
+      (async () => {
+        try {
+          // 调用数据服务获取所有提示词
+          const prompts = await dataService.getAllPrompts();
+          
+          // 检查是否有加载错误
+          const loadError = await dataService.getLoadError();
+          
+          console.log('PromptCraft: 成功获取提示词数据，数量:', prompts.length);
+          
+          // 返回标准化的响应格式
+          sendResponse({
+            success: true,
+            data: prompts,
+            error: null,
+            loadError: loadError.hasError ? {
+              hasError: true,
+              message: loadError.message || '数据加载存在问题'
+            } : null
+          });
+          
+        } catch (error) {
+          console.error('PromptCraft: 处理GET_ALL_PROMPTS请求时发生错误:', error);
+          
+          // 返回错误响应
+          sendResponse({
+            success: false,
+            data: null,
+            error: `获取提示词失败: ${error.message}`
+          });
+        }
+      })();
+      
+      return true; // 保持消息通道开放以支持异步响应
+    }
+    
+    // 处理ADD_PROMPT请求（添加新提示词）
+    if (message.type === 'ADD_PROMPT') {
+      console.log('PromptCraft: 收到ADD_PROMPT消息请求');
+      
+      (async () => {
+        try {
+          // 调用数据服务添加提示词
+          const savedPrompt = await dataService.addPrompt(message.payload);
+          
+          console.log('PromptCraft: 成功添加提示词，ID:', savedPrompt.id);
+          
+          // 返回成功响应
+          sendResponse({
+            success: true,
+            data: savedPrompt
+          });
+          
+        } catch (error) {
+          console.error('PromptCraft: 处理ADD_PROMPT请求时发生错误:', error);
+          
+          // 返回错误响应
+          sendResponse({
+            success: false,
+            error: error.message
+          });
+        }
+      })();
+      
+      return true; // 保持消息通道开放以支持异步响应
+    }
+    
+    // 处理UPDATE_PROMPT请求（更新提示词）
+    if (message.type === 'UPDATE_PROMPT') {
+      console.log('PromptCraft: 收到UPDATE_PROMPT消息请求');
+      
+      (async () => {
+        try {
+          // 调用数据服务更新提示词
+          const updatedPrompt = await dataService.updatePrompt(message.payload.id, message.payload.data);
+          
+          console.log('PromptCraft: 成功更新提示词，ID:', message.payload.id);
+          
+          // 返回成功响应
+          sendResponse({
+            success: true,
+            data: updatedPrompt
+          });
+          
+        } catch (error) {
+          console.error('PromptCraft: 处理UPDATE_PROMPT请求时发生错误:', error);
+          
+          // 返回错误响应
+          sendResponse({
+            success: false,
+            error: error.message
+          });
+        }
+      })();
+      
+      return true; // 保持消息通道开放以支持异步响应
+    }
+    
+    // 处理DELETE_PROMPT请求（删除提示词）
+    if (message.type === 'DELETE_PROMPT') {
+      console.log('PromptCraft: 收到DELETE_PROMPT消息请求');
+      
+      (async () => {
+        try {
+          // 调用数据服务删除提示词
+          const success = await dataService.deletePrompt(message.payload);
+          
+          console.log('PromptCraft: 成功删除提示词，ID:', message.payload);
+          
+          // 返回成功响应
+          sendResponse({
+            success: true,
+            data: success
+          });
+          
+        } catch (error) {
+          console.error('PromptCraft: 处理DELETE_PROMPT请求时发生错误:', error);
+          
+          // 返回错误响应
+          sendResponse({
+            success: false,
+            error: error.message
+          });
+        }
+      })();
+      
+      return true; // 保持消息通道开放以支持异步响应
+    }
+    
+    // 处理GET_THEME_MODE请求（获取主题模式）
+    if (message.type === 'GET_THEME_MODE') {
+      console.log('PromptCraft: 收到GET_THEME_MODE消息请求');
+      
+      (async () => {
+        try {
+          const themeMode = await dataService.getThemeMode();
+          
+          console.log('PromptCraft: 成功获取主题模式:', themeMode);
+          
+          sendResponse({
+            success: true,
+            data: themeMode
+          });
+          
+        } catch (error) {
+          console.error('PromptCraft: 处理GET_THEME_MODE请求时发生错误:', error);
+          
+          sendResponse({
+            success: false,
+            error: error.message
+          });
+        }
+      })();
+      
+      return true;
+    }
+    
+    // 处理SET_THEME_MODE请求（设置主题模式）
+    if (message.type === 'SET_THEME_MODE') {
+      console.log('PromptCraft: 收到SET_THEME_MODE消息请求');
+      
+      (async () => {
+        try {
+          await dataService.setThemeMode(message.payload);
+          
+          console.log('PromptCraft: 成功设置主题模式:', message.payload);
+          
+          sendResponse({
+            success: true
+          });
+          
+        } catch (error) {
+          console.error('PromptCraft: 处理SET_THEME_MODE请求时发生错误:', error);
+          
+          sendResponse({
+            success: false,
+            error: error.message
+          });
+        }
+      })();
+      
+      return true;
+    }
+    
+    // 处理CLEAR_ALL_PROMPTS请求（清空所有提示词）
+    if (message.type === 'CLEAR_ALL_PROMPTS') {
+      console.log('PromptCraft: 收到CLEAR_ALL_PROMPTS消息请求');
+      
+      (async () => {
+        try {
+          await dataService.clearAllPrompts();
+          
+          console.log('PromptCraft: 成功清空所有提示词');
+          
+          sendResponse({
+            success: true
+          });
+          
+        } catch (error) {
+          console.error('PromptCraft: 处理CLEAR_ALL_PROMPTS请求时发生错误:', error);
+          
+          sendResponse({
+            success: false,
+            error: error.message
+          });
+        }
+      })();
+      
+      return true;
+    }
+    
+    // 处理IMPORT_PROMPTS请求（导入提示词）
+    if (message.type === 'IMPORT_PROMPTS') {
+      console.log('PromptCraft: 收到IMPORT_PROMPTS消息请求');
+      
+      (async () => {
+        try {
+          const { importedPrompts } = message.payload;
+          
+          // 获取现有提示词
+          const existingPrompts = await dataService.getAllPrompts();
+          
+          // 处理重名提示词的更新策略
+          let addedCount = 0;
+          let updatedCount = 0;
+          const finalPrompts = [...existingPrompts];
+          
+          importedPrompts.forEach(newPrompt => {
+            // 查找是否存在同名提示词
+            const existingIndex = finalPrompts.findIndex(existing => 
+              existing.title.trim().toLowerCase() === newPrompt.title.trim().toLowerCase()
+            );
+            
+            if (existingIndex !== -1) {
+              // 更新现有提示词
+              finalPrompts[existingIndex] = {
+                ...finalPrompts[existingIndex],
+                content: newPrompt.content,
+                category: newPrompt.category,
+                updated_at: new Date().toISOString()
+              };
+              updatedCount++;
+            } else {
+              // 添加新提示词到开头
+              finalPrompts.unshift({
+                ...newPrompt,
+                id: UUIDUtils.generateUUID(),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                is_deleted: false
+              });
+              addedCount++;
+            }
+          });
+          
+          // 保存最终数据
+          await dataService.setAllPrompts(finalPrompts);
+          
+          console.log('PromptCraft: 成功导入提示词，新增:', addedCount, '更新:', updatedCount);
+          
+          sendResponse({ 
+            success: true, 
+            data: {
+              addedCount,
+              updatedCount,
+              total: importedPrompts.length
+            }
+          });
+          
+        } catch (error) {
+          console.error('PromptCraft: 处理IMPORT_PROMPTS请求时发生错误:', error);
+          
+          sendResponse({
+            success: false,
+            error: error.message
+          });
+        }
+      })();
+      
+      return true;
+    }
+    
+    // 处理LOGIN_WITH_GOOGLE请求（Google登录）
+    if (message.type === 'LOGIN_WITH_GOOGLE') {
+      console.log('Background: 收到LOGIN_WITH_GOOGLE消息请求');
+      
+      (async () => {
+        try {
+          if (!authServiceInstance) {
+            throw new Error('认证服务未初始化');
+          }
+          
+          console.log('Background: 开始执行Google登录流程...');
+          const result = await authServiceInstance.signInWithGoogle();
+          
+          if (result && result.success) {
+            console.log('Background: Google登录成功，用户:', result.user.email);
+            
+            // 向 sidepanel 发送UI更新指令
+            chrome.runtime.sendMessage({
+              type: 'UPDATE_AUTH_UI',
+              session: result.session
+            }).catch(err => {
+              console.log('Background: 发送UI更新消息失败（可能sidepanel未打开）:', err);
+            });
+            
+            sendResponse({
+              success: true,
+              data: result
+            });
+          } else {
+            throw new Error('登录失败，未返回有效结果');
+          }
+          
+        } catch (error) {
+          console.error('Background: Google登录失败:', error);
+          
+          // 向 sidepanel 发送错误通知
+          chrome.runtime.sendMessage({
+            type: 'LOGIN_ERROR',
+            error: error.message
+          }).catch(err => {
+            console.log('Background: 发送登录错误消息失败（可能sidepanel未打开）:', err);
+          });
+          
+          sendResponse({
+            success: false,
+            error: error.message
+          });
+        }
+      })();
+      
+      return true;
+     }
+     
+     // 处理LOGOUT请求（退出登录）
+     if (message.type === 'LOGOUT') {
+       console.log('Background: 收到LOGOUT消息请求');
+       
+       (async () => {
+         try {
+           if (!authServiceInstance) {
+             throw new Error('认证服务未初始化');
+           }
+           
+           console.log('Background: 开始执行退出登录流程...');
+           await authServiceInstance.signOut();
+           
+           console.log('Background: 退出登录成功');
+           
+           // 向 sidepanel 发送UI更新指令
+           chrome.runtime.sendMessage({
+             type: 'UPDATE_AUTH_UI',
+             session: null
+           }).catch(err => {
+             console.log('Background: 发送UI更新消息失败（可能sidepanel未打开）:', err);
+           });
+           
+           sendResponse({
+             success: true
+           });
+           
+         } catch (error) {
+           console.error('Background: 退出登录失败:', error);
+           
+           // 向 sidepanel 发送错误通知
+           chrome.runtime.sendMessage({
+             type: 'LOGOUT_ERROR',
+             error: error.message
+           }).catch(err => {
+             console.log('Background: 发送退出错误消息失败（可能sidepanel未打开）:', err);
+           });
+           
+           sendResponse({
+             success: false,
+             error: error.message
+           });
+         }
+       })();
+       
+       return true;
+     }
+   });
+  
+// 服务实例管理
+let authServiceInstance = null;
+let dataServiceInstance = null;
+let syncServiceInstance = null;
+
+// 初始化所有服务
+async function initializeServices() {
+  try {
+    // 1. 创建认证服务实例
+    if (typeof authService !== 'undefined') {
+      authServiceInstance = authService;
+      console.log('PromptCraft: authService 实例创建成功');
+    } else {
+      console.error('PromptCraft: authService 未定义');
+      return;
+    }
+    
+    // 2. 创建数据服务实例
+    if (typeof dataService !== 'undefined') {
+      dataServiceInstance = dataService;
+      console.log('PromptCraft: dataService 实例创建成功');
+    } else {
+      console.error('PromptCraft: dataService 未定义');
+      return;
+    }
+    
+    // 3. 创建同步服务实例并注入依赖
+    if (typeof SyncService !== 'undefined') {
+      syncServiceInstance = new SyncService(
+        authServiceInstance,
+        dataServiceInstance,
+        supabaseClient
+      );
+      
+      // 设置 dataService 的同步服务引用
+      dataServiceInstance.setSyncService(syncServiceInstance);
+      
+      // 初始化同步服务
+      await syncServiceInstance.initialize();
+      
+      console.log('PromptCraft: SyncService 实例创建并初始化成功');
+    } else {
+      console.error('PromptCraft: SyncService 未定义');
+    }
+    
+  } catch (error) {
+    console.error('PromptCraft: 服务初始化失败:', error);
+  }
+}
+
+// 在扩展启动时初始化服务
+initializeServices();
   

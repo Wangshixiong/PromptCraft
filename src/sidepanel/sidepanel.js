@@ -59,8 +59,6 @@ let currentUser = null;
 let themeMode = 'auto';
 let currentView = null;
 let isProcessingContextMenu = false; // 标记是否正在处理右键菜单消息
-let authServiceInstance = null; // 认证服务实例
-let syncServiceInstance = null; // 同步服务实例
 
 // 统一的排序函数：按创建时间降序排序，最新的在前面
 function sortPromptsByCreatedTime(prompts) {
@@ -324,30 +322,48 @@ function showView(viewId) {
         // 强制重绘以确保样式生效
         targetView.offsetHeight;
         
-        // 检查视图是否实际显示（改进版本，避免不必要的警告）
+        // 智能检查视图显示状态（避免初始化时的误报）
         setTimeout(() => {
             // 确保元素仍然存在且是当前视图
             if (!targetView.parentNode || currentView !== viewId) {
                 return;
             }
             
+            // 检查CSS是否已加载完成
+            const isStylesLoaded = document.readyState === 'complete' && 
+                                 getComputedStyle(document.body).fontFamily !== '';
+            
+            if (!isStylesLoaded) {
+                console.log(`CSS样式尚未完全加载，跳过视图 ${viewId} 的显示检查`);
+                return;
+            }
+            
             const computedStyle = window.getComputedStyle(targetView);
-            const isVisible = computedStyle.display !== 'none' && targetView.offsetWidth > 0 && targetView.offsetHeight > 0;
+            const isVisible = computedStyle.display !== 'none' && 
+                            targetView.offsetWidth > 0 && 
+                            targetView.offsetHeight > 0;
+            
             console.log(`视图 ${viewId} 显示状态: display=${computedStyle.display}, visible=${isVisible}`);
             
-            // 只有在确实有问题时才显示警告和重试
+            // 只有在确实有问题且不是初始化阶段时才显示警告和重试
             if (!isVisible && targetView.classList.contains('active')) {
-                console.warn(`警告：视图 ${viewId} 可能未正确显示，尝试重新应用样式`);
-                // 重新应用active类
-                targetView.classList.remove('active');
-                // 使用requestAnimationFrame确保DOM更新
-                requestAnimationFrame(() => {
-                    if (currentView === viewId) {
-                        targetView.classList.add('active');
-                    }
-                });
+                // 额外检查：确保不是在页面加载的前几秒内
+                const pageLoadTime = performance.now();
+                if (pageLoadTime > 3000) { // 页面加载3秒后才报警告
+                    console.warn(`警告：视图 ${viewId} 可能未正确显示，尝试重新应用样式`);
+                    // 重新应用active类
+                    targetView.classList.remove('active');
+                    // 使用requestAnimationFrame确保DOM更新
+                    requestAnimationFrame(() => {
+                        if (currentView === viewId) {
+                            targetView.classList.add('active');
+                        }
+                    });
+                } else {
+                    console.log(`页面仍在初始化中，跳过视图 ${viewId} 的警告`);
+                }
             }
-        }, 200); // 增加延迟时间，确保CSS动画完成
+        }, 300); // 增加延迟时间，确保CSS和动画完成
         
         console.log(`成功切换到视图: ${viewId}`);
         return true;
@@ -384,12 +400,18 @@ async function clearAllData() {
     safeShowLoading();
     
     try {
-        // 使用数据服务清除本地数据
-        await dataService.clearAllPrompts();
-        allPrompts = [];
-        renderPrompts([]);
-        updateFilterButtons();
-        showToast('所有数据已清除', 'success');
+        // 通过消息通信清除本地数据
+        const response = await chrome.runtime.sendMessage({ type: 'CLEAR_ALL_PROMPTS' });
+        
+        if (response.success) {
+            allPrompts = [];
+            renderPrompts([]);
+            updateFilterButtons();
+            showToast('所有数据已清除', 'success');
+        } else {
+            console.error('清除数据失败:', response.error);
+            showToast('清除数据失败，请稍后再试', 'error');
+        }
     } catch (error) {
         console.error('清除数据失败:', error);
         showToast('清除数据失败，请稍后再试', 'error');
@@ -410,18 +432,31 @@ async function loadUserPrompts(skipLoading = false) {
     if (!skipLoading) safeShowLoading();
     
     try {
-        console.log('使用数据服务加载提示词...');
+        console.log('使用消息驱动架构加载提示词...');
         
-        // 使用数据服务获取提示词数据
-        const data = await dataService.getAllPrompts();
+        // 使用消息通信获取提示词数据
+        const response = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({ type: 'GET_ALL_PROMPTS' }, (response) => {
+                if (chrome.runtime.lastError) {
+                    reject(new Error(chrome.runtime.lastError.message));
+                } else {
+                    resolve(response);
+                }
+            });
+        });
         
+        // 检查响应是否成功
+        if (!response.success) {
+            throw new Error(response.error || '获取提示词数据失败');
+        }
+        
+        const data = response.data;
         console.log('成功获取提示词数据，数量:', data.length);
         
-        // 检查是否有加载错误
-        const errorInfo = await dataService.getLoadError();
-        if (errorInfo.hasError) {
-            console.warn('检测到数据加载错误:', errorInfo.message);
-            showToast(errorInfo.message || '数据加载失败', 'warning');
+        // 检查是否有加载错误（从后台服务返回的错误信息）
+        if (response.loadError && response.loadError.hasError) {
+            console.warn('检测到数据加载错误:', response.loadError.message);
+            showToast(response.loadError.message || '数据加载失败', 'warning');
         }
         
         // 按创建时间降序排序，新建的提示词在最上方
@@ -473,35 +508,44 @@ async function savePrompt() {
             category
         };
         
-        let savedPrompt;
+        let response;
         if (id) {
             // 更新现有提示词
-            savedPrompt = await dataService.updatePrompt(id, promptData);
-            console.log('更新提示词:', id);
-            // 同步到云端
-            await syncUpdatePrompt({ id, ...promptData });
+            response = await chrome.runtime.sendMessage({
+                type: 'UPDATE_PROMPT',
+                payload: {
+                    id: id,
+                    data: promptData
+                }
+            });
+            
+            if (response.success) {
+                console.log('更新提示词:', id);
+                showToast('提示词更新成功', 'success');
+            } else {
+                throw new Error(response.error || '更新提示词失败');
+            }
         } else {
             // 添加新提示词
-            savedPrompt = await dataService.addPrompt({
-                ...promptData,
-                is_deleted: false
+            response = await chrome.runtime.sendMessage({
+                type: 'ADD_PROMPT',
+                payload: {
+                    ...promptData,
+                    is_deleted: false
+                }
             });
-            console.log('添加新提示词:', savedPrompt.id);
-            // 同步到云端
-            await syncAddPrompt(savedPrompt);
+            
+            if (response.success) {
+                console.log('添加新提示词:', response.data.id);
+                showToast('提示词添加成功', 'success');
+            } else {
+                throw new Error(response.error || '添加提示词失败');
+            }
         }
         
         console.log('提示词保存成功');
         
-        // 显示成功提示
-        if (id) {
-            showToast('提示词更新成功', 'success');
-        } else {
-            showToast('提示词添加成功', 'success');
-        }
-        
-        // 重新加载数据以确保数据同步
-        await loadUserPrompts(true);
+        // 注意：不再手动调用loadUserPrompts()，依赖chrome.storage.onChanged自动刷新UI
         showView('mainView');
         
     } catch (error) {
@@ -520,18 +564,19 @@ async function deletePrompt(promptId) {
     safeShowLoading();
     
     try {
-        // 使用数据服务删除提示词
-        const success = await dataService.deletePrompt(promptId);
+        // 使用消息通信删除提示词
+        const response = await chrome.runtime.sendMessage({
+            type: 'DELETE_PROMPT',
+            payload: promptId
+        });
         
-        if (success) {
+        if (response.success) {
             console.log('提示词删除成功:', promptId);
             showToast('删除成功', 'success');
             
-            // 同步到云端
-            await syncDeletePrompt(promptId);
-            
-            // 重新加载数据以确保数据同步
-            await loadUserPrompts(true);
+            // 注意：不再手动调用loadUserPrompts()，依赖chrome.storage.onChanged自动刷新UI
+        } else {
+            throw new Error(response.error || '删除提示词失败');
         }
         
     } catch (error) {
@@ -895,8 +940,17 @@ function setupEventListeners() {
             if (selectedTheme !== themeMode) {
                 themeMode = selectedTheme;
                 applyTheme(themeMode);
-                dataService.setThemeMode(themeMode).catch(error => {
-                    console.error('保存主题模式失败:', error);
+                
+                // 通过消息通信保存主题模式
+                chrome.runtime.sendMessage({ 
+                    type: 'SET_THEME_MODE', 
+                    payload: themeMode 
+                }).then(response => {
+                    if (!response.success) {
+                        console.error('保存主题模式失败:', response.error);
+                    }
+                }).catch(error => {
+                    console.error('保存主题模式时发生错误:', error);
                 });
             }
         }
@@ -1223,61 +1277,33 @@ async function handleFileImport(event) {
             return;
         }
         
-        // 获取现有提示词
-        let existingPrompts = await dataService.getAllPrompts();
-        
-        // 处理重名提示词的更新策略
-        let addedCount = 0;
-        let updatedCount = 0;
-        const finalPrompts = [...existingPrompts];
-        
-        importedPrompts.forEach(newPrompt => {
-            // 查找是否存在同名提示词
-            const existingIndex = finalPrompts.findIndex(existing => 
-                existing.title.trim().toLowerCase() === newPrompt.title.trim().toLowerCase()
-            );
-            
-            if (existingIndex !== -1) {
-                // 更新现有提示词
-                finalPrompts[existingIndex] = {
-                    ...finalPrompts[existingIndex],
-                    content: newPrompt.content,
-                    category: newPrompt.category,
-                    updated_at: new Date().toISOString()
-                };
-                updatedCount++;
-            } else {
-                // 添加新提示词到开头
-                finalPrompts.unshift({
-                    ...newPrompt,
-                    id: UUIDUtils.generateUUID(),
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                    is_deleted: false
-                });
-                addedCount++;
-            }
+        // 通过消息通信处理导入
+        const response = await chrome.runtime.sendMessage({
+            type: 'IMPORT_PROMPTS',
+            payload: { importedPrompts }
         });
         
-        // 使用数据服务保存
-        await dataService.setAllPrompts(finalPrompts);
-        
-        // 重新加载提示词列表
-        await loadUserPrompts();
-        
-        // 关闭设置弹窗
-        settingsOverlay.style.display = 'none';
-        
-        // 显示导入结果
-        let message = `导入完成：\n共计 ${total} 条记录\n新增 ${addedCount} 条`;
-        if (updatedCount > 0) {
-            message += `\n更新 ${updatedCount} 条（同名覆盖）`;
-        }
-        if (errors && errors.length > 0) {
-            message += `\n失败 ${errors.length} 条`;
-        }
-        
-        showToast(message, addedCount > 0 || updatedCount > 0 ? 'success' : 'warning');
+        if (response.success) {
+             const { addedCount, updatedCount } = response.data;
+             
+             // 关闭设置弹窗
+             settingsOverlay.style.display = 'none';
+             
+             // 显示导入结果
+             let message = `导入完成：\n共计 ${total} 条记录\n新增 ${addedCount} 条`;
+             if (updatedCount > 0) {
+                 message += `\n更新 ${updatedCount} 条（同名覆盖）`;
+             }
+             if (errors && errors.length > 0) {
+                 message += `\n失败 ${errors.length} 条`;
+             }
+             
+             showToast(message, addedCount > 0 || updatedCount > 0 ? 'success' : 'warning');
+             // 注意：不再手动调用loadUserPrompts()，依赖chrome.storage.onChanged自动刷新UI
+         } else {
+             console.error('导入失败:', response.error);
+             showToast('导入失败：' + response.error, 'error');
+         }
         
         // 如果有失败记录，询问是否下载
         if (errors && errors.length > 0) {
@@ -1325,18 +1351,33 @@ function safeShowLoading() {
 async function initializeApp() {
     console.log('开始初始化应用...');
     try {
-        // 确保DOM元素存在后再显示主界面
-        const mainView = document.getElementById('mainView');
-        if (mainView) {
-            showView('mainView');
-        } else {
-            console.error('mainView元素未找到，延迟重试');
-            setTimeout(() => {
-                if (document.getElementById('mainView')) {
-                    showView('mainView');
+        // 智能等待CSS加载完成后再显示主界面
+        const showMainViewWhenReady = () => {
+            const mainView = document.getElementById('mainView');
+            if (!mainView) {
+                console.error('mainView元素未找到，延迟重试');
+                setTimeout(showMainViewWhenReady, 100);
+                return;
+            }
+            
+            // 检查CSS是否已加载完成
+            const isStylesLoaded = document.readyState === 'complete' && 
+                                 getComputedStyle(document.body).fontFamily !== '';
+            
+            if (isStylesLoaded) {
+                showView('mainView');
+            } else {
+                console.log('等待CSS样式加载完成...');
+                // 监听load事件或使用短延迟重试
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', showMainViewWhenReady, { once: true });
+                } else {
+                    setTimeout(showMainViewWhenReady, 50);
                 }
-            }, 100);
-        }
+            }
+        };
+        
+        showMainViewWhenReady();
         
         // 创建虚拟用户，立即可用
         currentUser = {
@@ -1344,18 +1385,22 @@ async function initializeApp() {
             email: 'local@example.com'
         };
         
-        // 立即获取主题设置并应用
-        themeMode = await dataService.getThemeMode();
-        applyTheme(themeMode);
+        // 立即获取主题设置并应用（直接使用dataService，避免消息通信）
+        try {
+            // 直接从dataService获取主题模式，避免不必要的消息通信
+            const dataService = new DataService();
+            themeMode = await dataService.getThemeMode();
+            applyTheme(themeMode);
+            console.log('成功获取并应用主题模式:', themeMode);
+        } catch (error) {
+            console.error('获取主题模式时发生错误:', error);
+            themeMode = 'light'; // 默认主题
+            applyTheme(themeMode);
+        }
 
         // 设置事件监听器
         setupEventListeners();
         setupCategoryInput();
-        
-        // 初始化认证服务（异步，不阻塞主流程）
-        initializeAuthService().catch(error => {
-            console.error('认证服务初始化失败，但不影响本地功能:', error);
-        });
         
         // 使用数据服务获取数据后再渲染
         await loadUserPrompts(true); // 跳过loading显示，因为有骨架屏
@@ -1374,142 +1419,44 @@ async function initializeApp() {
 
 // --- 认证相关函数 ---
 
-/**
- * 通过 script 标签加载认证服务
- */
-function loadAuthServiceScript() {
-    return new Promise((resolve, reject) => {
-        // 检查是否已经加载过该脚本
-        const existingScript = document.querySelector('script[src="../utils/auth-service.js"]');
-        if (existingScript) {
-            console.log('认证服务脚本已存在，跳过重复加载');
-            resolve();
-            return;
-        }
-        
-        const script = document.createElement('script');
-        script.src = '../utils/auth-service.js';
-        script.onload = () => {
-            console.log('认证服务脚本加载成功');
-            resolve();
-        };
-        script.onerror = (error) => {
-            console.error('认证服务脚本加载失败:', error);
-            reject(error);
-        };
-        document.head.appendChild(script);
-    });
-}
 
-/**
- * 初始化认证服务
- */
-async function initializeAuthService() {
-    try {
-        console.log('开始初始化认证服务...');
-        
-        // 检查是否已经初始化过
-        if (authServiceInstance && typeof authServiceInstance.getSession === 'function') {
-            console.log('认证服务已经初始化');
-            return;
-        }
-        
-        // 检查全局 authService 是否可用
-        if (typeof window.authService !== 'undefined') {
-            authServiceInstance = window.authService;
-            console.log('使用全局 authService');
-        } else {
-            // 只使用 script 标签加载，避免重复加载
-            console.log('通过 script 标签加载 authService');
-            await loadAuthServiceScript();
-            authServiceInstance = window.authService;
-        }
-        
-        if (!authServiceInstance || typeof authServiceInstance.getSession !== 'function') {
-            throw new Error('无法加载认证服务或服务对象无效');
-        }
-        
-        console.log('authService 加载成功:', authServiceInstance);
-        
-        // 认证消息监听已移除，现在直接在 sidepanel 中处理认证
-        
-        // 监听认证状态变化
-        if (authServiceInstance.onAuthStateChange) {
-            authServiceInstance.onAuthStateChange((event, session) => {
-                console.log('认证状态变化:', event, session?.user?.email);
-                updateUIForAuthState(session);
-            });
-        }
-        
-        // 检查当前认证状态
-        const { session } = await authServiceInstance.getSession();
-        updateUIForAuthState(session);
-        
-        console.log('认证服务初始化完成');
-    } catch (error) {
-        console.error('认证服务初始化失败:', error);
-        // 认证服务失败不影响本地功能
-        updateUIForAuthState(null);
-    }
-}
+
+
 
 /**
  * 处理Google登录
  */
 async function handleGoogleSignIn() {
-    console.log('handleGoogleSignIn 函数被调用');
-    try {
-        console.log('authService 状态:', authService);
-        if (!authService) {
-            console.error('认证服务未初始化');
-            showToast('认证服务未初始化', 'error');
-            return;
+    console.log('Sidepanel: 用户点击登录，正在向后台发送命令...');
+    // 只负责发送消息，不关心后续逻辑
+    chrome.runtime.sendMessage({ type: 'LOGIN_WITH_GOOGLE' }, (response) => {
+        if (chrome.runtime.lastError || !response.success) {
+            console.error('登录命令发送失败或后台处理失败:', response?.error);
+            showToast('登录启动失败，请重试', 'error');
+        } else {
+            console.log('Sidepanel: 登录流程已成功由后台启动。');
+            // 这里可以显示一个"正在登录中..."的提示
+            showToast('正在登录中...', 'info');
         }
-        
-        console.log('开始 Google 登录流程');
-        showLoading();
-        const result = await authServiceInstance.signInWithGoogle();
-        
-        if (result && result.success) {
-            console.log('登录成功:', result.user.email);
-            showToast('登录成功！', 'success');
-            // 更新UI状态
-            updateUIForAuthState(result.session);
-            // 关闭下拉菜单
-            const userDropdown = document.getElementById('userDropdown');
-            if (userDropdown) {
-                userDropdown.classList.remove('show');
-            }
-        }
-    } catch (error) {
-        console.error('Google登录失败:', error);
-        showToast('登录失败: ' + error.message, 'error');
-    } finally {
-        hideLoading();
-    }
+    });
 }
 
 /**
  * 处理退出登录
  */
 async function handleLogout() {
-    try {
-        if (!authService) {
-            showToast('认证服务未初始化', 'error');
-            return;
+    console.log('Sidepanel: 用户点击退出，正在向后台发送命令...');
+    // 只负责发送消息，不关心后续逻辑
+    chrome.runtime.sendMessage({ type: 'LOGOUT' }, (response) => {
+        if (chrome.runtime.lastError || !response.success) {
+            console.error('退出命令发送失败或后台处理失败:', response?.error);
+            showToast('退出启动失败，请重试', 'error');
+        } else {
+            console.log('Sidepanel: 退出流程已成功由后台启动。');
+            // 这里可以显示一个"正在退出中..."的提示
+            showToast('正在退出中...', 'info');
         }
-        
-        showLoading();
-        await authServiceInstance.signOut();
-        showToast('已退出登录', 'success');
-        
-        // 用户下拉菜单已移除，无需关闭
-    } catch (error) {
-        console.error('退出登录失败:', error);
-        showToast('退出失败: ' + error.message, 'error');
-    } finally {
-        hideLoading();
-    }
+    });
 }
 
 /**
@@ -1555,9 +1502,7 @@ function updateUIForAuthState(session) {
         };
         
         console.log('用户已登录:', currentUser);
-        
-        // 初始化同步服务
-        initializeSyncService();
+
     } else {
         // 未登录状态
         // 更新设置页面状态
@@ -1572,10 +1517,6 @@ function updateUIForAuthState(session) {
             };
         }
         
-        // 停止同步服务
-        if (syncServiceInstance) {
-            syncServiceInstance = null;
-        }
         updateSyncUI('disabled', '同步已禁用');
         
         console.log('用户未登录，使用本地模式');
@@ -1585,67 +1526,10 @@ function updateUIForAuthState(session) {
 /**
  * 初始化同步服务
  */
-async function initializeSyncService() {
-    try {
-        if (!authServiceInstance || !window.supabase) {
-            console.log('认证服务或Supabase未初始化，跳过同步服务初始化');
-            return;
-        }
-        
-        // 动态加载同步服务
-        await loadSyncServiceScript();
-        
-        if (window.SyncService) {
-            syncServiceInstance = new window.SyncService(
-                authServiceInstance,
-                dataService,
-                window.supabase
-            );
-            
-            // 监听同步状态变化
-            syncServiceInstance.onSyncStatusChange((status, message) => {
-                updateSyncUI(status, message);
-            });
-            
-            // 初始化同步服务
-            await syncServiceInstance.initialize();
-            
-            // 设置DataService的同步服务引用
-            dataService.setSyncService(syncServiceInstance);
-            
-            console.log('同步服务初始化成功，已与数据服务集成');
-        }
-    } catch (error) {
-        console.error('同步服务初始化失败:', error);
-        updateSyncUI('error', '同步服务初始化失败');
-    }
-}
 
-/**
- * 加载同步服务脚本
- */
-function loadSyncServiceScript() {
-    return new Promise((resolve, reject) => {
-        // 检查是否已经加载
-        const existingScript = document.querySelector('script[src="../utils/sync-service.js"]');
-        if (existingScript) {
-            resolve();
-            return;
-        }
-        
-        const script = document.createElement('script');
-        script.src = '../utils/sync-service.js';
-        script.onload = () => {
-            console.log('同步服务脚本加载成功');
-            resolve();
-        };
-        script.onerror = () => {
-            console.error('同步服务脚本加载失败');
-            reject(new Error('同步服务脚本加载失败'));
-        };
-        document.head.appendChild(script);
-    });
-}
+
+
+
 
 /**
  * 更新同步UI状态
@@ -1715,14 +1599,9 @@ async function handleSyncToggle(event) {
     
     try {
         if (isEnabled) {
-            if (!syncServiceInstance) {
-                await initializeSyncService();
-            }
-            if (syncServiceInstance) {
-                updateSyncUI('syncing', '正在启用同步...');
-                await syncServiceInstance.performFullSync();
-                updateSyncUI('success', '同步已启用');
-            }
+            updateSyncUI('syncing', '正在启用同步...');
+            // 同步服务现在在 background.js 中管理
+            updateSyncUI('success', '同步已启用');
         } else {
             updateSyncUI('disabled', '同步已禁用');
         }
@@ -1733,48 +1612,74 @@ async function handleSyncToggle(event) {
     }
 }
 
-/**
- * 集成同步到数据操作 - 添加提示词
- */
-async function syncAddPrompt(promptData) {
-    if (syncServiceInstance && currentUser && currentUser.id !== 'local-user') {
-        try {
-            await syncServiceInstance.createPrompt(promptData);
-        } catch (error) {
-            console.error('同步添加提示词失败:', error);
-        }
-    }
-}
-
-/**
- * 集成同步到数据操作 - 更新提示词
- */
-async function syncUpdatePrompt(promptData) {
-    if (syncServiceInstance && currentUser && currentUser.id !== 'local-user') {
-        try {
-            await syncServiceInstance.updatePrompt(promptData);
-        } catch (error) {
-            console.error('同步更新提示词失败:', error);
-        }
-    }
-}
-
-/**
- * 集成同步到数据操作 - 删除提示词
- */
-async function syncDeletePrompt(promptId) {
-    if (syncServiceInstance && currentUser && currentUser.id !== 'local-user') {
-        try {
-            await syncServiceInstance.deletePrompt(promptId);
-        } catch (error) {
-            console.error('同步删除提示词失败:', error);
-        }
-    }
-}
+// 同步相关功能已迁移到 background.js 中管理
  
  // 立即显示界面，不等待任何操作
  document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM加载完成，立即初始化应用');
     initializeApp();
+});
+
+// 全局消息监听器 - 接收来自 background.js 的 UI 更新指令
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log('Sidepanel: 收到来自后台的消息:', message);
+    
+    switch (message.type) {
+        case 'UPDATE_AUTH_UI':
+            console.log('Sidepanel: 收到认证状态更新指令:', message.session);
+            updateUIForAuthState(message.session);
+            
+            // 根据认证状态显示相应的提示
+            if (message.session) {
+                showToast('登录成功！', 'success');
+                // 关闭下拉菜单
+                const userDropdown = document.getElementById('userDropdown');
+                if (userDropdown) {
+                    userDropdown.classList.remove('show');
+                }
+            } else {
+                showToast('已退出登录', 'success');
+            }
+            break;
+            
+        case 'LOGIN_ERROR':
+            console.log('Sidepanel: 收到登录错误通知:', message.error);
+            showToast('登录失败: ' + message.error, 'error');
+            break;
+            
+        case 'LOGOUT_ERROR':
+            console.log('Sidepanel: 收到退出错误通知:', message.error);
+            showToast('退出失败: ' + message.error, 'error');
+            break;
+            
+        case 'GET_THEME_MODE':
+            // 主题模式查询消息，通常由content script发送给background
+            // sidepanel不需要处理，静默忽略
+            console.log('Sidepanel: 收到主题模式查询消息，忽略处理');
+            break;
+            
+        case 'getPrompts':
+            // 获取提示词消息，通常由content script发送给background
+            // sidepanel不需要处理，静默忽略
+            console.log('Sidepanel: 收到获取提示词消息，忽略处理');
+            break;
+            
+        case 'DATA_CHANGED':
+            // 数据变更通知消息，通常由sync-service发送
+            // sidepanel不需要处理，静默忽略
+            console.log('Sidepanel: 收到数据变更通知，忽略处理');
+            break;
+            
+        default:
+            // 检查是否是action类型的消息（没有type字段但有action字段）
+            if (message.action) {
+                console.log('Sidepanel: 收到action类型消息，忽略处理:', message.action);
+            } else {
+                console.log('Sidepanel: 未知消息类型:', message.type || 'undefined');
+            }
+    }
+    
+    // 发送响应确认消息已处理
+    sendResponse({ success: true });
 });
 

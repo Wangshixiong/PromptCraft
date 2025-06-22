@@ -386,7 +386,24 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
     }
 
     // 从内存(chrome.storage)加载提示词数据
+    // 防止重复加载的时间戳和标记
+    let lastLoadTime = 0;
+    let isLoading = false;
+    const LOAD_DEBOUNCE_TIME = 1000; // 1秒内不重复加载
+    
     function loadPrompts() {
+        const now = Date.now();
+        
+        // 防止短时间内重复调用
+        if (isLoading || (now - lastLoadTime < LOAD_DEBOUNCE_TIME)) {
+            console.log('PromptCraft: 跳过重复的loadPrompts调用，距离上次加载:', now - lastLoadTime, 'ms');
+            return;
+        }
+        
+        isLoading = true;
+        lastLoadTime = now;
+        console.log('PromptCraft: 开始加载提示词数据');
+        
         try {
             // 检查是否在扩展环境中
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
@@ -401,6 +418,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                         state.prompts = getEmptyPrompts();
                         console.log('PromptCraft: Connection failed, showing empty list');
                         updateUIAfterPromptsLoad();
+                        isLoading = false; // 重置加载状态
                         return;
                     }
 
@@ -421,6 +439,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                         console.log('PromptCraft: Response was:', response);
                     }
                     updateUIAfterPromptsLoad();
+                    isLoading = false; // 重置加载状态
                 });
             } else {
                 // 非扩展环境，显示空列表
@@ -428,12 +447,14 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                 state.prompts = getEmptyPrompts();
                 console.log('PromptCraft: Showing empty list');
                 updateUIAfterPromptsLoad();
+                isLoading = false; // 重置加载状态
             }
         } catch (error) {
             console.warn('PromptCraft: Error loading prompts:', error);
             state.prompts = getEmptyPrompts();
             console.log('PromptCraft: Error occurred, showing empty list');
             updateUIAfterPromptsLoad();
+            isLoading = false; // 重置加载状态
         }
     }
 
@@ -1791,10 +1812,14 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
      */
     async function getThemeMode() {
         try {
-            const result = await new Promise((resolve) => {
-                chrome.storage.local.get(['themeMode'], resolve);
-            });
-            return result.themeMode || 'auto';
+            // 通过消息通信获取主题模式，避免扩展上下文失效问题
+            const response = await chrome.runtime.sendMessage({ type: 'GET_THEME_MODE' });
+            if (response && response.success) {
+                return response.data || 'auto';
+            } else {
+                console.warn('PromptCraft: 获取主题模式失败，使用默认值:', response?.error);
+                return 'auto';
+            }
         } catch (error) {
             console.error('PromptCraft: 获取主题模式失败:', error);
             return 'auto';
@@ -1845,6 +1870,10 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         }
     }
     
+    // 缓存当前主题状态，避免重复设置
+    let cachedThemeMode = null;
+    let cachedEffectiveTheme = null;
+    
     /**
      * 更新UI主题
      */
@@ -1852,26 +1881,46 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         if (!state.uiContainer) return;
         
         try {
-            currentThemeMode = await getThemeMode();
-            const effectiveTheme = getEffectiveTheme(currentThemeMode);
+            const newThemeMode = await getThemeMode();
+            const newEffectiveTheme = getEffectiveTheme(newThemeMode);
+            
+            // 检查是否需要更新（避免重复设置相同主题）
+            if (cachedThemeMode === newThemeMode && cachedEffectiveTheme === newEffectiveTheme) {
+                console.log('PromptCraft: 主题未变化，跳过更新:', newThemeMode, '实际主题:', newEffectiveTheme);
+                return;
+            }
+            
+            // 更新缓存
+            cachedThemeMode = newThemeMode;
+            cachedEffectiveTheme = newEffectiveTheme;
+            currentThemeMode = newThemeMode;
             
             // 更新UI容器的主题属性
-            if (effectiveTheme === 'dark') {
+            if (newEffectiveTheme === 'dark') {
                 state.uiContainer.setAttribute('data-theme', 'dark');
             } else {
                 state.uiContainer.setAttribute('data-theme', 'light');
             }
             
-            console.log('PromptCraft: 更新UI主题:', currentThemeMode, '实际主题:', effectiveTheme);
+            console.log('PromptCraft: 更新UI主题:', newThemeMode, '实际主题:', newEffectiveTheme);
         } catch (error) {
             console.error('PromptCraft: 更新UI主题失败:', error);
         }
     }
     
+    // 防止重复设置监听器的标记
+    let themeListenersSetup = false;
+    
     /**
      * 监听主题变化
      */
     function setupThemeListener() {
+        // 防止重复设置监听器
+        if (themeListenersSetup) {
+            console.log('PromptCraft: 主题监听器已设置，跳过重复设置');
+            return;
+        }
+        
         // 监听chrome.storage变化
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
             chrome.storage.onChanged.addListener((changes, namespace) => {
@@ -1890,6 +1939,10 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                 updateUITheme();
             }
         });
+        
+        // 标记监听器已设置
+        themeListenersSetup = true;
+        console.log('PromptCraft: 主题监听器设置完成');
     }
 
     })();

@@ -111,7 +111,9 @@ if (typeof module !== 'undefined' && module.exports) {
     };
 } else if (typeof window !== 'undefined') {
     // 浏览器环境
-    window.UUIDUtils = {
+    // 在 Chrome 扩展环境中，background.js 没有 window 对象，使用 globalThis
+    const globalScope = typeof window !== 'undefined' ? window : globalThis;
+    globalScope.UUIDUtils = {
         generateUUID,
         generatePrefixedUUID,
         isValidUUID

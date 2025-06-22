@@ -219,6 +219,8 @@ const JSONUtils = {
     exportFailedRecords
 };
 
-// 导出为JSONUtils
-window.JSONUtils = JSONUtils;
+// 将JSONUtils暴露到全局作用域
+// 在 Chrome 扩展环境中，background.js 没有 window 对象，使用 globalThis
+const globalScope = typeof window !== 'undefined' ? window : globalThis;
+globalScope.JSONUtils = JSONUtils;
 // JSONUtils已完全替代ExcelUtils
