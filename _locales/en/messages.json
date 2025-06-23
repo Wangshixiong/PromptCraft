@@ -1,0 +1,18 @@
+{
+  "extensionName": {
+    "message": "Prompt Management Assistant",
+    "description": "The name of the extension displayed in the store and browser."
+  },
+  "extensionDescription": {
+    "message": "A secure, reliable, cross-device sync tool for your personal prompts.",
+    "description": "A detailed description of the extension's purpose."
+  },
+  "actionTitle": {
+    "message": "Open Prompt Management Assistant",
+    "description": "The title displayed when hovering over the extension's icon in the toolbar."
+  },
+  "commandDescription": {
+    "message": "Open or close the Prompt Management Assistant sidebar",
+    "description": "The description for the keyboard shortcut to open the side panel."
+  }
+}

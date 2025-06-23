@@ -1,15 +1,16 @@
 {
     "manifest_version": 3,
-    "name": "Prompt管理助手",
+    "default_locale": "zh_CN",
+    "name": "__MSG_extensionName__",
     "version": "1.2.0",
-    "description": "一个安全、可靠、可跨设备同步的个人提示词管理工具。",
+    "description": "__MSG_extensionDescription__",
     "permissions": [
-    "storage",
-    "sidePanel",
-    "contextMenus",
-    "activeTab",
-    "identity"
-  ],
+        "storage",
+        "sidePanel",
+        "contextMenus",
+        "activeTab",
+        "identity"
+    ],
     "icons": {
       "16": "assets/icons/icon16.png",
       "48": "assets/icons/icon48.png",
@@ -22,18 +23,18 @@
       "service_worker": "src/background.js"
     },
     "action": {
-      "default_title": "打开 Prompt管理助手"
+      "default_title": "__MSG_actionTitle__"
     },
     "commands": {
-    "_execute_action": {
-      "suggested_key": {
-        "default": "Ctrl+B",
-        "mac": "Command+B"
-      },
-      "description": "打开或关闭 Prompt管理助手  侧边栏"
-    }
-  },
-  "content_scripts": [
+        "_execute_action": {
+            "suggested_key": {
+                "default": "Ctrl+B",
+                "mac": "Command+B"
+            },
+            "description": "__MSG_commandDescription__"
+        }
+    },
+    "content_scripts": [
         {
             "matches": ["<all_urls>"],
             "js": ["src/content_script.js"],
@@ -41,17 +42,15 @@
             "all_frames": true
         }
     ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "assets/icons/*",
-        "assets/data/*",
-        "src/utils/*",
-        "src/content/content.css",
-        "src/libs/supabase.min.js"
-      ],
-      "matches": ["<all_urls>"]
-    }
-  ]
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "assets/icons/*",
+                "assets/data/*",
+                "src/utils/*",
+                "src/libs/supabase.min.js"
+            ],
+            "matches": ["<all_urls>"]
+        }
+    ]
 }
-  
