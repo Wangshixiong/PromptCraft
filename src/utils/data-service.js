@@ -112,6 +112,7 @@ class DataService {
     async _getFromStorage(keys) {
         return new Promise((resolve, reject) => {
             try {
+                console.log(`Attempting to retrieve from storage:`, keys);
                 chrome.storage.local.get(keys, (result) => {
                     if (chrome.runtime.lastError) {
                         const error = new Error(`存储读取失败: ${chrome.runtime.lastError.message}`);
@@ -119,10 +120,21 @@ class DataService {
                         reject(error);
                         return;
                     }
+                    console.log(`Data retrieved from storage:`, {
+                        keys: keys,
+                        resultKeys: Object.keys(result),
+                        dataSize: JSON.stringify(result).length,
+                        timestamp: new Date().toISOString()
+                    });
                     resolve(result);
                 });
             } catch (error) {
-                console.error('存储读取异常:', error);
+                console.error('存储读取异常:', {
+                    error: error.message,
+                    stack: error.stack,
+                    keys: keys,
+                    timestamp: new Date().toISOString()
+                });
                 reject(new Error(`存储读取异常: ${error.message}`));
             }
         });
@@ -138,13 +150,19 @@ class DataService {
     async _setToStorage(data, notifyChange = true) {
         return new Promise((resolve, reject) => {
             try {
+                console.log(`Attempting to save to storage:`, { dataKeys: Object.keys(data), dataSize: JSON.stringify(data).length });
                 chrome.storage.local.set(data, () => {
                     if (chrome.runtime.lastError) {
                         const error = new Error(`存储写入失败: ${chrome.runtime.lastError.message}`);
-                        console.error('chrome.storage.local.set 错误:', chrome.runtime.lastError);
+                        console.error('chrome.storage.local.set 错误:', {
+                            error: chrome.runtime.lastError,
+                            dataKeys: Object.keys(data),
+                            timestamp: new Date().toISOString()
+                        });
                         reject(error);
                         return;
                     }
+                    console.log(`Data successfully saved to storage:`, Object.keys(data));
                     // 根据参数决定是否发送变更通知
                     if (notifyChange) {
                         this._notifyDataChange(data);
@@ -156,6 +174,35 @@ class DataService {
                 reject(new Error(`存储写入异常: ${error.message}`));
             }
         });
+    }
+
+    /**
+     * 原子性存储操作
+     * 将多个存储操作合并为一次操作，确保数据一致性
+     * @param {Array<Object>} operations - 存储操作数组
+     * @param {boolean} [notifyChange=true] - 是否触发数据变更通知
+     * @returns {Promise<void>}
+     * @private
+     */
+    async _atomicStorageOperation(operations, notifyChange = true) {
+        await this.initialize();
+        
+        try {
+            // 将多个存储操作合并为一次操作
+            const combinedData = {};
+            
+            for (const op of operations) {
+                Object.assign(combinedData, op);
+            }
+            
+            console.log('DataService: 执行原子性存储操作:', Object.keys(combinedData));
+            await this._setToStorage(combinedData, notifyChange);
+            console.log('DataService: 原子性存储操作完成');
+            
+        } catch (error) {
+            console.error('DataService: 原子性存储操作失败:', error);
+            throw error;
+        }
     }
 
     /**
@@ -910,6 +957,39 @@ class DataService {
             return result[STORAGE_KEYS.DEFAULT_TEMPLATES_LOADED] || false;
         } catch (error) {
             console.error('检查默认模板加载状态失败:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 验证数据一致性
+     * 检查hasData标志与实际数据是否一致
+     * @returns {Promise<boolean>} 数据是否一致
+     */
+    async validateDataConsistency() {
+        await this.initialize();
+        
+        try {
+            const hasDataFlag = await this.hasData();
+            const actualPrompts = await this.getAllPrompts();
+            
+            console.log('DataService: 数据一致性检查 - hasData:', hasDataFlag, 'prompts count:', actualPrompts ? actualPrompts.length : 'null/undefined');
+            
+            // 检查数据一致性
+            if (hasDataFlag && (!actualPrompts || actualPrompts.length === 0)) {
+                console.warn('DataService: 检测到数据不一致，hasData=true但prompts为空');
+                return false;
+            }
+            
+            if (!hasDataFlag && actualPrompts && actualPrompts.length > 0) {
+                console.warn('DataService: 检测到数据不一致，hasData=false但prompts存在');
+                return false;
+            }
+            
+            console.log('DataService: 数据一致性检查通过');
+            return true;
+        } catch (error) {
+            console.error('DataService: 数据一致性检查失败:', error);
             return false;
         }
     }

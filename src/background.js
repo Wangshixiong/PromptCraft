@@ -16,10 +16,18 @@ async function loadDefaultPromptsToMemory() {
     try {
         // 检查是否已经初始化过
         const hasData = await dataService.hasData();
+        console.log('PromptCraft: hasData flag:', hasData);
+        
         if (hasData) {
+            // 简单验证：检查实际数据是否存在
             const prompts = await dataService.getAllPrompts();
-            console.log('PromptCraft: Already initialized, prompts count:', prompts.length);
-            return;
+            if (prompts && prompts.length > 0) {
+                console.log('PromptCraft: Already initialized, skipping...');
+                return;
+            }
+            // 如果hasData=true但实际无数据，重置标志并继续初始化
+            console.warn('PromptCraft: Data inconsistency detected, reinitializing...');
+            await dataService.setHasData(false);
         }
         
         console.log('PromptCraft: First time installation, loading default prompts...');
@@ -55,8 +63,12 @@ async function loadDefaultPromptsToMemory() {
             console.log('PromptCraft: Default templates already loaded, skipping...');
         }
         
-        await dataService.setHasData(true);
-        await dataService.setThemeMode('auto'); // 默认主题设置
+        // 使用原子性操作确保数据一致性
+        await dataService._atomicStorageOperation([
+            { 'promptcraft_has_data': true },
+            { 'themeMode': 'auto' }
+        ]);
+        console.log('PromptCraft: 原子性设置hasData和themeMode完成');
         
         console.log('PromptCraft: Initialization completed successfully');
         
@@ -65,12 +77,29 @@ async function loadDefaultPromptsToMemory() {
         console.error('PromptCraft: Error type:', error.constructor.name);
         console.error('PromptCraft: Error message:', error.message);
         console.error('PromptCraft: Error stack:', error.stack);
+        console.error('PromptCraft: Error details:', {
+            name: error.name,
+            message: error.message,
+            timestamp: new Date().toISOString()
+        });
         
         // 如果加载失败，设置空数据但标记为已初始化
         await dataService.setAllPrompts([]);
-        await dataService.setHasData(true);
-        await dataService.setLoadError(true, `加载默认提示词失败: ${error.message}`);
-        await dataService.setThemeMode('auto');
+        
+        // 使用原子性操作确保错误状态的一致性
+        try {
+            await dataService._atomicStorageOperation([
+                { 'promptcraft_has_data': true },
+                { 'loadError': true },
+                { 'errorMessage': `加载默认提示词失败: ${error.message}` },
+                { 'errorTimestamp': new Date().toISOString() },
+                { 'themeMode': 'auto' }
+            ]);
+            console.log('PromptCraft: 错误状态原子性设置完成');
+        } catch (storageError) {
+            console.error('PromptCraft: Critical - Failed to save error state to storage:', storageError);
+            console.error('PromptCraft: System state may be inconsistent. Manual intervention may be required.');
+        }
         console.log('PromptCraft: Error state saved, extension will show empty list');
     }
 }
