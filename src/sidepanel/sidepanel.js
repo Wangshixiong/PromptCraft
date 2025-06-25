@@ -2,7 +2,7 @@
 
 /**
  * PromptCraft - 本地提示词管理工具
- * 版本: 1.2.0
+ * 版本: 1.2.1
  * 描述: 纯本地存储的提示词管理扩展，无需登录，保护隐私
  */
 
@@ -31,6 +31,12 @@ const importBtn = document.getElementById('importBtn');
 const exportBtn = document.getElementById('exportBtn');
 const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
 const fileInput = document.getElementById('fileInput');
+// 版本日志相关元素
+const versionNumber = document.getElementById('versionNumber');
+const versionNew = document.getElementById('versionNew');
+const versionLogOverlay = document.getElementById('versionLogOverlay');
+const versionLogClose = document.getElementById('versionLogClose');
+const versionLogBody = document.getElementById('versionLogBody');
 
 
 /**
@@ -1068,6 +1074,25 @@ function setupEventListeners() {
         }
     });
     
+    // 版本日志相关事件监听器
+    if (versionNumber) {
+        versionNumber.addEventListener('click', showVersionLog);
+    }
+    
+    if (versionLogClose) {
+        versionLogClose.addEventListener('click', () => {
+            versionLogOverlay.style.display = 'none';
+        });
+    }
+    
+    if (versionLogOverlay) {
+        versionLogOverlay.addEventListener('click', (e) => {
+            if (e.target === versionLogOverlay) {
+                versionLogOverlay.style.display = 'none';
+            }
+        });
+    }
+    
     // 导入导出功能
     downloadTemplateBtn.addEventListener('click', handleDownloadTemplate);
     exportBtn.addEventListener('click', handleExport);
@@ -1093,14 +1118,7 @@ function setupEventListeners() {
         manualSyncBtn.addEventListener('click', handleManualSync);
     }
     
-    // 帮助按钮事件监听器
-    const helpBtn = document.getElementById('helpBtn');
-    if (helpBtn) {
-        helpBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            showToast('帮助文档功能即将推出', 'info');
-        });
-    }
+
     
     fileInput.addEventListener('change', handleFileImport);
     
@@ -1326,8 +1344,40 @@ async function initializeApp() {
             console.warn('预加载登录资源时发生错误:', error);
         }
         
+        // 主动查询后台的认证状态（关键修复：初次握手机制）
+        try {
+            console.log('PromptCraft: 正在查询后台认证状态...');
+            const response = await chrome.runtime.sendMessage({
+                type: 'GET_AUTH_STATE'
+            });
+            
+            if (response && response.success && response.data) {
+                const { isAuthenticated, session, user } = response.data;
+                console.log('PromptCraft: 后台认证状态查询结果:', isAuthenticated ? '已登录' : '未登录');
+                
+                if (isAuthenticated && session && user) {
+                    // 恢复认证状态
+                    currentUser = user;
+                    console.log('PromptCraft: 成功恢复用户会话:', user.email);
+                    
+                    // 更新UI为已登录状态
+                    updateUIForAuthState(session);
+                } else {
+                    console.log('PromptCraft: 用户未登录，保持本地模式');
+                }
+            } else {
+                console.log('PromptCraft: 认证状态查询失败，保持本地模式');
+            }
+        } catch (error) {
+            console.warn('PromptCraft: 查询认证状态时发生错误:', error);
+            // 即使查询失败也继续正常流程，保持本地模式
+        }
+        
         // 使用数据服务获取数据后再渲染
         await loadUserPrompts(true); // 跳过loading显示，因为有骨架屏
+        
+        // 初始化版本日志功能
+        initializeVersionLog();
         
     } catch (error) {
         console.error('初始化应用时发生错误:', error);
@@ -1416,10 +1466,17 @@ async function handleGoogleSignIn() {
         progressCallback: true // 标识需要进度回调
     }, (response) => {
         if (chrome.runtime.lastError || !response.success) {
-            console.error('登录命令发送失败或后台处理失败:', response?.error);
-            showToast('登录启动失败，请重试', 'error');
-            // 登录失败时恢复按钮状态
-            setLoginButtonLoading(false);
+            // 检查是否为用户取消
+            if (response?.cancelled || response?.error === 'USER_CANCELLED') {
+                console.log('Sidepanel: 用户取消了Google登录');
+                // 用户取消时静默恢复按钮状态，不显示错误提示
+                setLoginButtonLoading(false);
+            } else {
+                console.error('登录命令发送失败或后台处理失败:', response?.error);
+                showToast('登录启动失败，请重试', 'error');
+                // 登录失败时恢复按钮状态
+                setLoginButtonLoading(false);
+            }
         } else {
             console.log('Sidepanel: 登录流程已成功由后台启动。');
             // 移除"正在登录中"提示，避免与"登录成功"Toast重复
@@ -1716,6 +1773,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             setLoginButtonLoading(false);
             break;
             
+        case 'LOGIN_CANCELLED':
+            console.log('用户取消了Google登录');
+            // 用户取消登录时静默恢复按钮状态，不显示错误提示
+            setLoginButtonLoading(false);
+            break;
+            
         case 'LOGOUT_ERROR':
             console.log('退出失败:', message.error);
             showToast('退出失败: ' + message.error, 'error');
@@ -1852,5 +1915,162 @@ if (document.readyState === 'loading') {
 } else {
     // DOM已经加载完成，直接初始化
     initializeApp();
+}
+
+// ===== 版本日志功能 =====
+
+/**
+ * 加载版本日志数据
+ * @returns {Promise<Object>} 版本日志数据
+ */
+async function loadVersionLogData() {
+    try {
+        const response = await fetch('/assets/data/version-log.json');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('加载版本日志数据失败:', error);
+        return null;
+    }
+}
+
+/**
+ * 显示版本日志弹窗
+ */
+async function showVersionLog() {
+    const versionData = await loadVersionLogData();
+    if (!versionData) {
+        console.error('无法加载版本日志数据');
+        return;
+    }
+
+    // 清空之前的内容
+    versionLogBody.innerHTML = '';
+
+    // 按版本号倒序显示（最新版本在前）
+    const sortedVersions = versionData.versions.sort((a, b) => {
+        // 简单的版本号比较（假设格式为 x.y.z）
+        const aVersion = a.version.split('.').map(Number);
+        const bVersion = b.version.split('.').map(Number);
+        
+        for (let i = 0; i < Math.max(aVersion.length, bVersion.length); i++) {
+            const aPart = aVersion[i] || 0;
+            const bPart = bVersion[i] || 0;
+            if (aPart !== bPart) {
+                return bPart - aPart; // 倒序
+            }
+        }
+        return 0;
+    });
+
+    // 生成版本日志HTML
+    sortedVersions.forEach(version => {
+        const versionItem = document.createElement('div');
+        versionItem.className = 'version-item';
+        
+        const versionHeader = document.createElement('div');
+        versionHeader.className = 'version-header';
+        
+        const versionTitle = document.createElement('h3');
+        versionTitle.className = 'version-title';
+        versionTitle.textContent = `v${version.version}`;
+        
+        const versionDate = document.createElement('span');
+        versionDate.className = 'version-date';
+        versionDate.textContent = version.date;
+        
+        versionHeader.appendChild(versionTitle);
+        versionHeader.appendChild(versionDate);
+        
+        const versionContent = document.createElement('div');
+        versionContent.className = 'version-content';
+        
+        if (version.title) {
+            const titleElement = document.createElement('h4');
+            titleElement.className = 'version-subtitle';
+            titleElement.textContent = version.title;
+            versionContent.appendChild(titleElement);
+        }
+        
+        const changesList = document.createElement('ul');
+        changesList.className = 'version-changes';
+        
+        version.changes.forEach(change => {
+            const changeItem = document.createElement('li');
+            changeItem.textContent = change;
+            changesList.appendChild(changeItem);
+        });
+        
+        versionContent.appendChild(changesList);
+        
+        versionItem.appendChild(versionHeader);
+        versionItem.appendChild(versionContent);
+        
+        versionLogBody.appendChild(versionItem);
+    });
+
+    // 显示弹窗
+    versionLogOverlay.style.display = 'flex';
+    
+    // 标记用户已查看最新版本
+    await markVersionAsViewed(versionData.currentVersion);
+}
+
+/**
+ * 隐藏版本日志弹窗
+ */
+function hideVersionLog() {
+    versionLogOverlay.style.display = 'none';
+}
+
+/**
+ * 检查是否有新版本
+ */
+async function checkForNewVersion() {
+    const versionData = await loadVersionLogData();
+    if (!versionData) {
+        return;
+    }
+
+    try {
+        // 从本地存储获取用户最后查看的版本
+        const result = await chrome.storage.local.get(['lastViewedVersion']);
+        const lastViewedVersion = result.lastViewedVersion;
+        
+        // 如果用户从未查看过版本日志，或者当前版本比最后查看的版本新
+        if (!lastViewedVersion || versionData.currentVersion !== lastViewedVersion) {
+            // 显示NEW标识
+            versionNew.style.display = 'inline-block';
+        } else {
+            // 隐藏NEW标识
+            versionNew.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('检查新版本失败:', error);
+    }
+}
+
+/**
+ * 标记版本为已查看
+ * @param {string} version 版本号
+ */
+async function markVersionAsViewed(version) {
+    try {
+        await chrome.storage.local.set({ lastViewedVersion: version });
+        // 隐藏NEW标识
+        versionNew.style.display = 'none';
+    } catch (error) {
+        console.error('标记版本为已查看失败:', error);
+    }
+}
+
+/**
+ * 初始化版本日志功能
+ */
+function initializeVersionLog() {
+    // 检查是否有新版本
+    checkForNewVersion();
 }
 

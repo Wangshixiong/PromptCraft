@@ -585,7 +585,7 @@ body.dark-mode {
 
 /* 关于模块样式 */
 .about-content {
-    padding: 20px;
+    padding: 16px;
     background: var(--card-light);
     border-radius: 12px;
     border: 1px solid var(--border-light);
@@ -600,18 +600,18 @@ body.dark-mode {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--border-light);
-}
-
-.dark-mode .version-info {
-    border-bottom-color: var(--border-dark);
+    margin-bottom: 0;
 }
 
 .version-label {
     font-weight: 500;
     color: var(--text-primary);
+}
+
+.version-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .version-number {
@@ -624,42 +624,30 @@ body.dark-mode {
     font-weight: 600;
 }
 
-.help-links {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.help-link {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    background: var(--background-light);
-    border-radius: 8px;
-    border: 1px solid var(--border-light);
-    color: var(--text-primary);
-    text-decoration: none;
+.version-number.clickable {
+    cursor: pointer;
     transition: var(--transition);
-    font-size: 14px;
+    border: 1px solid transparent;
 }
 
-.dark-mode .help-link {
-    background: var(--background-dark);
-    border-color: var(--border-dark);
-}
-
-.help-link:hover {
+.version-number.clickable:hover {
     background: var(--primary-color);
     color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    border-color: var(--primary-color);
 }
 
-.help-link i {
-    font-size: 16px;
-    opacity: 0.8;
+.version-new {
+    background: var(--danger);
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
+
+
 
 /* 确认弹窗样式 */
 .confirm-overlay {
@@ -1559,7 +1547,8 @@ body.dark-mode .filter-btn:hover {
     width: 90%;
     max-width: 400px;
     max-height: 80vh;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     color: var(--text-light);
 }
@@ -1614,6 +1603,33 @@ body.dark-mode .filter-btn:hover {
 
 .settings-body {
     padding: 20px 24px;
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(80vh - 80px);
+}
+
+/* 设置弹窗滚动条样式 */
+.settings-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.settings-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.settings-body::-webkit-scrollbar-thumb {
+    background: var(--primary-light);
+    border-radius: 3px;
+    opacity: 0.6;
+}
+
+.settings-body::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+    opacity: 0.8;
+}
+
+.dark-mode .settings-body::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
 }
 
 .settings-section {
@@ -1928,11 +1944,204 @@ body.dark-mode .filter-btn:hover {
     font-size: 13px;
 }
 
-/* 移除原有的设置按钮样式，使用新的卡片样式 */
-.settings-buttons {
-    display: block;
+/* 版本日志弹窗样式 (V2 - 简洁设计) */
+.version-log-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10001;
 }
 
-.settings-row {
-    display: none;
+.version-log-modal {
+    background: var(--background-light);
+    border-radius: 12px;
+    width: 85%;
+    max-width: 500px;
+    max-height: 70vh;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative; /* 新增：为关闭按钮的绝对定位提供基准 */
+}
+
+.dark-mode .version-log-modal {
+    background: var(--background-dark);
+    border-color: var(--border-dark);
+}
+
+/* --- 修改核心 --- */
+/* 删除了整个 .version-log-header 的样式 */
+
+/* 重新设计关闭按钮，使其悬浮在右上角 */
+.version-log-close {
+    position: absolute; /* 修改：使用绝对定位 */
+    top: 12px;          /* 修改：定位到顶部 */
+    right: 12px;         /* 修改：定位到右侧 */
+    z-index: 10;         /* 修改：确保在内容之上 */
+
+    background: rgba(0, 0, 0, 0.05); /* 新增：给按钮一个背景，方便点击 */
+    color: var(--text-light);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%; /* 修改：圆形按钮更美观 */
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.dark-mode .version-log-close {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-dark);
+}
+
+.version-log-close:hover {
+    background: var(--danger); /* 修改：悬浮时变红，更醒目 */
+    color: white;
+    transform: scale(1.1) rotate(90deg); /* 新增：增加交互动效 */
+}
+/* --- 修改核心结束 --- */
+
+
+.version-log-body {
+    flex: 1;
+    overflow-y: auto;
+    /* 修改：为顶部的关闭按钮留出空间，避免内容重叠 */
+    padding: 24px 24px 0 24px; 
+    max-height: calc(80vh - 48px); /* 相应调整最大高度 */
+}
+
+.version-log-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.version-log-body::-webkit-scrollbar-track {
+    background: var(--card-light);
+    border-radius: 4px;
+}
+
+.dark-mode .version-log-body::-webkit-scrollbar-track {
+    background: var(--card-dark);
+}
+
+.version-log-body::-webkit-scrollbar-thumb {
+    background: var(--border-light);
+    border-radius: 4px;
+}
+
+.dark-mode .version-log-body::-webkit-scrollbar-thumb {
+    background: var(--border-dark);
+}
+
+.version-item {
+    padding-bottom: 20px; /* 修改：调整内边距 */
+    margin-bottom: 20px; /* 新增：用 margin 代替 border 分割 */
+    border-bottom: 1px solid var(--border-light); /* 保持分割线 */
+}
+
+.dark-mode .version-item {
+    border-bottom-color: var(--border-dark);
+}
+
+.version-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 24px; /* 给最后一项也加上底部内边距 */
+}
+
+/* 剩余的 .version-header, .version-title 等样式保持不变 */
+.version-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 16px;
+}
+
+.version-info-left {
+    flex: 1;
+}
+
+.version-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-light);
+    margin: 0 0 4px 0;
+}
+
+.dark-mode .version-title {
+    color: var(--text-dark);
+}
+
+.version-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.dark-mode .version-meta {
+    color: #94a3b8;
+}
+
+.version-tag {
+    background: var(--primary-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.version-date {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.version-changes {
+    margin-top: 12px;
+}
+
+.version-changes ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.version-changes li {
+    padding: 6px 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-light);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.dark-mode .version-changes li {
+    color: var(--text-dark);
+}
+
+.version-changes li::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    margin-top: 8px;
+    flex-shrink: 0;
 }

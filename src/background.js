@@ -75,6 +75,39 @@ async function loadDefaultPromptsToMemory() {
     }
 }
 
+// 认证状态恢复函数
+async function restoreAuthState() {
+    try {
+        console.log('PromptCraft: 开始恢复认证状态...');
+        
+        // 检查是否有保存的认证会话
+        if (typeof authService !== 'undefined' && authService.getSession) {
+            const { session } = await authService.getSession();
+            if (session && session.user) {
+                console.log('PromptCraft: 认证状态已恢复，用户:', session.user.email);
+                
+                // 广播认证状态给所有监听的页面
+                chrome.runtime.sendMessage({
+                    type: 'UPDATE_AUTH_UI',
+                    session: session
+                }).catch(error => {
+                    // 忽略没有监听器的错误，这在启动时是正常的
+                    console.log('PromptCraft: 认证状态广播（启动时无监听器，正常）');
+                });
+                
+                return session;
+            } else {
+                console.log('PromptCraft: 未找到有效的认证会话');
+            }
+        } else {
+            console.log('PromptCraft: authService 未就绪，跳过认证状态恢复');
+        }
+    } catch (error) {
+        console.error('PromptCraft: 恢复认证状态失败:', error);
+    }
+    return null;
+}
+
 // 当插件首次安装、更新或浏览器启动时运行
 chrome.runtime.onInstalled.addListener(async () => {
     // 先移除可能存在的菜单项，避免重复创建错误
@@ -89,11 +122,17 @@ chrome.runtime.onInstalled.addListener(async () => {
     
     // 加载默认提示词到内存
     await loadDefaultPromptsToMemory();
+    
+    // 恢复认证状态
+    await restoreAuthState();
 });
 
-// 当浏览器启动时也加载默认数据（如果需要）
+// 当浏览器启动时也加载默认数据和恢复认证状态
 chrome.runtime.onStartup.addListener(async () => {
     await loadDefaultPromptsToMemory();
+    
+    // 恢复认证状态
+    await restoreAuthState();
 });
   
   // 监听右键菜单的点击事件
@@ -497,20 +536,39 @@ chrome.runtime.onStartup.addListener(async () => {
           }
           
         } catch (error) {
-          console.error('Background: Google登录失败:', error);
-          
-          // 向 sidepanel 发送错误通知
-          chrome.runtime.sendMessage({
-            type: 'LOGIN_ERROR',
-            error: error.message
-          }).catch(err => {
-            console.log('Background: 发送登录错误消息失败（可能sidepanel未打开）:', err);
-          });
-          
-          sendResponse({
-            success: false,
-            error: error.message
-          });
+          // 检查是否为用户主动取消登录
+          if (error.isUserCancelled || error.message === 'USER_CANCELLED') {
+            console.log('PromptCraft: 用户取消了Google登录，静默处理');
+            
+            // 向 sidepanel 发送取消通知（不是错误）
+            chrome.runtime.sendMessage({
+              type: 'LOGIN_CANCELLED'
+            }).catch(err => {
+              console.log('PromptCraft: 发送登录取消消息失败（可能sidepanel未打开）:', err);
+            });
+            
+            sendResponse({
+              success: false,
+              cancelled: true,
+              error: 'USER_CANCELLED'
+            });
+          } else {
+            // 真正的登录错误
+            console.error('PromptCraft: Google登录失败:', error);
+            
+            // 向 sidepanel 发送错误通知
+            chrome.runtime.sendMessage({
+              type: 'LOGIN_ERROR',
+              error: error.message
+            }).catch(err => {
+              console.log('PromptCraft: 发送登录错误消息失败（可能sidepanel未打开）:', err);
+            });
+            
+            sendResponse({
+              success: false,
+              error: error.message
+            });
+          }
         }
       })();
       
@@ -552,6 +610,63 @@ chrome.runtime.onStartup.addListener(async () => {
            sendResponse({
              success: false,
              error: error.message
+           });
+         }
+       })();
+       
+       return true;
+     }
+     
+     // 处理GET_AUTH_STATE请求（获取认证状态）
+     if (message.type === 'GET_AUTH_STATE') {
+       console.log('PromptCraft: 收到GET_AUTH_STATE消息请求');
+       
+       (async () => {
+         try {
+           // 检查认证服务是否可用
+           if (typeof authService === 'undefined' || !authService.getSession) {
+             console.log('PromptCraft: authService 未就绪，返回未认证状态');
+             sendResponse({
+               success: true,
+               data: {
+                 isAuthenticated: false,
+                 session: null,
+                 user: null
+               }
+             });
+             return;
+           }
+           
+           // 获取当前认证会话
+           const { session, user } = await authService.getSession();
+           const isAuthenticated = !!(session && user);
+           
+           console.log('PromptCraft: 当前认证状态:', isAuthenticated ? '已登录' : '未登录');
+           if (isAuthenticated) {
+             console.log('PromptCraft: 当前用户:', user.email);
+           }
+           
+           sendResponse({
+             success: true,
+             data: {
+               isAuthenticated,
+               session,
+               user
+             }
+           });
+           
+         } catch (error) {
+           console.error('PromptCraft: 获取认证状态失败:', error);
+           
+           // 即使出错也返回未认证状态，确保前端能正常工作
+           sendResponse({
+             success: true,
+             data: {
+               isAuthenticated: false,
+               session: null,
+               user: null,
+               error: error.message
+             }
            });
          }
        })();

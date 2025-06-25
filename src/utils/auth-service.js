@@ -129,13 +129,33 @@ async function signInWithGoogle(progressCallback = null) {
                 clearTimeout(timeoutId);
                 
                 if (chrome.runtime.lastError) {
-                    console.error('认证流程失败:', chrome.runtime.lastError);
-                    reject(new Error(chrome.runtime.lastError.message));
+                    const errorMessage = chrome.runtime.lastError.message;
+                    
+                    // 识别用户主动取消登录的情况
+                    if (errorMessage === 'The user did not approve access.' || 
+                        errorMessage.includes('user did not approve') ||
+                        errorMessage.includes('cancelled') ||
+                        errorMessage.includes('closed')) {
+                        console.log('PromptCraft: 用户取消了Google登录');
+                        // 创建一个特殊的错误类型，标识这是用户取消而非真正的错误
+                        const cancelError = new Error('USER_CANCELLED');
+                        cancelError.isUserCancelled = true;
+                        reject(cancelError);
+                        return;
+                    }
+                    
+                    // 真正的认证错误
+                    console.error('PromptCraft: 认证流程失败:', chrome.runtime.lastError);
+                    reject(new Error(errorMessage));
                     return;
                 }
                 
                 if (!responseUrl) {
-                    reject(new Error('认证被取消或失败'));
+                    // 没有响应URL通常也是用户取消的情况
+                    console.log('PromptCraft: 用户取消了Google登录（无响应URL）');
+                    const cancelError = new Error('USER_CANCELLED');
+                    cancelError.isUserCancelled = true;
+                    reject(cancelError);
                     return;
                 }
                 

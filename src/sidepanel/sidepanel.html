@@ -257,17 +257,27 @@
                     <div class="about-content">
                         <div class="version-info">
                             <span class="version-label">版本信息</span>
-                            <span class="version-number">v0.9.0</span>
-                        </div>
-                        <div class="help-links">
-                            <a href="#" class="help-link" id="helpBtn">
-                                <i class="fas fa-question-circle"></i>
-                                帮助文档
-                            </a>
+                            <div class="version-container">
+                                <span class="version-number clickable" id="versionNumber">v1.2.1</span>
+                                <span class="version-new" id="versionNew" style="display: none;">NEW</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 版本日志弹窗 -->
+    <div class="version-log-overlay" id="versionLogOverlay" style="display: none;">
+        <div class="version-log-modal">
+            
+            <button class="version-log-close" id="versionLogClose">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="version-log-body" id="versionLogBody">
+                </div>
         </div>
     </div>
 
