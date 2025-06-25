@@ -2,7 +2,7 @@
 
 /**
  * PromptCraft - 本地提示词管理工具
- * 版本: 0.5.0
+ * 版本: 1.2.0
  * 描述: 纯本地存储的提示词管理扩展，无需登录，保护隐私
  */
 
@@ -781,8 +781,32 @@ function handleSearch(term) {
     );
     renderPrompts(filtered);
 }
-
-
+    // 重置表单为新建状态
+    function resetForm() {
+        promptIdInput.value = '';
+        promptTitleInput.value = '';
+        promptContentInput.value = '';
+        promptCategoryInput.value = '';
+        promptCategorySelect.value = '';
+        promptCategorySelect.style.display = 'none';
+        promptCategoryInput.style.display = 'block';
+        formTitle.textContent = '添加新提示词';
+        // 重置textarea高度
+        autoResizeTextarea(promptContentInput);
+    }
+    // 重置表单为新建状态
+    function resetForm() {
+        promptIdInput.value = '';
+        promptTitleInput.value = '';
+        promptContentInput.value = '';
+        promptCategoryInput.value = '';
+        promptCategorySelect.value = '';
+        promptCategorySelect.style.display = 'none';
+        promptCategoryInput.style.display = 'block';
+        formTitle.textContent = '添加新提示词';
+        // 重置textarea高度
+        autoResizeTextarea(promptContentInput);
+    }
 // --- 预览功能 ---
 
 function showPreview(prompt) {
@@ -918,19 +942,7 @@ function addCardEventListeners() {
 
 function setupEventListeners() {
     // 监听数据变更事件，实现实时界面刷新
-    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
-        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            if (message.type === 'DATA_CHANGED') {
-                console.log('收到数据变更通知，刷新界面');
-                // 异步刷新界面，避免阻塞
-                setTimeout(() => {
-                    loadUserPrompts(true).catch(error => {
-                        console.error('数据变更后刷新界面失败:', error);
-                    });
-                }, 100);
-            }
-        });
-    }
+    // 数据变更监听已合并到主监听器中
 
     // 主题选择器事件处理
     document.addEventListener('click', (e) => {
@@ -963,19 +975,7 @@ function setupEventListeners() {
         }
     });
     
-    // 重置表单为新建状态
-    function resetForm() {
-        promptIdInput.value = '';
-        promptTitleInput.value = '';
-        promptContentInput.value = '';
-        promptCategoryInput.value = '';
-        promptCategorySelect.value = '';
-        promptCategorySelect.style.display = 'none';
-        promptCategoryInput.style.display = 'block';
-        formTitle.textContent = '添加新提示词';
-        // 重置textarea高度
-        autoResizeTextarea(promptContentInput);
-    }
+
 
     addPromptBtn.addEventListener('click', () => {
         resetForm();
@@ -1068,12 +1068,6 @@ function setupEventListeners() {
         }
     });
     
-    // 同步开关事件监听
-    const syncToggle = document.getElementById('syncToggle');
-    if (syncToggle) {
-        syncToggle.addEventListener('change', handleSyncToggle);
-    }
-    
     // 导入导出功能
     downloadTemplateBtn.addEventListener('click', handleDownloadTemplate);
     exportBtn.addEventListener('click', handleExport);
@@ -1093,6 +1087,12 @@ function setupEventListeners() {
         logoutBtn.addEventListener('click', handleLogout);
     }
     
+    // 手动同步按钮事件监听器
+    const manualSyncBtn = document.getElementById('manualSyncBtn');
+    if (manualSyncBtn) {
+        manualSyncBtn.addEventListener('click', handleManualSync);
+    }
+    
     // 帮助按钮事件监听器
     const helpBtn = document.getElementById('helpBtn');
     if (helpBtn) {
@@ -1104,95 +1104,7 @@ function setupEventListeners() {
     
     fileInput.addEventListener('change', handleFileImport);
     
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        
-        if (message.type === 'ADD_FROM_CONTEXT_MENU' && message.data?.content) {
-            console.log('收到右键菜单消息，内容:', message.data.content);
-            
-            // 设置标志，防止checkUserSession的延迟检查干扰
-            isProcessingContextMenu = true;
-            
-            // 等待应用完全初始化后再处理
-            const waitForInitialization = async () => {
-                // 检查必要的元素是否存在
-                if (currentUser && addPromptBtn && promptContentInput) {
-                    console.log('应用已初始化完成，开始处理右键添加提示词');
-                    
-                 // 检查是否正在编辑现有提示词
-                 const isEditing = promptIdInput.value && promptIdInput.value.trim() !== '';
-                 
-                 if (currentView !== 'formView') {
-                     // 不在表单视图，直接切换并填充
-                     showView('formView');
-                     // 使用 requestAnimationFrame 确保 DOM 更新后再填充
-                     requestAnimationFrame(() => {
-                         // 确保是新建状态
-                         resetForm();
-                         promptContentInput.value = formatContextMenuText(message.data.content);
-                         promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
-                         console.log('通过 rAF 切换到添加界面并填充内容');
-                         
-                         // 处理完成后重置标志
-                         setTimeout(() => {
-                             isProcessingContextMenu = false;
-                         }, 1000);
-                         
-                         sendResponse({ status: "success", message: "Content received and form populated via rAF after view switch." });
-                     });
-                 } else if (isEditing) {
-                     // 正在编辑状态，询问用户是否要放弃当前编辑
-                     const userConfirm = await showCustomConfirm('💡 是否要放弃当前编辑并创建新的提示词？');
-                     if (userConfirm) {
-                         requestAnimationFrame(() => {
-                             // 重置表单为新建状态
-                             resetForm();
-                             promptContentInput.value = formatContextMenuText(message.data.content);
-                             promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
-                             console.log('用户确认放弃编辑，创建新提示词');
-                             
-                             setTimeout(() => {
-                                 isProcessingContextMenu = false;
-                             }, 1000);
-                             
-                             sendResponse({ status: "success", message: "User confirmed to abandon edit and create new prompt." });
-                         });
-                     } else {
-                         console.log('用户取消了右键添加操作');
-                         setTimeout(() => {
-                             isProcessingContextMenu = false;
-                         }, 100);
-                         sendResponse({ status: "cancelled", message: "User cancelled the operation." });
-                     }
-                 } else {
-                     // 在表单视图但不是编辑状态，直接填充
-                     requestAnimationFrame(() => {
-                         // 确保是新建状态
-                         resetForm();
-                         promptContentInput.value = formatContextMenuText(message.data.content);
-                         promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
-                         console.log('已在添加界面，通过 rAF 填充内容');
-                         
-                         setTimeout(() => {
-                             isProcessingContextMenu = false;
-                         }, 1000);
-                         
-                         sendResponse({ status: "success", message: "Content received and form populated via rAF in existing view." });
-                     });
-                 }
-                } else {
-                    console.log('应用尚未完全初始化，等待中...');
-                    // 如果应用还未初始化完成，继续等待
-                    setTimeout(waitForInitialization, 100);
-                }
-            };
-            
-            // 开始等待初始化完成
-            waitForInitialization();
-            
-
-        }
-        return true; 
-    });
+    // 右键菜单监听已合并到主监听器中
 }
 
 // --- 导入导出功能 ---
@@ -1402,6 +1314,18 @@ async function initializeApp() {
         setupEventListeners();
         setupCategoryInput();
         
+        // 预加载登录资源（异步执行，不阻塞主流程）
+        try {
+            if (window.authService && typeof window.authService.preloadLoginResources === 'function') {
+                window.authService.preloadLoginResources().catch(error => {
+                    console.warn('预加载登录资源失败:', error);
+                });
+                console.log('已启动登录资源预加载');
+            }
+        } catch (error) {
+            console.warn('预加载登录资源时发生错误:', error);
+        }
+        
         // 使用数据服务获取数据后再渲染
         await loadUserPrompts(true); // 跳过loading显示，因为有骨架屏
         
@@ -1424,19 +1348,82 @@ async function initializeApp() {
 
 
 /**
+ * 设置登录按钮的加载状态
+ * @param {boolean} isLoading - 是否显示加载状态
+ */
+function setLoginButtonLoading(isLoading, progressText = '') {
+    const googleSignInBtn = document.getElementById('googleSignInBtn');
+    if (!googleSignInBtn) return;
+    
+    const googleIcon = googleSignInBtn.querySelector('.google-icon');
+    const btnText = googleSignInBtn.querySelector('.btn-text');
+    
+    if (isLoading) {
+        // 添加加载状态类
+        googleSignInBtn.classList.add('loading');
+        
+        // 隐藏Google图标，显示加载动画
+        if (googleIcon) {
+            googleIcon.style.display = 'none';
+        }
+        
+        // 创建并插入加载动画
+        const existingSpinner = googleSignInBtn.querySelector('.loading-spinner');
+        if (!existingSpinner) {
+            const spinner = document.createElement('div');
+            spinner.className = 'loading-spinner';
+            googleSignInBtn.insertBefore(spinner, btnText);
+        }
+        
+        // 更改按钮文字
+        if (btnText) {
+            btnText.textContent = progressText || '正在登录...';
+        }
+    } else {
+        // 移除加载状态类
+        googleSignInBtn.classList.remove('loading');
+        
+        // 显示Google图标
+        if (googleIcon) {
+            googleIcon.style.display = 'block';
+        }
+        
+        // 移除加载动画
+        const spinner = googleSignInBtn.querySelector('.loading-spinner');
+        if (spinner) {
+            spinner.remove();
+        }
+        
+        // 恢复按钮文字
+        if (btnText) {
+            btnText.textContent = '使用 Google 登录';
+        }
+    }
+}
+
+/**
  * 处理Google登录
  */
 async function handleGoogleSignIn() {
     console.log('Sidepanel: 用户点击登录，正在向后台发送命令...');
+    
+    // 启动加载状态
+    setLoginButtonLoading(true);
+    
     // 只负责发送消息，不关心后续逻辑
-    chrome.runtime.sendMessage({ type: 'LOGIN_WITH_GOOGLE' }, (response) => {
+    chrome.runtime.sendMessage({ 
+        type: 'LOGIN_WITH_GOOGLE',
+        progressCallback: true // 标识需要进度回调
+    }, (response) => {
         if (chrome.runtime.lastError || !response.success) {
             console.error('登录命令发送失败或后台处理失败:', response?.error);
             showToast('登录启动失败，请重试', 'error');
+            // 登录失败时恢复按钮状态
+            setLoginButtonLoading(false);
         } else {
             console.log('Sidepanel: 登录流程已成功由后台启动。');
-            // 这里可以显示一个"正在登录中..."的提示
-            showToast('正在登录中...', 'info');
+            // 移除"正在登录中"提示，避免与"登录成功"Toast重复
+            // 注意：登录成功时不在这里恢复按钮状态，而是在收到认证状态更新消息时恢复
         }
     });
 }
@@ -1453,8 +1440,7 @@ async function handleLogout() {
             showToast('退出启动失败，请重试', 'error');
         } else {
             console.log('Sidepanel: 退出流程已成功由后台启动。');
-            // 这里可以显示一个"正在退出中..."的提示
-            showToast('正在退出中...', 'info');
+            // 移除"正在退出中"提示，避免与"已退出登录"Toast重复
         }
     });
 }
@@ -1467,9 +1453,10 @@ function updateUIForAuthState(session) {
     // 设置页面元素
     const loggedOutSection = document.getElementById('loggedOutSection');
     const loggedInSection = document.getElementById('loggedInSection');
-    const userAvatarSettings = document.getElementById('userAvatarSettings');
-    const defaultUserIconSettings = document.getElementById('defaultUserIconSettings');
-    const userEmailSettings = document.getElementById('userEmailSettings');
+    const userAvatar = document.getElementById('userAvatar');
+    const defaultAvatar = document.getElementById('defaultAvatar');
+    const userName = document.getElementById('userName');
+    const userEmail = document.getElementById('userEmail');
     
     if (session && session.user) {
         // 已登录状态
@@ -1479,20 +1466,42 @@ function updateUIForAuthState(session) {
         if (loggedInSection) loggedInSection.style.display = 'block';
         if (loggedOutSection) loggedOutSection.style.display = 'none';
         
-        // 更新设置页面中的用户头像
-        if (userAvatarSettings && user.user_metadata?.avatar_url) {
-            userAvatarSettings.src = user.user_metadata.avatar_url;
-            userAvatarSettings.style.display = 'block';
-            if (defaultUserIconSettings) defaultUserIconSettings.style.display = 'none';
+        // 更新用户头像
+        if (userAvatar && user.user_metadata?.avatar_url) {
+            const avatarImg = userAvatar.querySelector('.avatar-img');
+            if (avatarImg) {
+                avatarImg.src = user.user_metadata.avatar_url;
+                userAvatar.style.display = 'block';
+                if (defaultAvatar) defaultAvatar.style.display = 'none';
+            }
         } else {
-            if (userAvatarSettings) userAvatarSettings.style.display = 'none';
-            if (defaultUserIconSettings) defaultUserIconSettings.style.display = 'block';
+            if (userAvatar) userAvatar.style.display = 'none';
+            if (defaultAvatar) {
+                defaultAvatar.style.display = 'flex';
+                // 设置默认头像的首字母
+                const firstLetter = (user.email || 'U').charAt(0).toUpperCase();
+                defaultAvatar.textContent = firstLetter;
+            }
         }
         
-        // 更新设置页面中的用户邮箱
-        if (userEmailSettings) {
-            userEmailSettings.textContent = user.email || '未知用户';
+        // 更新用户昵称和邮箱
+        if (userName) {
+            // 优先使用用户元数据中的姓名，否则使用邮箱前缀
+            const displayName = user.user_metadata?.full_name || 
+                               user.user_metadata?.name || 
+                               (user.email ? user.email.split('@')[0] : '用户');
+            userName.textContent = displayName;
+            userName.title = displayName; // 添加hover显示完整用户名
         }
+        
+        if (userEmail) {
+            const email = user.email || '未知邮箱';
+            userEmail.textContent = email;
+            userEmail.title = email; // 添加hover显示完整邮箱
+        }
+        
+        // 初始化同步时间显示
+        updateSyncTime();
         
         // 更新全局用户状态
         currentUser = {
@@ -1517,8 +1526,6 @@ function updateUIForAuthState(session) {
             };
         }
         
-        updateSyncUI('disabled', '同步已禁用');
-        
         console.log('用户未登录，使用本地模式');
     }
 }
@@ -1532,102 +1539,156 @@ function updateUIForAuthState(session) {
 
 
 /**
- * 更新同步UI状态
- * @param {string} status - 同步状态: 'idle', 'syncing', 'success', 'error', 'disabled'
- * @param {string} message - 状态消息
+ * 处理手动同步
  */
-function updateSyncUI(status, message) {
-    const syncStatusIcon = document.querySelector('.sync-status-icon');
-    const syncStatusText = document.querySelector('.sync-status-text');
-    const syncIndicator = document.getElementById('syncIndicator');
-    const syncToggle = document.getElementById('syncToggle');
+async function handleManualSync() {
+    const manualSyncBtn = document.getElementById('manualSyncBtn');
+    if (!manualSyncBtn) return;
     
-    if (!syncStatusIcon || !syncStatusText) return;
+    // 检查用户是否已登录
+    if (!currentUser || currentUser.id === 'local-user') {
+        showToast('请先登录以使用云端同步功能', 'warning');
+        return;
+    }
     
-    // 清除所有状态类
-    syncStatusIcon.className = 'fas sync-status-icon';
-    syncStatusText.className = 'sync-status-text';
+    try {
+        console.log('用户手动触发同步');
+        
+        // 添加旋转动画
+        manualSyncBtn.classList.add('syncing');
+        manualSyncBtn.disabled = true;
+        
+        // 向后台发送同步请求并等待完成
+        const response = await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage({ type: 'MANUAL_SYNC' }, (response) => {
+                if (chrome.runtime.lastError) {
+                    reject(new Error(chrome.runtime.lastError.message));
+                } else {
+                    resolve(response);
+                }
+            });
+        });
+        
+        if (response && response.success) {
+            console.log('手动同步完成');
+            // 更新同步时间
+            updateSyncTime();
+            showToast('同步成功！', 'success');
+        } else {
+            console.error('手动同步失败:', response?.error);
+            showToast('同步失败: ' + (response?.error || '未知错误'), 'error');
+        }
+        
+    } catch (error) {
+        console.error('手动同步失败:', error);
+        showToast('同步失败，请重试', 'error');
+    } finally {
+        // 移除旋转动画并恢复按钮状态
+        manualSyncBtn.classList.remove('syncing');
+        manualSyncBtn.disabled = false;
+    }
+}
+
+/**
+ * 更新同步时间显示
+ */
+function updateSyncTime() {
+    const syncTimeElement = document.getElementById('syncTime');
+    if (syncTimeElement) {
+        const now = new Date();
+        const timeString = now.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        syncTimeElement.textContent = `最后同步时间: ${timeString}`;
+    }
+}
+
+/**
+ * 更新同步状态
+ * @param {string} status - 同步状态
+ * @param {string} lastSyncTime - 最后同步时间
+ */
+function updateSyncStatus(status, lastSyncTime) {
+    console.log('更新同步状态UI:', status, lastSyncTime);
+    
+    const syncTimeElement = document.getElementById('syncTime');
     
     switch (status) {
         case 'syncing':
-            syncStatusIcon.classList.add('fa-sync-alt', 'fa-spin', 'syncing');
-            syncStatusText.classList.add('syncing');
-            syncStatusText.textContent = message || '正在同步...';
-            if (syncIndicator) syncIndicator.style.display = 'flex';
-            break;
-            
-        case 'success':
-            syncStatusIcon.classList.add('fa-check-circle', 'success');
-            syncStatusText.classList.add('success');
-            syncStatusText.textContent = message || '同步成功';
-            if (syncIndicator) syncIndicator.style.display = 'none';
-            // 只在同步完成时显示toast，避免重复提示
-            if (message && message.includes('同步完成')) {
-                showToast('云端同步完成，数据已更新', 'success');
+            if (syncTimeElement) {
+                syncTimeElement.textContent = '正在同步...';
             }
             break;
             
+        case 'success':
+            if (lastSyncTime) {
+                const syncTime = new Date(lastSyncTime);
+                const timeString = syncTime.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                if (syncTimeElement) {
+                    syncTimeElement.textContent = `最后同步时间: ${timeString}`;
+                }
+            } else {
+                updateSyncTime();
+            }
+            showToast('云端同步完成', 'success');
+            break;
+            
         case 'error':
-            syncStatusIcon.classList.add('fa-exclamation-circle', 'error');
-            syncStatusText.classList.add('error');
-            syncStatusText.textContent = message || '同步失败';
-            if (syncIndicator) syncIndicator.style.display = 'none';
+            if (syncTimeElement) {
+                syncTimeElement.textContent = '同步失败';
+            }
+            showToast('同步失败，请稍后重试', 'error');
             break;
             
-        case 'disabled':
-            syncStatusIcon.classList.add('fa-times-circle');
-            syncStatusText.textContent = message || '同步已禁用';
-            if (syncIndicator) syncIndicator.style.display = 'none';
-            if (syncToggle) syncToggle.checked = false;
-            break;
-            
-        default: // 'idle'
-            syncStatusIcon.classList.add('fa-check-circle', 'success');
-            syncStatusText.classList.add('success');
-            syncStatusText.textContent = message || '同步已启用';
-            if (syncIndicator) syncIndicator.style.display = 'none';
-            if (syncToggle) syncToggle.checked = true;
+        case 'idle':
+        default:
+            if (syncTimeElement) {
+                syncTimeElement.textContent = '尚未同步';
+            }
             break;
     }
- }
+}
 
 /**
- * 处理同步开关切换
+ * 更新同步UI状态（保留用于兼容性）
+ * @param {string} status - 同步状态
+ * @param {string} message - 状态消息
  */
-async function handleSyncToggle(event) {
-    const isEnabled = event.target.checked;
-    
-    try {
-        if (isEnabled) {
-            updateSyncUI('syncing', '正在启用同步...');
-            // 同步服务现在在 background.js 中管理
-            updateSyncUI('success', '同步已启用');
-        } else {
-            updateSyncUI('disabled', '同步已禁用');
-        }
-    } catch (error) {
-        console.error('同步开关操作失败:', error);
-        updateSyncUI('error', '同步操作失败');
-        event.target.checked = !isEnabled; // 恢复开关状态
+function updateSyncUI(status, message) {
+    // 对于新的UI，只需要更新同步时间
+    if (status === 'success' && message && message.includes('同步完成')) {
+        updateSyncTime();
+        showToast('云端同步完成，数据已更新', 'success');
     }
 }
 
 // 同步相关功能已迁移到 background.js 中管理
  
- // 立即显示界面，不等待任何操作
- document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM加载完成，立即初始化应用');
-    initializeApp();
-});
+ // 注释：移除重复的DOMContentLoaded监听器，避免重复初始化
+ // 初始化逻辑已在 initializeApp() 函数内部的 showMainViewWhenReady() 中处理
 
 // 全局消息监听器 - 接收来自 background.js 的 UI 更新指令
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log('Sidepanel: 收到来自后台的消息:', message);
-    
+    // 处理来自后台的消息
     switch (message.type) {
         case 'UPDATE_AUTH_UI':
-            console.log('Sidepanel: 收到认证状态更新指令:', message.session);
+            console.log('认证状态更新:', message.session ? '已登录' : '已退出');
             updateUIForAuthState(message.session);
+            
+            // 恢复登录按钮状态（无论登录成功还是退出登录）
+            setLoginButtonLoading(false);
             
             // 根据认证状态显示相应的提示
             if (message.session) {
@@ -1642,44 +1703,154 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             }
             break;
             
+        case 'LOGIN_PROGRESS':
+            console.log('登录进度更新:', message.stage, message.message);
+            // 更新登录按钮的进度文本
+            setLoginButtonLoading(true, message.message);
+            break;
+            
         case 'LOGIN_ERROR':
-            console.log('Sidepanel: 收到登录错误通知:', message.error);
+            console.log('登录失败:', message.error);
             showToast('登录失败: ' + message.error, 'error');
+            // 登录错误时恢复按钮状态
+            setLoginButtonLoading(false);
             break;
             
         case 'LOGOUT_ERROR':
-            console.log('Sidepanel: 收到退出错误通知:', message.error);
+            console.log('退出失败:', message.error);
             showToast('退出失败: ' + message.error, 'error');
             break;
             
         case 'GET_THEME_MODE':
-            // 主题模式查询消息，通常由content script发送给background
-            // sidepanel不需要处理，静默忽略
-            console.log('Sidepanel: 收到主题模式查询消息，忽略处理');
-            break;
-            
         case 'getPrompts':
-            // 获取提示词消息，通常由content script发送给background
-            // sidepanel不需要处理，静默忽略
-            console.log('Sidepanel: 收到获取提示词消息，忽略处理');
+            // 静默忽略主题模式查询和获取提示词消息
             break;
             
         case 'DATA_CHANGED':
-            // 数据变更通知消息，通常由sync-service发送
-            // sidepanel不需要处理，静默忽略
-            console.log('Sidepanel: 收到数据变更通知，忽略处理');
+            console.log('收到数据变更通知，刷新界面');
+            // 异步刷新界面，避免阻塞
+            setTimeout(() => {
+                loadUserPrompts(true).catch(error => {
+                    console.error('数据变更后刷新界面失败:', error);
+                });
+            }, 100);
+            break;
+            
+        case 'SYNC_STATUS_CHANGED':
+            console.log('同步状态变化:', message.operation, message.data);
+            if (message.operation === 'SYNC_COMPLETED') {
+                // 同步完成，更新同步时间显示
+                updateSyncTime();
+            }
+            break;
+            
+        case 'SYNC_PROGRESS':
+            console.log('同步进度更新:', message.progress);
+            break;
+            
+        case 'ADD_FROM_CONTEXT_MENU':
+            if (message.data?.content) {
+                
+                // 设置标志，防止checkUserSession的延迟检查干扰
+                isProcessingContextMenu = true;
+                
+                // 等待应用完全初始化后再处理
+                const waitForInitialization = async () => {
+                    // 检查必要的元素是否存在
+                    if (currentUser && addPromptBtn && promptContentInput) {
+                        
+                        // 检查是否正在编辑现有提示词
+                        const isEditing = promptIdInput.value && promptIdInput.value.trim() !== '';
+                        
+                        if (currentView !== 'formView') {
+                            // 不在表单视图，直接切换并填充
+                            showView('formView');
+                            // 使用 requestAnimationFrame 确保 DOM 更新后再填充
+                            requestAnimationFrame(() => {
+                                // 确保是新建状态
+                                resetForm();
+                                promptContentInput.value = formatContextMenuText(message.data.content);
+                                promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                // 切换到添加界面并填充内容
+                                
+                                // 处理完成后重置标志
+                                setTimeout(() => {
+                                    isProcessingContextMenu = false;
+                                }, 1000);
+                                
+                                sendResponse({ status: "success", message: "Content received and form populated via rAF after view switch." });
+                            });
+                        } else if (isEditing) {
+                            // 正在编辑状态，询问用户是否要放弃当前编辑
+                            const userConfirm = await showCustomConfirm('💡 是否要放弃当前编辑并创建新的提示词？');
+                            if (userConfirm) {
+                                requestAnimationFrame(() => {
+                                    // 重置表单为新建状态
+                                    resetForm();
+                                    promptContentInput.value = formatContextMenuText(message.data.content);
+                                    promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                    // 用户确认放弃编辑，创建新提示词
+                                    
+                                    setTimeout(() => {
+                                        isProcessingContextMenu = false;
+                                    }, 1000);
+                                    
+                                    sendResponse({ status: "success", message: "User confirmed to abandon edit and create new prompt." });
+                                });
+                            } else {
+                                // 用户取消了右键添加操作
+                                setTimeout(() => {
+                                    isProcessingContextMenu = false;
+                                }, 100);
+                                sendResponse({ status: "cancelled", message: "User cancelled the operation." });
+                            }
+                        } else {
+                            // 在表单视图但不是编辑状态，直接填充
+                            requestAnimationFrame(() => {
+                                // 确保是新建状态
+                                resetForm();
+                                promptContentInput.value = formatContextMenuText(message.data.content);
+                                promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                // 已在添加界面，填充内容
+                                
+                                setTimeout(() => {
+                                    isProcessingContextMenu = false;
+                                }, 1000);
+                                
+                                sendResponse({ status: "success", message: "Content received and form populated via rAF in existing view." });
+                            });
+                        }
+                    } else {
+                        // 应用尚未完全初始化，继续等待
+                        // 如果应用还未初始化完成，继续等待
+                        setTimeout(waitForInitialization, 100);
+                    }
+                };
+                
+                // 开始等待初始化完成
+                waitForInitialization();
+                return true; // 保持消息通道开放
+            }
             break;
             
         default:
             // 检查是否是action类型的消息（没有type字段但有action字段）
             if (message.action) {
-                console.log('Sidepanel: 收到action类型消息，忽略处理:', message.action);
-            } else {
-                console.log('Sidepanel: 未知消息类型:', message.type || 'undefined');
+                // 忽略action类型的消息
+            } else if (message.type) {
+                console.log('未知消息类型:', message.type);
             }
     }
     
     // 发送响应确认消息已处理
     sendResponse({ success: true });
 });
+
+// 应用启动入口 - 确保只初始化一次
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp, { once: true });
+} else {
+    // DOM已经加载完成，直接初始化
+    initializeApp();
+}
 

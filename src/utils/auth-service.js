@@ -21,18 +21,80 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     }
 });
 
+// 预加载状态管理
+let isPreloaded = false;
+let preloadPromise = null;
+
 /**
- * 使用 Google 登录
+ * 预加载登录所需资源
+ * 在用户可能需要登录前提前调用，减少实际登录时的延迟
  */
-async function signInWithGoogle() {
+async function preloadLoginResources() {
+    if (isPreloaded || preloadPromise) {
+        return preloadPromise;
+    }
+    
+    console.log('开始预加载登录资源...');
+    
+    preloadPromise = (async () => {
+        try {
+            // 1. 预热Supabase客户端连接
+            await supabaseClient.auth.getSession();
+            
+            // 2. 预获取Chrome扩展重定向URL（这个操作很快但可以缓存）
+            const redirectURL = chrome.identity.getRedirectURL();
+            console.log('预加载：Chrome扩展重定向URL已缓存:', redirectURL);
+            
+            // 3. 预热OAuth URL获取（不实际执行登录，只是建立连接）
+            // 注意：这里不能真正调用signInWithOAuth，因为会触发实际登录流程
+            // 但可以通过其他方式预热连接
+            
+            isPreloaded = true;
+            console.log('登录资源预加载完成');
+            
+        } catch (error) {
+            console.warn('登录资源预加载失败（不影响正常登录）:', error);
+            // 预加载失败不应该影响正常登录流程
+        }
+    })();
+    
+    return preloadPromise;
+}
+
+/**
+ * 使用 Google 登录（带进度回调）
+ * @param {Function} progressCallback - 进度回调函数，接收 {stage, message} 参数
+ */
+async function signInWithGoogle(progressCallback = null) {
     try {
         console.log('开始 Google 登录流程...');
         
+        // 进度回调辅助函数
+        const reportProgress = (stage, message) => {
+            console.log(`登录进度 [${stage}]: ${message}`);
+            if (progressCallback) {
+                progressCallback({ stage, message });
+            }
+        };
+        
+        // 0. 尝试使用预加载的资源
+        reportProgress('preparing', '准备登录资源...');
+        if (preloadPromise) {
+            try {
+                await preloadPromise;
+                reportProgress('preparing', '使用预加载资源');
+            } catch (error) {
+                console.warn('预加载资源使用失败，继续正常流程:', error);
+            }
+        }
+        
         // 1. 获取 Chrome 扩展的重定向 URL
+        reportProgress('redirect', '获取重定向URL...');
         const redirectURL = chrome.identity.getRedirectURL();
         console.log('Chrome 扩展重定向 URL:', redirectURL);
         
         // 2. 调用 Supabase signInWithOAuth 获取授权 URL
+        reportProgress('oauth', '获取Google授权链接...');
         const { data, error: urlError } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
@@ -50,6 +112,7 @@ async function signInWithGoogle() {
         }
 
         console.log('获取到 OAuth URL:', data.url);
+        reportProgress('auth', '打开Google登录页面...');
 
         // 3. 使用 chrome.identity.launchWebAuthFlow 进行认证
         return new Promise((resolve, reject) => {
@@ -78,6 +141,7 @@ async function signInWithGoogle() {
                 
                 try {
                     console.log('认证回调 URL:', responseUrl);
+                    reportProgress('callback', '处理登录回调...');
                     
                     // 4. 解析回调 URL 中的参数
                     const url = new URL(responseUrl);
@@ -107,6 +171,7 @@ async function signInWithGoogle() {
                     }
                     
                     console.log('开始设置 Supabase 会话...');
+                    reportProgress('session', '建立用户会话...');
                     
                     // 5. 设置 Supabase 会话
                     const { data: sessionData, error: sessionError } = await supabaseClient.auth.setSession({
@@ -128,6 +193,7 @@ async function signInWithGoogle() {
                     
                     console.log('用户认证成功:', sessionData.user.email);
                     console.log('会话设置完成，会话ID:', sessionData.session.access_token.substring(0, 20) + '...');
+                    reportProgress('complete', '登录成功！');
                     
                     // 确保认证状态变化事件能够正确触发
                     setTimeout(() => {
@@ -230,6 +296,7 @@ const authService = {
     getSession,
     isAuthenticated,
     getCurrentUser,
+    preloadLoginResources,
     onAuthStateChange: (callback) => supabaseClient.auth.onAuthStateChange(callback),
     // 暴露 Supabase 客户端以供其他用途
     client: supabaseClient
