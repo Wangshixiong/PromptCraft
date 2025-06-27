@@ -25,6 +25,41 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 let isPreloaded = false;
 let preloadPromise = null;
 
+// 用户数据保护列表 - 这些键永远不应该被清理
+const PROTECTED_USER_DATA_KEYS = [
+    'prompts',                    // 用户的个人提示词
+    'themeMode',                  // 用户主题设置
+    'promptcraft_has_data',       // 数据状态标志
+    'default_templates_loaded',   // 默认模板加载状态
+    'schema_version',             // 数据模式版本
+    'loadError',                  // 加载错误状态
+    'errorMessage',               // 错误消息
+    'errorTimestamp'              // 错误时间戳
+];
+
+/**
+ * 安全检查函数：确保不会清理受保护的用户数据
+ * @param {Array} keysToRemove - 要清理的键列表
+ * @returns {Array} 过滤后的安全键列表
+ */
+function validateKeysToRemove(keysToRemove) {
+    const safeKeys = keysToRemove.filter(key => {
+        if (PROTECTED_USER_DATA_KEYS.includes(key)) {
+            console.warn(`安全警告: 尝试清理受保护的用户数据键 '${key}'，已阻止`);
+            return false;
+        }
+        return true;
+    });
+    
+    console.log('数据清理安全检查完成:', {
+        原始键数量: keysToRemove.length,
+        安全键数量: safeKeys.length,
+        被保护的键: keysToRemove.filter(key => PROTECTED_USER_DATA_KEYS.includes(key))
+    });
+    
+    return safeKeys;
+}
+
 /**
  * 预加载登录所需资源
  * 在用户可能需要登录前提前调用，减少实际登录时的延迟
@@ -254,10 +289,28 @@ async function signOut() {
             throw error;
         }
         
-        // 清除本地存储
-        await chrome.storage.local.clear();
+        // 选择性清理：只清除认证和同步相关数据，保留用户数据
+        const authKeysToRemove = [
+            // Supabase 认证相关键（使用项目ID模式）
+            'sb-uwgxhtrbixsdabjvuuaj-auth-token',
+            'sb-uwgxhtrbixsdabjvuuaj-auth-token-code-verifier', 
+            'sb-uwgxhtrbixsdabjvuuaj-auth-refresh-token',
+            // 同步服务相关键（但保留用户数据和状态标志）
+            'last_sync_time',
+            'sync_status',
+            'migration_completed', 
+            'sync_queue',
+            'conflict_log'
+            // 注意：不清理 prompts, themeMode, promptcraft_has_data, default_templates_loaded, schema_version
+        ];
         
-        console.log('退出登录成功');
+        // 安全检查：确保不会清理受保护的用户数据
+        const safeKeysToRemove = validateKeysToRemove(authKeysToRemove);
+        
+        console.log('清理认证相关数据:', safeKeysToRemove);
+        await chrome.storage.local.remove(safeKeysToRemove);
+        
+        console.log('退出登录成功，用户数据已保留');
         return { success: true };
         
     } catch (error) {

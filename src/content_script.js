@@ -552,7 +552,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         }
 
         // 递归检查所有子元素
-        const allElements = rootElement.querySelectorAll('*');
+        const allElements = rootElement.querySelectorAll('textarea, input[type="text"], [contenteditable="true"]');
         allElements.forEach((element) => {
             if (isEditableElement(element)) {
                 bindInputElement(element);
