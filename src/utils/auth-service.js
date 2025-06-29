@@ -51,11 +51,7 @@ function validateKeysToRemove(keysToRemove) {
         return true;
     });
     
-    console.log('数据清理安全检查完成:', {
-        原始键数量: keysToRemove.length,
-        安全键数量: safeKeys.length,
-        被保护的键: keysToRemove.filter(key => PROTECTED_USER_DATA_KEYS.includes(key))
-    });
+
     
     return safeKeys;
 }
@@ -69,7 +65,7 @@ async function preloadLoginResources() {
         return preloadPromise;
     }
     
-    console.log('开始预加载登录资源...');
+
     
     preloadPromise = (async () => {
         try {
@@ -78,14 +74,14 @@ async function preloadLoginResources() {
             
             // 2. 预获取Chrome扩展重定向URL（这个操作很快但可以缓存）
             const redirectURL = chrome.identity.getRedirectURL();
-            console.log('预加载：Chrome扩展重定向URL已缓存:', redirectURL);
+
             
             // 3. 预热OAuth URL获取（不实际执行登录，只是建立连接）
             // 注意：这里不能真正调用signInWithOAuth，因为会触发实际登录流程
             // 但可以通过其他方式预热连接
             
             isPreloaded = true;
-            console.log('登录资源预加载完成');
+
             
         } catch (error) {
             console.warn('登录资源预加载失败（不影响正常登录）:', error);
@@ -102,11 +98,10 @@ async function preloadLoginResources() {
  */
 async function signInWithGoogle(progressCallback = null) {
     try {
-        console.log('开始 Google 登录流程...');
+
         
         // 进度回调辅助函数
         const reportProgress = (stage, message) => {
-            console.log(`登录进度 [${stage}]: ${message}`);
             if (progressCallback) {
                 progressCallback({ stage, message });
             }
@@ -119,14 +114,14 @@ async function signInWithGoogle(progressCallback = null) {
                 await preloadPromise;
                 reportProgress('preparing', '使用预加载资源');
             } catch (error) {
-                console.warn('预加载资源使用失败，继续正常流程:', error);
+
             }
         }
         
         // 1. 获取 Chrome 扩展的重定向 URL
         reportProgress('redirect', '获取重定向URL...');
         const redirectURL = chrome.identity.getRedirectURL();
-        console.log('Chrome 扩展重定向 URL:', redirectURL);
+
         
         // 2. 调用 Supabase signInWithOAuth 获取授权 URL
         reportProgress('oauth', '获取Google授权链接...');
@@ -146,7 +141,7 @@ async function signInWithGoogle(progressCallback = null) {
             throw urlError;
         }
 
-        console.log('获取到 OAuth URL:', data.url);
+
         reportProgress('auth', '打开Google登录页面...');
 
         // 3. 使用 chrome.identity.launchWebAuthFlow 进行认证
@@ -171,7 +166,7 @@ async function signInWithGoogle(progressCallback = null) {
                         errorMessage.includes('user did not approve') ||
                         errorMessage.includes('cancelled') ||
                         errorMessage.includes('closed')) {
-                        console.log('PromptCraft: 用户取消了Google登录');
+
                         // 创建一个特殊的错误类型，标识这是用户取消而非真正的错误
                         const cancelError = new Error('USER_CANCELLED');
                         cancelError.isUserCancelled = true;
@@ -187,7 +182,7 @@ async function signInWithGoogle(progressCallback = null) {
                 
                 if (!responseUrl) {
                     // 没有响应URL通常也是用户取消的情况
-                    console.log('PromptCraft: 用户取消了Google登录（无响应URL）');
+
                     const cancelError = new Error('USER_CANCELLED');
                     cancelError.isUserCancelled = true;
                     reject(cancelError);
@@ -195,7 +190,7 @@ async function signInWithGoogle(progressCallback = null) {
                 }
                 
                 try {
-                    console.log('认证回调 URL:', responseUrl);
+
                     reportProgress('callback', '处理登录回调...');
                     
                     // 4. 解析回调 URL 中的参数
@@ -207,11 +202,7 @@ async function signInWithGoogle(progressCallback = null) {
                     const error = hashParams.get('error');
                     const errorDescription = hashParams.get('error_description');
                     
-                    console.log('解析到的令牌信息:', {
-                        hasAccessToken: !!accessToken,
-                        hasRefreshToken: !!refreshToken,
-                        error: error
-                    });
+
                     
                     if (error) {
                         console.error('OAuth 认证失败:', error, errorDescription);
@@ -225,7 +216,7 @@ async function signInWithGoogle(progressCallback = null) {
                         return;
                     }
                     
-                    console.log('开始设置 Supabase 会话...');
+
                     reportProgress('session', '建立用户会话...');
                     
                     // 5. 设置 Supabase 会话
@@ -246,13 +237,12 @@ async function signInWithGoogle(progressCallback = null) {
                         return;
                     }
                     
-                    console.log('用户认证成功:', sessionData.user.email);
-                    console.log('会话设置完成，会话ID:', sessionData.session.access_token.substring(0, 20) + '...');
+
                     reportProgress('complete', '登录成功！');
                     
                     // 确保认证状态变化事件能够正确触发
                     setTimeout(() => {
-                        console.log('延迟触发认证状态检查...');
+                        // 延迟触发认证状态检查
                     }, 100);
                     
                     resolve({
@@ -280,7 +270,7 @@ async function signInWithGoogle(progressCallback = null) {
  */
 async function signOut() {
     try {
-        console.log('开始退出登录...');
+
         
         // 清除 Supabase 会话
         const { error } = await supabaseClient.auth.signOut();
@@ -307,10 +297,10 @@ async function signOut() {
         // 安全检查：确保不会清理受保护的用户数据
         const safeKeysToRemove = validateKeysToRemove(authKeysToRemove);
         
-        console.log('清理认证相关数据:', safeKeysToRemove);
+
         await chrome.storage.local.remove(safeKeysToRemove);
         
-        console.log('退出登录成功，用户数据已保留');
+
         return { success: true };
         
     } catch (error) {

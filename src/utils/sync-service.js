@@ -40,7 +40,7 @@ const SYNC_OPERATION = {
 
 // 存储键名常量
 const SYNC_STORAGE_KEYS = {
-    LAST_SYNC_TIME: 'last_sync_time',           // 最后同步时间
+    LAST_SYNC_TIME: 'lastSyncTime',             // 最后同步时间（与data-service保持一致）
     SYNC_STATUS: 'sync_status',                 // 同步状态
     MIGRATION_COMPLETED: 'migration_completed', // 数据迁移完成标记
     SYNC_QUEUE: 'sync_queue',                   // 同步队列
@@ -83,7 +83,7 @@ class SyncService {
             conflictResolutionStrategy: 'last_write_wins' // 冲突解决策略
         };
         
-        console.log('SyncService 实例已创建');
+
     }
     
     /**
@@ -111,7 +111,7 @@ class SyncService {
      */
     async _doInitialize() {
         try {
-            console.log('开始初始化 SyncService...');
+
             
             // 1. 确保依赖服务已初始化
             if (!this.authService || !this.dataService) {
@@ -127,12 +127,12 @@ class SyncService {
             // 4. 检查当前用户状态
             const currentUser = await this.authService.getCurrentUser();
             if (currentUser) {
-                console.log('检测到已登录用户，准备同步:', currentUser.email);
+
                 // 延迟执行同步，避免阻塞初始化
                 setTimeout(() => this._handleUserSignIn(currentUser), 1000);
             }
             
-            console.log('SyncService 初始化完成');
+
             
         } catch (error) {
             console.error('SyncService 初始化失败:', error);
@@ -148,7 +148,7 @@ class SyncService {
     _setupAuthStateListener() {
         // 监听用户登录事件
         this.authService.onAuthStateChange((event, session) => {
-            console.log('SyncService: 认证状态变化:', event, session?.user?.email);
+
             
             // 向 sidepanel 发送 UI 更新指令（通过 background.js 转发）
             if (typeof chrome !== 'undefined' && chrome.runtime) {
@@ -156,7 +156,7 @@ class SyncService {
                     type: 'UPDATE_AUTH_UI',
                     session: session
                 }).catch(err => {
-                    console.log('SyncService: 发送UI更新消息失败（可能sidepanel未打开）:', err);
+
                 });
             }
             
@@ -175,21 +175,21 @@ class SyncService {
      */
     async _handleUserSignIn(user) {
         try {
-            console.log('处理用户登录，开始同步流程:', user.email);
+
             
             // 直接查询云端数据来判断用户状态
             const cloudPrompts = await this._fetchCloudPrompts(user.id);
-            const localPrompts = await this.dataService.getAllPrompts();
+            const localPrompts = await this.dataService.getAllPromptsIncludingDeleted();
             
-            console.log(`云端数据: ${cloudPrompts.length} 条，本地数据: ${localPrompts.length} 条`);
+
             
             if (cloudPrompts.length === 0 && localPrompts.length > 0) {
                 // 云端无数据，本地有数据 -> 首次登录，执行数据迁移
-                console.log('检测到首次登录（云端无数据，本地有数据），开始数据迁移...');
+
                 await this.migrateLocalData();
             } else {
                 // 其他情况都执行智能同步
-                console.log('执行智能数据同步...');
+
                 await this.performFullSync();
             }
             
@@ -205,7 +205,7 @@ class SyncService {
      */
     async _handleUserSignOut() {
         try {
-            console.log('用户已退出，清理同步状态...');
+
             
             // 清理同步状态
             this.currentStatus = SYNC_STATUS.IDLE;
@@ -214,7 +214,7 @@ class SyncService {
             // 清理本地同步相关数据（保留用户数据）
             await this._clearSyncState();
             
-            console.log('同步状态清理完成');
+
             
         } catch (error) {
             console.error('处理用户退出失败:', error);
@@ -229,14 +229,14 @@ class SyncService {
     async migrateLocalData() {
         // 检查同步状态锁
         if (this.isSyncing) {
-            console.log('数据迁移已在进行中，跳过重复执行');
+
             return { success: false, message: '数据迁移正在进行中' };
         }
         
         this.isSyncing = true;
         
         try {
-            console.log('开始首次登录数据迁移...');
+
             this._updateSyncStatus(SYNC_STATUS.SYNCING);
             
             // 1. 检查用户认证状态
@@ -246,11 +246,11 @@ class SyncService {
             }
             
             // 2. 获取所有本地提示词数据
-            const localPrompts = await this.dataService.getAllPrompts();
-            console.log(`获取到 ${localPrompts.length} 条本地提示词数据`);
+            const localPrompts = await this.dataService.getAllPromptsIncludingDeleted();
+
             
             if (localPrompts.length === 0) {
-                console.log('本地无数据需要迁移');
+
                 this._updateSyncStatus(SYNC_STATUS.SUCCESS);
                 return { success: true, migratedCount: 0, message: '无数据需要迁移' };
             }
@@ -271,7 +271,7 @@ class SyncService {
             const uploadResult = await this._batchUploadPrompts(uploadData);
             
             if (uploadResult.success) {
-                console.log(`数据迁移成功，共迁移 ${uploadResult.count} 条数据`);
+
                 this._updateSyncStatus(SYNC_STATUS.SUCCESS);
                 
                 return {
@@ -290,7 +290,7 @@ class SyncService {
         } finally {
             // 释放同步状态锁
             this.isSyncing = false;
-            console.log('数据迁移状态锁已释放');
+
         }
     }
     
@@ -302,14 +302,14 @@ class SyncService {
     async performFullSync() {
         // 检查同步状态锁
         if (this.isSyncing) {
-            console.log('完整同步已在进行中，跳过重复执行');
+
             return { success: false, message: '同步正在进行中' };
         }
         
         this.isSyncing = true;
         
         try {
-            console.log('开始执行完整同步...');
+
             
             // 启用批量操作模式，避免多次UI刷新
             this.dataService.enableBatchMode();
@@ -324,15 +324,15 @@ class SyncService {
             
             // 2. 获取本地和云端数据
             const [localPrompts, cloudPrompts] = await Promise.all([
-                this.dataService.getAllPrompts(),
+                this.dataService.getAllPromptsIncludingDeleted(),
                 this._fetchCloudPrompts(currentUser.id)
             ]);
             
-            console.log(`本地数据: ${localPrompts.length} 条，云端数据: ${cloudPrompts.length} 条`);
+
             
             // 3. 分析数据差异
             const syncPlan = this._analyzeSyncDifferences(localPrompts, cloudPrompts);
-            console.log('同步计划:', syncPlan);
+
             
             // 4. 执行同步操作
             const syncResults = {
@@ -370,7 +370,7 @@ class SyncService {
             // 5. 更新同步时间戳
             await this._updateLastSyncTime();
             
-            console.log('完整同步完成:', syncResults);
+
             this._updateSyncStatus(SYNC_STATUS.SUCCESS, '同步完成');
             
             return {
@@ -391,7 +391,7 @@ class SyncService {
             this._notifyDataChanged('SYNC_COMPLETED', { timestamp: Date.now() });
             // 释放同步状态锁
             this.isSyncing = false;
-            console.log('完整同步状态锁已释放');
+
         }
     }
     
@@ -422,7 +422,7 @@ class SyncService {
                 [SYNC_STORAGE_KEYS.MIGRATION_COMPLETED]: true,
                 [SYNC_STORAGE_KEYS.LAST_SYNC_TIME]: new Date().toISOString()
             });
-            console.log('迁移状态已标记为完成');
+
         } catch (error) {
             console.error('标记迁移完成失败:', error);
         }
@@ -438,7 +438,7 @@ class SyncService {
         const oldStatus = this.currentStatus;
         this.currentStatus = status;
         
-        console.log(`同步状态变化: ${oldStatus} -> ${status}`);
+
         
         // 通知状态变化监听器
         this.statusChangeListeners.forEach(listener => {
@@ -469,7 +469,7 @@ class SyncService {
             ]);
             
             this.currentStatus = result[SYNC_STORAGE_KEYS.SYNC_STATUS] || SYNC_STATUS.IDLE;
-            console.log('同步状态已恢复:', this.currentStatus);
+
             
         } catch (error) {
             console.error('恢复同步状态失败:', error);
@@ -488,7 +488,7 @@ class SyncService {
                 SYNC_STORAGE_KEYS.SYNC_QUEUE,
                 SYNC_STORAGE_KEYS.CONFLICT_LOG
             ]);
-            console.log('同步状态已清理');
+
         } catch (error) {
             console.error('清理同步状态失败:', error);
         }
@@ -535,7 +535,7 @@ class SyncService {
      */
     async _batchUploadPrompts(prompts) {
         try {
-            console.log(`开始批量上传 ${prompts.length} 条提示词...`);
+
             
             if (prompts.length === 0) {
                 return { success: true, count: 0 };
@@ -547,7 +547,7 @@ class SyncService {
             
             for (let i = 0; i < prompts.length; i += batchSize) {
                 const batch = prompts.slice(i, i + batchSize);
-                console.log(`上传批次 ${Math.floor(i / batchSize) + 1}/${Math.ceil(prompts.length / batchSize)}`);
+
                 
                 const { data, error } = await this.supabaseClient
                     .from('prompts')
@@ -562,10 +562,10 @@ class SyncService {
                 }
                 
                 totalUploaded += batch.length;
-                console.log(`批次上传成功，已上传 ${totalUploaded}/${prompts.length} 条`);
+
             }
             
-            console.log(`批量上传完成，共上传 ${totalUploaded} 条提示词`);
+
             return { success: true, count: totalUploaded };
             
         } catch (error) {
@@ -582,7 +582,7 @@ class SyncService {
      */
     async _fetchCloudPrompts(userId) {
         try {
-            console.log('从云端获取提示词数据...');
+
             
             const { data, error } = await this.supabaseClient
                 .from('prompts')
@@ -595,7 +595,7 @@ class SyncService {
                 throw new Error(`获取云端数据失败: ${error.message}`);
             }
             
-            console.log(`成功获取 ${data.length} 条云端提示词`);
+
             return data || [];
             
         } catch (error) {
@@ -639,7 +639,7 @@ class SyncService {
                 throw new Error(`创建提示词失败: ${error.message}`);
             }
             
-            console.log('提示词创建成功:', data.id);
+
             return { success: true, data };
             
         } catch (error) {
@@ -681,7 +681,7 @@ class SyncService {
                 throw new Error(`更新提示词失败: ${error.message}`);
             }
             
-            console.log('提示词更新成功:', data.id);
+
             return { success: true, data };
             
         } catch (error) {
@@ -717,7 +717,7 @@ class SyncService {
                 throw new Error(`删除提示词失败: ${error.message}`);
             }
             
-            console.log('提示词删除成功:', data.id);
+
             return { success: true, data };
             
         } catch (error) {
@@ -752,27 +752,38 @@ class SyncService {
             const cloudPrompt = cloudMap.get(localPrompt.id);
             
             if (!cloudPrompt) {
-                // 本地有，云端没有 -> 上传
+                // 本地有，云端没有 -> 上传（包括删除状态）
                 syncPlan.toUpload.push(localPrompt);
             } else {
-                // 两边都有，检查时间戳
+                // 两边都有，检查删除状态和时间戳
                 const localTime = new Date(localPrompt.updated_at || localPrompt.created_at);
                 const cloudTime = new Date(cloudPrompt.updated_at || cloudPrompt.created_at);
                 
-                if (localTime > cloudTime) {
-                    // 本地更新 -> 上传
+                // 如果本地已删除但云端未删除，且本地删除时间更新，则上传删除状态
+                if (localPrompt.is_deleted && !cloudPrompt.is_deleted && localTime > cloudTime) {
                     syncPlan.toUpload.push(localPrompt);
-                } else if (cloudTime > localTime) {
-                    // 云端更新 -> 下载
+                }
+                // 如果云端已删除但本地未删除，且云端删除时间更新，则下载删除状态
+                else if (!localPrompt.is_deleted && cloudPrompt.is_deleted && cloudTime > localTime) {
                     syncPlan.toDownload.push(cloudPrompt);
-                } else {
-                    // 时间戳相同，检查内容是否一致
-                    if (!this._isPromptContentEqual(localPrompt, cloudPrompt)) {
-                        // 内容不一致，标记为冲突
-                        syncPlan.conflicts.push({
-                            local: localPrompt,
-                            cloud: cloudPrompt
-                        });
+                }
+                // 如果都未删除，按正常逻辑比较
+                else if (!localPrompt.is_deleted && !cloudPrompt.is_deleted) {
+                    if (localTime > cloudTime) {
+                        // 本地更新 -> 上传
+                        syncPlan.toUpload.push(localPrompt);
+                    } else if (cloudTime > localTime) {
+                        // 云端更新 -> 下载
+                        syncPlan.toDownload.push(cloudPrompt);
+                    } else {
+                        // 时间戳相同，检查内容是否一致
+                        if (!this._isPromptContentEqual(localPrompt, cloudPrompt)) {
+                            // 内容不一致，标记为冲突
+                            syncPlan.conflicts.push({
+                                local: localPrompt,
+                                cloud: cloudPrompt
+                            });
+                        }
                     }
                 }
             }
@@ -784,21 +795,17 @@ class SyncService {
             
             if (!localPrompt) {
                 if (cloudPrompt.is_deleted) {
-                    // 云端已删除，本地也需要删除（如果存在）
-                    syncPlan.toDelete.push(cloudPrompt);
+                    // 云端已删除，本地也没有，无需操作
+                    // （本地可能已经物理删除了这个数据）
                 } else {
-                    // 云端有，本地没有 -> 下载
+                    // 云端有且未删除，本地没有 -> 下载
                     syncPlan.toDownload.push(cloudPrompt);
                 }
             }
+            // 注意：如果localPrompt存在，相关逻辑已在上面的本地数据分析中处理
         }
         
-        console.log('数据差异分析完成:', {
-            toUpload: syncPlan.toUpload.length,
-            toDownload: syncPlan.toDownload.length,
-            conflicts: syncPlan.conflicts.length,
-            toDelete: syncPlan.toDelete.length
-        });
+
         
         return syncPlan;
     }
@@ -827,7 +834,7 @@ class SyncService {
      */
     async _syncToCloud(prompts) {
         try {
-            console.log(`开始上传 ${prompts.length} 条数据到云端...`);
+
             
             const currentUser = await this.authService.getCurrentUser();
             if (!currentUser) {
@@ -849,7 +856,7 @@ class SyncService {
             const result = await this._batchUploadPrompts(uploadData);
             
             if (result.success) {
-                console.log(`成功上传 ${result.count} 条数据`);
+                
                 return { success: true, count: result.count };
             } else {
                 throw new Error(result.error);
@@ -869,10 +876,10 @@ class SyncService {
      */
     async _syncFromCloud(prompts) {
         try {
-            console.log(`开始从云端下载 ${prompts.length} 条数据...`);
+
             
             // 1. 获取当前所有本地数据
-            const currentLocalPrompts = await this.dataService.getAllPrompts();
+            const currentLocalPrompts = await this.dataService.getAllPromptsIncludingDeleted();
             const localPromptsMap = new Map(currentLocalPrompts.map(p => [p.id, p]));
             
             // 2. 在内存中处理所有云端数据
@@ -891,7 +898,8 @@ class SyncService {
                         content: cloudPrompt.content,
                         category: cloudPrompt.category,
                         created_at: cloudPrompt.created_at,
-                        updated_at: cloudPrompt.updated_at
+                        updated_at: cloudPrompt.updated_at,
+                        is_deleted: false  // 确保下载的活跃数据标记为未删除
                     };
                     toAddOrUpdate.push(localPrompt);
                 }
@@ -900,11 +908,13 @@ class SyncService {
             // 3. 计算最终的完整数据集
             const finalPrompts = [...currentLocalPrompts];
             
-            // 3.1 处理删除操作
+            // 3.1 处理删除操作（软删除）
             for (const deleteId of toDelete) {
                 const index = finalPrompts.findIndex(p => p.id === deleteId);
                 if (index !== -1) {
-                    finalPrompts.splice(index, 1);
+                    // 标记为已删除而不是物理删除
+                    finalPrompts[index].is_deleted = true;
+                    finalPrompts[index].updated_at = new Date().toISOString();
                 }
             }
             
@@ -912,11 +922,18 @@ class SyncService {
             for (const newPrompt of toAddOrUpdate) {
                 const existingIndex = finalPrompts.findIndex(p => p.id === newPrompt.id);
                 if (existingIndex !== -1) {
-                    // 更新现有数据
-                    finalPrompts[existingIndex] = newPrompt;
+                    // 更新现有数据，确保包含is_deleted字段
+                    finalPrompts[existingIndex] = {
+                        ...finalPrompts[existingIndex],
+                        ...newPrompt,
+                        is_deleted: newPrompt.is_deleted || false
+                    };
                 } else {
-                    // 添加新数据
-                    finalPrompts.push(newPrompt);
+                    // 添加新数据，确保包含is_deleted字段
+                    finalPrompts.push({
+                        ...newPrompt,
+                        is_deleted: newPrompt.is_deleted || false
+                    });
                 }
             }
             
@@ -924,7 +941,7 @@ class SyncService {
             await this.dataService.setAllPrompts(finalPrompts);
             
             const downloadedCount = toAddOrUpdate.length + toDelete.length;
-            console.log(`成功下载 ${downloadedCount} 条数据 (新增/更新: ${toAddOrUpdate.length}, 删除: ${toDelete.length})`);
+
             
             return { success: true, count: downloadedCount };
             
@@ -943,7 +960,7 @@ class SyncService {
      */
     async _resolveConflicts(conflicts) {
         try {
-            console.log(`开始解决 ${conflicts.length} 个数据冲突...`);
+
             
             let resolvedCount = 0;
             const conflictLog = [];
@@ -988,13 +1005,13 @@ class SyncService {
                 conflictLog.push(logEntry);
                 resolvedCount++;
                 
-                console.log(`冲突解决: ${winner.id} (${location} 版本获胜)`);
+
             }
             
             // 保存冲突解决日志
             await this._saveConflictLog(conflictLog);
             
-            console.log(`成功解决 ${resolvedCount} 个冲突`);
+
             return { success: true, resolvedCount, conflictLog };
             
         } catch (error) {
@@ -1011,17 +1028,28 @@ class SyncService {
      */
     async _syncDeletions(deletedPrompts) {
         try {
-            console.log(`开始同步 ${deletedPrompts.length} 个删除操作...`);
+
             
             let deletedCount = 0;
             
+            // 获取当前所有本地数据（包括已删除的）
+            const currentPrompts = await this.dataService.getAllPromptsIncludingDeleted();
+            
+            // 标记需要删除的提示词
             for (const deletedPrompt of deletedPrompts) {
-                // 删除本地数据
-                await this.dataService.deletePrompt(deletedPrompt.id, false);
-                deletedCount++;
+                const index = currentPrompts.findIndex(p => p.id === deletedPrompt.id);
+                if (index !== -1) {
+                    // 软删除：标记为已删除
+                    currentPrompts[index].is_deleted = true;
+                    currentPrompts[index].updated_at = new Date().toISOString();
+                    deletedCount++;
+                }
             }
             
-            console.log(`成功同步 ${deletedCount} 个删除操作`);
+            // 批量更新所有数据
+            await this.dataService.setAllPrompts(currentPrompts);
+            
+
             return { success: true, count: deletedCount };
             
         } catch (error) {
@@ -1057,7 +1085,7 @@ class SyncService {
                 [SYNC_STORAGE_KEYS.CONFLICT_LOG]: updatedLog
             });
             
-            console.log(`冲突解决日志已保存，共 ${conflictLog.length} 条新记录`);
+
             
         } catch (error) {
             console.error('保存冲突解决日志失败:', error);
@@ -1071,12 +1099,21 @@ class SyncService {
     async _updateLastSyncTime() {
         try {
             const now = new Date().toISOString();
+            console.log('[DEBUG] SyncService: 更新最后同步时间为:', now);
+            console.log('[DEBUG] SyncService: 使用存储键:', SYNC_STORAGE_KEYS.LAST_SYNC_TIME);
+            
             await this.dataService._setToStorage({
                 [SYNC_STORAGE_KEYS.LAST_SYNC_TIME]: now
             });
-            console.log('最后同步时间已更新:', now);
+            
+            console.log('[DEBUG] SyncService: 最后同步时间更新成功');
+            
+            // 验证存储是否成功
+            const stored = await this.dataService.getLastSyncTime();
+            console.log('[DEBUG] SyncService: 验证存储结果:', stored);
+
         } catch (error) {
-            console.error('更新最后同步时间失败:', error);
+            console.error('[DEBUG] SyncService: 更新最后同步时间失败:', error);
         }
     }
     
@@ -1101,7 +1138,7 @@ class SyncService {
                         // 静默处理错误，避免控制台噪音
                     }
                 });
-                console.log('已发送同步状态通知:', operation);
+
             }
         } catch (error) {
             // 静默处理错误，避免影响主要功能

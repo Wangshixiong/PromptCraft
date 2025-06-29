@@ -16,13 +16,13 @@ async function loadDefaultPromptsToMemory() {
     try {
         // 检查是否已经初始化过
         const hasData = await dataService.hasData();
-        console.log('PromptCraft: hasData flag:', hasData);
+    
         
         if (hasData) {
             // 简单验证：检查实际数据是否存在
             const prompts = await dataService.getAllPrompts();
             if (prompts && prompts.length > 0) {
-                console.log('PromptCraft: Already initialized, skipping...');
+        
                 return;
             }
             // 如果hasData=true但实际无数据，重置标志并继续初始化
@@ -30,14 +30,14 @@ async function loadDefaultPromptsToMemory() {
             await dataService.setHasData(false);
         }
         
-        console.log('PromptCraft: First time installation, loading default prompts...');
+
         
         // 从default-prompts.json文件加载默认数据
         const fileUrl = chrome.runtime.getURL('assets/data/default-prompts.json');
-        console.log('PromptCraft: Attempting to fetch from URL:', fileUrl);
+
         
         const response = await fetch(fileUrl);
-        console.log('PromptCraft: Fetch response status:', response.status, response.statusText);
+
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -58,9 +58,9 @@ async function loadDefaultPromptsToMemory() {
             // 标记默认模板已加载
             await dataService.setDefaultTemplatesLoaded();
             
-            console.log('PromptCraft: Default prompts copied to user area, count:', defaultPrompts.length);
+
         } else {
-            console.log('PromptCraft: Default templates already loaded, skipping...');
+
         }
         
         // 使用原子性操作确保数据一致性
@@ -68,9 +68,9 @@ async function loadDefaultPromptsToMemory() {
             { 'promptcraft_has_data': true },
             { 'themeMode': 'auto' }
         ]);
-        console.log('PromptCraft: 原子性设置hasData和themeMode完成');
+
         
-        console.log('PromptCraft: Initialization completed successfully');
+
         
     } catch (error) {
         console.error('PromptCraft: Failed to load default prompts:', error);
@@ -95,25 +95,25 @@ async function loadDefaultPromptsToMemory() {
                 { 'errorTimestamp': new Date().toISOString() },
                 { 'themeMode': 'auto' }
             ]);
-            console.log('PromptCraft: 错误状态原子性设置完成');
+    
         } catch (storageError) {
             console.error('PromptCraft: Critical - Failed to save error state to storage:', storageError);
             console.error('PromptCraft: System state may be inconsistent. Manual intervention may be required.');
         }
-        console.log('PromptCraft: Error state saved, extension will show empty list');
+
     }
 }
 
 // 认证状态恢复函数
 async function restoreAuthState() {
     try {
-        console.log('PromptCraft: 开始恢复认证状态...');
+    
         
         // 检查是否有保存的认证会话
         if (typeof authService !== 'undefined' && authService.getSession) {
             const { session } = await authService.getSession();
             if (session && session.user) {
-                console.log('PromptCraft: 认证状态已恢复，用户:', session.user.email);
+        
                 
                 // 广播认证状态给所有监听的页面
                 chrome.runtime.sendMessage({
@@ -121,15 +121,15 @@ async function restoreAuthState() {
                     session: session
                 }).catch(error => {
                     // 忽略没有监听器的错误，这在启动时是正常的
-                    console.log('PromptCraft: 认证状态广播（启动时无监听器，正常）');
+            
                 });
                 
                 return session;
             } else {
-                console.log('PromptCraft: 未找到有效的认证会话');
+        
             }
         } else {
-            console.log('PromptCraft: authService 未就绪，跳过认证状态恢复');
+    
         }
     } catch (error) {
         console.error('PromptCraft: 恢复认证状态失败:', error);
@@ -183,8 +183,8 @@ chrome.runtime.onStartup.addListener(async () => {
           }, (response) => {
               if (chrome.runtime.lastError) {
                   // 如果侧边栏还没准备好，实现重试逻辑
-                  console.log("Error sending message:", chrome.runtime.lastError.message);
-                  console.log("尝试重新发送消息...");
+      
+      
                   setTimeout(() => {
                        chrome.runtime.sendMessage({
                            type: "ADD_FROM_CONTEXT_MENU",
@@ -193,14 +193,14 @@ chrome.runtime.onStartup.addListener(async () => {
                            }
                        }, (retryResponse) => {
                            if (chrome.runtime.lastError) {
-                               console.log("重试发送消息失败:", chrome.runtime.lastError.message);
+               
                            } else {
-                               console.log("重试发送消息成功:", retryResponse);
+               
                            }
                        });
                    }, 300);
               } else {
-                  console.log("Message sent successfully, response:", response);
+      
               }
           });
       }, 400); // 优化延迟时间，平衡稳定性和响应速度
@@ -241,7 +241,7 @@ chrome.runtime.onStartup.addListener(async () => {
     
     // 处理sidepanel的GET_ALL_PROMPTS请求（新的消息驱动架构）
     if (message.type === 'GET_ALL_PROMPTS') {
-      console.log('PromptCraft: 收到GET_ALL_PROMPTS消息请求');
+  
       
       (async () => {
         try {
@@ -251,7 +251,7 @@ chrome.runtime.onStartup.addListener(async () => {
           // 检查是否有加载错误
           const loadError = await dataService.getLoadError();
           
-          console.log('PromptCraft: 成功获取提示词数据，数量:', prompts.length);
+  
           
           // 返回标准化的响应格式
           sendResponse({
@@ -281,14 +281,14 @@ chrome.runtime.onStartup.addListener(async () => {
     
     // 处理ADD_PROMPT请求（添加新提示词）
     if (message.type === 'ADD_PROMPT') {
-      console.log('PromptCraft: 收到ADD_PROMPT消息请求');
+  
       
       (async () => {
         try {
           // 调用数据服务添加提示词
           const savedPrompt = await dataService.addPrompt(message.payload);
           
-          console.log('PromptCraft: 成功添加提示词，ID:', savedPrompt.id);
+  
           
           // 返回成功响应
           sendResponse({
@@ -312,14 +312,14 @@ chrome.runtime.onStartup.addListener(async () => {
     
     // 处理UPDATE_PROMPT请求（更新提示词）
     if (message.type === 'UPDATE_PROMPT') {
-      console.log('PromptCraft: 收到UPDATE_PROMPT消息请求');
+  
       
       (async () => {
         try {
           // 调用数据服务更新提示词
           const updatedPrompt = await dataService.updatePrompt(message.payload.id, message.payload.data);
           
-          console.log('PromptCraft: 成功更新提示词，ID:', message.payload.id);
+  
           
           // 返回成功响应
           sendResponse({
@@ -343,14 +343,14 @@ chrome.runtime.onStartup.addListener(async () => {
     
     // 处理DELETE_PROMPT请求（删除提示词）
     if (message.type === 'DELETE_PROMPT') {
-      console.log('PromptCraft: 收到DELETE_PROMPT消息请求');
+  
       
       (async () => {
         try {
           // 调用数据服务删除提示词
           const success = await dataService.deletePrompt(message.payload);
           
-          console.log('PromptCraft: 成功删除提示词，ID:', message.payload);
+  
           
           // 返回成功响应
           sendResponse({
@@ -374,13 +374,13 @@ chrome.runtime.onStartup.addListener(async () => {
     
     // 处理GET_THEME_MODE请求（获取主题模式）
     if (message.type === 'GET_THEME_MODE') {
-      console.log('PromptCraft: 收到GET_THEME_MODE消息请求');
+  
       
       (async () => {
         try {
           const themeMode = await dataService.getThemeMode();
           
-          console.log('PromptCraft: 成功获取主题模式:', themeMode);
+  
           
           sendResponse({
             success: true,
@@ -402,13 +402,13 @@ chrome.runtime.onStartup.addListener(async () => {
     
     // 处理SET_THEME_MODE请求（设置主题模式）
     if (message.type === 'SET_THEME_MODE') {
-      console.log('PromptCraft: 收到SET_THEME_MODE消息请求');
+  
       
       (async () => {
         try {
           await dataService.setThemeMode(message.payload);
           
-          console.log('PromptCraft: 成功设置主题模式:', message.payload);
+  
           
           sendResponse({
             success: true
@@ -429,13 +429,13 @@ chrome.runtime.onStartup.addListener(async () => {
     
     // 处理CLEAR_ALL_PROMPTS请求（清空所有提示词）
     if (message.type === 'CLEAR_ALL_PROMPTS') {
-      console.log('PromptCraft: 收到CLEAR_ALL_PROMPTS消息请求');
+  
       
       (async () => {
         try {
           await dataService.clearAllPrompts();
           
-          console.log('PromptCraft: 成功清空所有提示词');
+  
           
           sendResponse({
             success: true
@@ -456,7 +456,7 @@ chrome.runtime.onStartup.addListener(async () => {
     
     // 处理IMPORT_PROMPTS请求（导入提示词）
     if (message.type === 'IMPORT_PROMPTS') {
-      console.log('PromptCraft: 收到IMPORT_PROMPTS消息请求');
+  
       
       (async () => {
         try {
@@ -501,7 +501,7 @@ chrome.runtime.onStartup.addListener(async () => {
           // 保存最终数据
           await dataService.setAllPrompts(finalPrompts);
           
-          console.log('PromptCraft: 成功导入提示词，新增:', addedCount, '更新:', updatedCount);
+  
           
           sendResponse({ 
             success: true, 
@@ -527,16 +527,11 @@ chrome.runtime.onStartup.addListener(async () => {
     
     // 处理LOGIN_WITH_GOOGLE请求（Google登录）
     if (message.type === 'LOGIN_WITH_GOOGLE') {
-      console.log('Background: 收到LOGIN_WITH_GOOGLE消息请求');
-      
       (async () => {
         try {
           if (!authServiceInstance) {
             throw new Error('认证服务未初始化');
           }
-          
-          console.log('Background: 开始执行Google登录流程...');
-          
           // 创建进度回调函数
           const progressCallback = message.progressCallback ? (stage, progressMessage) => {
             // 向sidepanel发送进度更新
@@ -545,15 +540,13 @@ chrome.runtime.onStartup.addListener(async () => {
               stage: stage,
               message: progressMessage
             }).catch(err => {
-              console.log('Background: 发送登录进度消息失败（可能sidepanel未打开）:', err);
+  
             });
           } : null;
           
           const result = await authServiceInstance.signInWithGoogle(progressCallback);
           
           if (result && result.success) {
-            console.log('Background: Google登录成功，用户:', result.user.email);
-            
             // UI更新由sync-service的认证状态监听器统一处理，避免重复发送
             
             sendResponse({
@@ -567,13 +560,11 @@ chrome.runtime.onStartup.addListener(async () => {
         } catch (error) {
           // 检查是否为用户主动取消登录
           if (error.isUserCancelled || error.message === 'USER_CANCELLED') {
-            console.log('PromptCraft: 用户取消了Google登录，静默处理');
-            
             // 向 sidepanel 发送取消通知（不是错误）
             chrome.runtime.sendMessage({
               type: 'LOGIN_CANCELLED'
             }).catch(err => {
-              console.log('PromptCraft: 发送登录取消消息失败（可能sidepanel未打开）:', err);
+              
             });
             
             sendResponse({
@@ -590,7 +581,7 @@ chrome.runtime.onStartup.addListener(async () => {
               type: 'LOGIN_ERROR',
               error: error.message
             }).catch(err => {
-              console.log('PromptCraft: 发送登录错误消息失败（可能sidepanel未打开）:', err);
+              
             });
             
             sendResponse({
@@ -606,19 +597,13 @@ chrome.runtime.onStartup.addListener(async () => {
      
      // 处理LOGOUT请求（退出登录）
      if (message.type === 'LOGOUT') {
-       console.log('Background: 收到LOGOUT消息请求');
-       
        (async () => {
          try {
            if (!authServiceInstance) {
              throw new Error('认证服务未初始化');
            }
            
-           console.log('Background: 开始执行退出登录流程...');
            await authServiceInstance.signOut();
-           
-           console.log('Background: 退出登录成功');
-           
            // UI更新由sync-service的认证状态监听器统一处理，避免重复发送
            
            sendResponse({
@@ -633,7 +618,7 @@ chrome.runtime.onStartup.addListener(async () => {
              type: 'LOGOUT_ERROR',
              error: error.message
            }).catch(err => {
-             console.log('Background: 发送退出错误消息失败（可能sidepanel未打开）:', err);
+ 
            });
            
            sendResponse({
@@ -648,13 +633,10 @@ chrome.runtime.onStartup.addListener(async () => {
      
      // 处理GET_AUTH_STATE请求（获取认证状态）
      if (message.type === 'GET_AUTH_STATE') {
-       console.log('PromptCraft: 收到GET_AUTH_STATE消息请求');
-       
        (async () => {
          try {
            // 检查认证服务是否可用
            if (typeof authService === 'undefined' || !authService.getSession) {
-             console.log('PromptCraft: authService 未就绪，返回未认证状态');
              sendResponse({
                success: true,
                data: {
@@ -669,11 +651,6 @@ chrome.runtime.onStartup.addListener(async () => {
            // 获取当前认证会话
            const { session, user } = await authService.getSession();
            const isAuthenticated = !!(session && user);
-           
-           console.log('PromptCraft: 当前认证状态:', isAuthenticated ? '已登录' : '未登录');
-           if (isAuthenticated) {
-             console.log('PromptCraft: 当前用户:', user.email);
-           }
            
            sendResponse({
              success: true,
@@ -705,7 +682,7 @@ chrome.runtime.onStartup.addListener(async () => {
      
      // 处理MANUAL_SYNC请求（手动同步）
      if (message.type === 'MANUAL_SYNC') {
-       console.log('Background: 收到MANUAL_SYNC消息请求');
+
        
        (async () => {
          try {
@@ -713,10 +690,10 @@ chrome.runtime.onStartup.addListener(async () => {
              throw new Error('同步服务未初始化');
            }
            
-           console.log('Background: 开始执行手动同步...');
+
            await syncServiceInstance.performFullSync();
            
-           console.log('Background: 手动同步完成');
+
            
            sendResponse({
              success: true
@@ -734,6 +711,42 @@ chrome.runtime.onStartup.addListener(async () => {
        
        return true;
      }
+     
+     // 处理GET_LAST_SYNC_TIME请求（获取最后同步时间）
+      if (message.type === 'GET_LAST_SYNC_TIME') {
+        console.log('[DEBUG] Background: 收到GET_LAST_SYNC_TIME请求');
+        (async () => {
+          try {
+            if (!dataServiceInstance) {
+              console.error('[DEBUG] Background: 数据服务未初始化');
+              throw new Error('数据服务未初始化');
+            }
+            
+            console.log('[DEBUG] Background: 调用dataServiceInstance.getLastSyncTime()');
+            const lastSyncTime = await dataServiceInstance.getLastSyncTime();
+            console.log('[DEBUG] Background: 获取到的同步时间:', lastSyncTime);
+            
+            const response = {
+              success: true,
+              data: lastSyncTime
+            };
+            console.log('[DEBUG] Background: 发送响应:', response);
+            sendResponse(response);
+            
+          } catch (error) {
+            console.error('[DEBUG] Background: 获取最后同步时间失败:', error);
+            
+            const errorResponse = {
+              success: false,
+              error: error.message
+            };
+            console.log('[DEBUG] Background: 发送错误响应:', errorResponse);
+            sendResponse(errorResponse);
+          }
+        })();
+        
+        return true;
+      }
    });
   
 // 服务实例管理
@@ -747,7 +760,6 @@ async function initializeServices() {
     // 1. 创建认证服务实例
     if (typeof authService !== 'undefined') {
       authServiceInstance = authService;
-      console.log('PromptCraft: authService 实例创建成功');
     } else {
       console.error('PromptCraft: authService 未定义');
       return;
@@ -756,7 +768,7 @@ async function initializeServices() {
     // 2. 创建数据服务实例
     if (typeof dataService !== 'undefined') {
       dataServiceInstance = dataService;
-      console.log('PromptCraft: dataService 实例创建成功');
+
     } else {
       console.error('PromptCraft: dataService 未定义');
       return;
@@ -776,7 +788,7 @@ async function initializeServices() {
       // 初始化同步服务
       await syncServiceInstance.initialize();
       
-      console.log('PromptCraft: SyncService 实例创建并初始化成功');
+
     } else {
       console.error('PromptCraft: SyncService 未定义');
     }

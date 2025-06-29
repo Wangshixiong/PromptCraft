@@ -307,7 +307,7 @@ function showCustomAlert(message) {
 }
 
 function showView(viewId) {
-    console.log(`切换视图到: ${viewId}`);
+    
     try {
         // 隐藏所有视图
         document.querySelectorAll('.view').forEach(view => {
@@ -340,7 +340,7 @@ function showView(viewId) {
                                  getComputedStyle(document.body).fontFamily !== '';
             
             if (!isStylesLoaded) {
-                console.log(`CSS样式尚未完全加载，跳过视图 ${viewId} 的显示检查`);
+    
                 return;
             }
             
@@ -349,7 +349,7 @@ function showView(viewId) {
                             targetView.offsetWidth > 0 && 
                             targetView.offsetHeight > 0;
             
-            console.log(`视图 ${viewId} 显示状态: display=${computedStyle.display}, visible=${isVisible}`);
+    
             
             // 只有在确实有问题且不是初始化阶段时才显示警告和重试
             if (!isVisible && targetView.classList.contains('active')) {
@@ -366,12 +366,12 @@ function showView(viewId) {
                         }
                     });
                 } else {
-                    console.log(`页面仍在初始化中，跳过视图 ${viewId} 的警告`);
+        
                 }
             }
         }, 300); // 增加延迟时间，确保CSS和动画完成
         
-        console.log(`成功切换到视图: ${viewId}`);
+
         return true;
     } catch (err) {
         console.error(`切换视图到 ${viewId} 时发生错误:`, err);
@@ -430,7 +430,7 @@ async function clearAllData() {
 // --- 数据处理 (CRUD) ---
 
 async function loadUserPrompts(skipLoading = false) {
-    console.log('开始加载提示词数据，skipLoading:', skipLoading);
+
     if (!currentUser) {
         console.error('无法加载提示词：用户未设置');
         return;
@@ -438,7 +438,7 @@ async function loadUserPrompts(skipLoading = false) {
     if (!skipLoading) safeShowLoading();
     
     try {
-        console.log('使用消息驱动架构加载提示词...');
+
         
         // 使用消息通信获取提示词数据
         const response = await new Promise((resolve, reject) => {
@@ -457,7 +457,7 @@ async function loadUserPrompts(skipLoading = false) {
         }
         
         const data = response.data;
-        console.log('成功获取提示词数据，数量:', data.length);
+        
         
         // 检查是否有加载错误（从后台服务返回的错误信息）
         if (response.loadError && response.loadError.hasError) {
@@ -467,10 +467,10 @@ async function loadUserPrompts(skipLoading = false) {
         
         // 按创建时间降序排序，新建的提示词在最上方
         allPrompts = sortPromptsByCreatedTime(data);
-        console.log('渲染提示词列表...');
+
         renderPrompts(allPrompts);
         updateFilterButtons();
-        console.log('提示词加载完成');
+
         
     } catch (err) {
         console.error('加载提示词时发生错误:', err);
@@ -526,7 +526,7 @@ async function savePrompt() {
             });
             
             if (response.success) {
-                console.log('更新提示词:', id);
+        
                 showToast('提示词更新成功', 'success');
             } else {
                 throw new Error(response.error || '更新提示词失败');
@@ -542,14 +542,14 @@ async function savePrompt() {
             });
             
             if (response.success) {
-                console.log('添加新提示词:', response.data.id);
+    
                 showToast('提示词添加成功', 'success');
             } else {
                 throw new Error(response.error || '添加提示词失败');
             }
         }
         
-        console.log('提示词保存成功');
+
         
         // 注意：不再手动调用loadUserPrompts()，依赖chrome.storage.onChanged自动刷新UI
         showView('mainView');
@@ -577,7 +577,7 @@ async function deletePrompt(promptId) {
         });
         
         if (response.success) {
-            console.log('提示词删除成功:', promptId);
+    
             showToast('删除成功', 'success');
             
             // 注意：不再手动调用loadUserPrompts()，依赖chrome.storage.onChanged自动刷新UI
@@ -596,17 +596,17 @@ async function deletePrompt(promptId) {
 // --- 渲染与 UI 更新 ---
 
 function renderPrompts(promptsToRender) {
-    console.log('开始渲染提示词列表...');
+
     try {
         // 清空骨架屏占位符和所有内容
         promptsContainer.innerHTML = '';
-        console.log('已清空骨架屏占位符');
+    
         if (promptsToRender.length === 0) {
             promptsContainer.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #64748b;"><i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i><h3>空空如也</h3><p>点击上方按钮添加您的第一个提示词吧！</p></div>`;
             return;
         }
 
-        console.log(`渲染 ${promptsToRender.length} 个提示词...`);
+    
         promptsToRender.forEach((prompt, index) => {
             try {
                 if (!prompt || !prompt.id) {
@@ -638,9 +638,9 @@ function renderPrompts(promptsToRender) {
             }
         });
         
-        console.log('添加卡片事件监听器...');
+    
         addCardEventListeners();
-        console.log('提示词渲染完成');
+    
     } catch (err) {
         console.error('渲染提示词时发生错误:', err);
         console.error('错误详情:', err.message, err.stack);
@@ -1122,6 +1122,23 @@ function setupEventListeners() {
     
     fileInput.addEventListener('change', handleFileImport);
     
+    // 设置存储变化监听器
+    if (chrome.storage && chrome.storage.onChanged) {
+        chrome.storage.onChanged.addListener((changes, namespace) => {
+            // 监听同步时间的变化
+            if (changes.lastSyncTime) {
+    
+                updateSyncTime();
+            }
+            
+            // 监听提示词数据的变化
+            if (changes.prompts) {
+    
+                loadUserPrompts();
+            }
+        });
+    }
+    
     // 右键菜单监听已合并到主监听器中
 }
 
@@ -1269,7 +1286,7 @@ function safeShowLoading() {
     // 10秒后强制隐藏loading
     if (loadingTimeout) clearTimeout(loadingTimeout);
     loadingTimeout = setTimeout(() => {
-        console.log('Loading超时，强制隐藏');
+
         forceHideLoading();
         // 如果没有用户设置，显示主界面
         if (!currentUser) {
@@ -1279,7 +1296,7 @@ function safeShowLoading() {
 }
 
 async function initializeApp() {
-    console.log('开始初始化应用...');
+
     try {
         // 智能等待CSS加载完成后再显示主界面
         const showMainViewWhenReady = () => {
@@ -1297,7 +1314,7 @@ async function initializeApp() {
             if (isStylesLoaded) {
                 showView('mainView');
             } else {
-                console.log('等待CSS样式加载完成...');
+        
                 // 监听load事件或使用短延迟重试
                 if (document.readyState === 'loading') {
                     document.addEventListener('DOMContentLoaded', showMainViewWhenReady, { once: true });
@@ -1321,7 +1338,7 @@ async function initializeApp() {
             const dataService = new DataService();
             themeMode = await dataService.getThemeMode();
             applyTheme(themeMode);
-            console.log('成功获取并应用主题模式:', themeMode);
+    
         } catch (error) {
             console.error('获取主题模式时发生错误:', error);
             themeMode = 'light'; // 默认主题
@@ -1338,7 +1355,7 @@ async function initializeApp() {
                 window.authService.preloadLoginResources().catch(error => {
                     console.warn('预加载登录资源失败:', error);
                 });
-                console.log('已启动登录资源预加载');
+        
             }
         } catch (error) {
             console.warn('预加载登录资源时发生错误:', error);
@@ -1346,27 +1363,27 @@ async function initializeApp() {
         
         // 主动查询后台的认证状态（关键修复：初次握手机制）
         try {
-            console.log('PromptCraft: 正在查询后台认证状态...');
+    
             const response = await chrome.runtime.sendMessage({
                 type: 'GET_AUTH_STATE'
             });
             
             if (response && response.success && response.data) {
                 const { isAuthenticated, session, user } = response.data;
-                console.log('PromptCraft: 后台认证状态查询结果:', isAuthenticated ? '已登录' : '未登录');
+    
                 
                 if (isAuthenticated && session && user) {
                     // 恢复认证状态
                     currentUser = user;
-                    console.log('PromptCraft: 成功恢复用户会话:', user.email);
+    
                     
                     // 更新UI为已登录状态
                     updateUIForAuthState(session);
                 } else {
-                    console.log('PromptCraft: 用户未登录，保持本地模式');
+    
                 }
             } else {
-                console.log('PromptCraft: 认证状态查询失败，保持本地模式');
+    
             }
         } catch (error) {
             console.warn('PromptCraft: 查询认证状态时发生错误:', error);
@@ -1455,7 +1472,7 @@ function setLoginButtonLoading(isLoading, progressText = '') {
  * 处理Google登录
  */
 async function handleGoogleSignIn() {
-    console.log('Sidepanel: 用户点击登录，正在向后台发送命令...');
+    
     
     // 启动加载状态
     setLoginButtonLoading(true);
@@ -1468,7 +1485,7 @@ async function handleGoogleSignIn() {
         if (chrome.runtime.lastError || !response.success) {
             // 检查是否为用户取消
             if (response?.cancelled || response?.error === 'USER_CANCELLED') {
-                console.log('Sidepanel: 用户取消了Google登录');
+        
                 // 用户取消时静默恢复按钮状态，不显示错误提示
                 setLoginButtonLoading(false);
             } else {
@@ -1478,7 +1495,7 @@ async function handleGoogleSignIn() {
                 setLoginButtonLoading(false);
             }
         } else {
-            console.log('Sidepanel: 登录流程已成功由后台启动。');
+    
             // 移除"正在登录中"提示，避免与"登录成功"Toast重复
             // 注意：登录成功时不在这里恢复按钮状态，而是在收到认证状态更新消息时恢复
         }
@@ -1489,14 +1506,14 @@ async function handleGoogleSignIn() {
  * 处理退出登录
  */
 async function handleLogout() {
-    console.log('Sidepanel: 用户点击退出，正在向后台发送命令...');
+
     // 只负责发送消息，不关心后续逻辑
     chrome.runtime.sendMessage({ type: 'LOGOUT' }, (response) => {
         if (chrome.runtime.lastError || !response.success) {
             console.error('退出命令发送失败或后台处理失败:', response?.error);
             showToast('退出启动失败，请重试', 'error');
         } else {
-            console.log('Sidepanel: 退出流程已成功由后台启动。');
+        
             // 移除"正在退出中"提示，避免与"已退出登录"Toast重复
         }
     });
@@ -1567,7 +1584,7 @@ function updateUIForAuthState(session) {
             avatar_url: user.user_metadata?.avatar_url
         };
         
-        console.log('用户已登录:', currentUser);
+
 
     } else {
         // 未登录状态
@@ -1583,7 +1600,7 @@ function updateUIForAuthState(session) {
             };
         }
         
-        console.log('用户未登录，使用本地模式');
+
     }
 }
 
@@ -1609,7 +1626,7 @@ async function handleManualSync() {
     }
     
     try {
-        console.log('用户手动触发同步');
+    
         
         // 添加旋转动画
         manualSyncBtn.classList.add('syncing');
@@ -1627,7 +1644,7 @@ async function handleManualSync() {
         });
         
         if (response && response.success) {
-            console.log('手动同步完成');
+    
             // 更新同步时间
             updateSyncTime();
             showToast('同步成功！', 'success');
@@ -1649,19 +1666,50 @@ async function handleManualSync() {
 /**
  * 更新同步时间显示
  */
-function updateSyncTime() {
+async function updateSyncTime() {
     const syncTimeElement = document.getElementById('syncTime');
     if (syncTimeElement) {
-        const now = new Date();
-        const timeString = now.toLocaleString('zh-CN', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-        syncTimeElement.textContent = `最后同步时间: ${timeString}`;
+        try {
+            console.log('[DEBUG] 开始获取最后同步时间...');
+            // 从存储中获取真实的最后同步时间
+            const response = await chrome.runtime.sendMessage({
+                type: 'GET_LAST_SYNC_TIME'
+            });
+            
+            console.log('[DEBUG] GET_LAST_SYNC_TIME 响应:', response);
+            
+            if (response && response.success && response.data) {
+                console.log('[DEBUG] 同步时间数据:', response.data);
+                const syncTime = new Date(response.data);
+                console.log('[DEBUG] 解析后的时间对象:', syncTime);
+                console.log('[DEBUG] UTC时间:', syncTime.toISOString());
+                console.log('[DEBUG] 本地时间:', syncTime.toString());
+                
+                // 使用北京时间格式化
+                const timeString = syncTime.toLocaleString('zh-CN', {
+                    timeZone: 'Asia/Shanghai',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+                console.log('[DEBUG] 格式化后的时间字符串:', timeString);
+                syncTimeElement.textContent = `最后同步时间: ${timeString}`;
+            } else {
+                console.log('[DEBUG] 没有同步时间数据，显示"尚未同步"');
+                console.log('[DEBUG] response.success:', response?.success);
+                console.log('[DEBUG] response.data:', response?.data);
+                syncTimeElement.textContent = '尚未同步';
+            }
+        } catch (error) {
+            console.error('[DEBUG] 获取同步时间失败:', error);
+            syncTimeElement.textContent = '同步时间获取失败';
+        }
+    } else {
+        console.error('[DEBUG] 找不到syncTime元素');
     }
 }
 
@@ -1671,7 +1719,7 @@ function updateSyncTime() {
  * @param {string} lastSyncTime - 最后同步时间
  */
 function updateSyncStatus(status, lastSyncTime) {
-    console.log('更新同步状态UI:', status, lastSyncTime);
+
     
     const syncTimeElement = document.getElementById('syncTime');
     
@@ -1741,7 +1789,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // 处理来自后台的消息
     switch (message.type) {
         case 'UPDATE_AUTH_UI':
-            console.log('认证状态更新:', message.session ? '已登录' : '已退出');
+    
             updateUIForAuthState(message.session);
             
             // 恢复登录按钮状态（无论登录成功还是退出登录）
@@ -1761,26 +1809,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             break;
             
         case 'LOGIN_PROGRESS':
-            console.log('登录进度更新:', message.stage, message.message);
+
             // 更新登录按钮的进度文本
             setLoginButtonLoading(true, message.message);
             break;
             
         case 'LOGIN_ERROR':
-            console.log('登录失败:', message.error);
+
             showToast('登录失败: ' + message.error, 'error');
             // 登录错误时恢复按钮状态
             setLoginButtonLoading(false);
             break;
             
         case 'LOGIN_CANCELLED':
-            console.log('用户取消了Google登录');
+
             // 用户取消登录时静默恢复按钮状态，不显示错误提示
             setLoginButtonLoading(false);
             break;
             
         case 'LOGOUT_ERROR':
-            console.log('退出失败:', message.error);
+
             showToast('退出失败: ' + message.error, 'error');
             break;
             
@@ -1790,7 +1838,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             break;
             
         case 'DATA_CHANGED':
-            console.log('收到数据变更通知，刷新界面');
+
             // 异步刷新界面，避免阻塞
             setTimeout(() => {
                 loadUserPrompts(true).catch(error => {
@@ -1800,7 +1848,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             break;
             
         case 'SYNC_STATUS_CHANGED':
-            console.log('同步状态变化:', message.operation, message.data);
+
             if (message.operation === 'SYNC_COMPLETED') {
                 // 同步完成，更新同步时间显示
                 updateSyncTime();
@@ -1808,7 +1856,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             break;
             
         case 'SYNC_PROGRESS':
-            console.log('同步进度更新:', message.progress);
+
             break;
             
         case 'ADD_FROM_CONTEXT_MENU':
@@ -1901,7 +1949,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if (message.action) {
                 // 忽略action类型的消息
             } else if (message.type) {
-                console.log('未知消息类型:', message.type);
+    
             }
     }
     

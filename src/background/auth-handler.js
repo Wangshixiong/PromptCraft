@@ -3,5 +3,3 @@
 
 // 导入认证服务
 importScripts('utils/auth-service.js');
-
-console.log('Chrome 扩展认证处理器已初始化');

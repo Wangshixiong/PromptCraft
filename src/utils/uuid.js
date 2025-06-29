@@ -11,22 +11,16 @@ function generateUUID() {
     try {
         // 优先使用浏览器原生的crypto.randomUUID()
         if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-            const uuid = crypto.randomUUID();
-            console.log('使用原生crypto.randomUUID()生成UUID:', uuid);
-            return uuid;
+            return crypto.randomUUID();
         }
         
         // 备用方案：使用crypto.getRandomValues()
         if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-            const uuid = generateUUIDWithCrypto();
-            console.log('使用crypto.getRandomValues()生成UUID:', uuid);
-            return uuid;
+            return generateUUIDWithCrypto();
         }
         
         // 最后备用方案：使用Math.random()
-        const uuid = generateUUIDWithMath();
-        console.log('使用Math.random()生成UUID:', uuid);
-        return uuid;
+        return generateUUIDWithMath();
     } catch (error) {
         console.error('UUID生成失败，使用备用方案:', error);
         return generateUUIDWithMath();
@@ -82,10 +76,7 @@ function isValidUUID(uuid) {
     
     // UUID v4格式正则表达式
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    const isValid = uuidRegex.test(uuid);
-    
-    console.log(`UUID格式验证 ${uuid}:`, isValid);
-    return isValid;
+    return uuidRegex.test(uuid);
 }
 
 /**
@@ -95,10 +86,7 @@ function isValidUUID(uuid) {
  */
 function generatePrefixedUUID(prefix = '') {
     const uuid = generateUUID();
-    const prefixedUUID = prefix ? `${prefix}_${uuid}` : uuid;
-    
-    console.log('生成带前缀的UUID:', prefixedUUID);
-    return prefixedUUID;
+    return prefix ? `${prefix}_${uuid}` : uuid;
 }
 
 // 导出模块

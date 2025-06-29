@@ -298,66 +298,35 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
     // 初始化系统
     function init() {
-        console.log('PromptCraft: Initializing extension', {
-            url: window.location.href,
-            hostname: window.location.hostname,
-            pathname: window.location.pathname,
-            userAgent: navigator.userAgent,
-            timestamp: new Date().toISOString(),
-            triggerCommand: CONSTANTS.TRIGGER_COMMAND
-        });
+
 
         // 特别检测大模型网站
         const aiSites = ['kimi.moonshot.cn', 'gemini.google.com', 'doubao.com', 'chatgpt.com', 'claude.ai'];
         const currentSite = window.location.hostname;
         const isAISite = aiSites.some(site => currentSite.includes(site));
 
-        console.log('PromptCraft: AI Site Detection', {
-            currentSite: currentSite,
-            isAISite: isAISite,
-            detectedSites: aiSites.filter(site => currentSite.includes(site))
-        });
+
 
         // 检测CSP限制
         const metaTags = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
         if (metaTags.length > 0) {
-            console.log('PromptCraft: CSP detected', {
-                cspCount: metaTags.length,
-                cspContent: Array.from(metaTags).map(tag => tag.content)
-            });
+
         }
 
-        console.log('PromptCraft: Injecting styles');
         injectStyles(); // 注入CSS样式
-
-        console.log('PromptCraft: Loading prompts');
         loadPrompts();
-
-        console.log('PromptCraft: Setting up event listeners');
         setupEventListeners();
-
-        console.log('PromptCraft: Setting up cleanup handlers');
         setupCleanupHandlers();
-
-        console.log('PromptCraft: Setting up storage change listener');
         setupStorageChangeListener();
 
-        // 设置心跳日志，每30秒输出一次确认扩展运行状态
+        // 设置心跳检查，每30秒确认扩展运行状态
         setInterval(() => {
-            console.log('💓 PromptCraft: Heartbeat - Extension is running', {
-                timestamp: new Date().toISOString(),
-                url: window.location.href,
-                isInitialized: state.isInitialized,
-                isUIVisible: state.isUIVisible
-            });
+            // 心跳检查
         }, 30000);
 
-        console.log('PromptCraft: Initialization completed successfully');
-
-        // 立即测试一次输入事件监听
-        console.log('PromptCraft: Testing input event listener setup...');
+        // 初始化完成
         setTimeout(() => {
-            console.log('PromptCraft: Extension ready for input detection');
+            // 扩展准备就绪
         }, 1000);
     }
 
@@ -368,11 +337,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
     // 数据加载完成后更新UI
     function updateUIAfterPromptsLoad() {
-        console.log('PromptCraft: updateUIAfterPromptsLoad called, current prompts:', state.prompts);
-        console.log('PromptCraft: prompts count:', state.prompts.length);
-        if (state.prompts.length > 0) {
-            console.log('PromptCraft: First prompt:', state.prompts[0]);
-        }
+
 
         // 如果当前有显示的UI，需要重新渲染
         const existingContainer = document.getElementById(CONSTANTS.UI_CONTAINER_ID);
@@ -396,27 +361,27 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         
         // 防止短时间内重复调用
         if (isLoading || (now - lastLoadTime < LOAD_DEBOUNCE_TIME)) {
-            console.log('PromptCraft: 跳过重复的loadPrompts调用，距离上次加载:', now - lastLoadTime, 'ms');
+    
             return;
         }
         
         isLoading = true;
         lastLoadTime = now;
-        console.log('PromptCraft: 开始加载提示词数据');
+    
         
         try {
             // 检查是否在扩展环境中
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
                 // 从background script获取内存中的提示词数据
                 chrome.runtime.sendMessage({ action: 'getPrompts' }, (response) => {
-                    console.log('PromptCraft: Received response from background:', response);
+        
 
                     if (chrome.runtime.lastError) {
                         const errorMsg = chrome.runtime.lastError.message || chrome.runtime.lastError.toString();
                         console.warn('PromptCraft: Failed to load prompts from memory:', errorMsg);
                         showErrorMessage(`无法连接到扩展后台服务: ${errorMsg}`);
                         state.prompts = getEmptyPrompts();
-                        console.log('PromptCraft: Connection failed, showing empty list');
+        
                         updateUIAfterPromptsLoad();
                         isLoading = false; // 重置加载状态
                         return;
@@ -427,32 +392,32 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                         console.error('PromptCraft: Load error detected:', response.errorMessage);
                         showErrorMessage(response.errorMessage || '加载默认提示词失败');
                         state.prompts = getEmptyPrompts();
-                        console.log('PromptCraft: Load error, showing empty list');
+        
                     } else if (response && response.prompts && response.prompts.length > 0) {
                         state.prompts = response.prompts;
-                        console.log('PromptCraft: Successfully loaded prompts from memory:', state.prompts.length);
-                        console.log('PromptCraft: Loaded prompts data:', state.prompts);
+
+
                     } else {
                         // 如果内存中没有数据，显示空列表
                         state.prompts = getEmptyPrompts();
-                        console.log('PromptCraft: No prompts in memory, showing empty list');
-                        console.log('PromptCraft: Response was:', response);
+
+
                     }
                     updateUIAfterPromptsLoad();
                     isLoading = false; // 重置加载状态
                 });
             } else {
                 // 非扩展环境，显示空列表
-                console.log('PromptCraft: Not in extension environment, showing empty list');
+
                 state.prompts = getEmptyPrompts();
-                console.log('PromptCraft: Showing empty list');
+
                 updateUIAfterPromptsLoad();
                 isLoading = false; // 重置加载状态
             }
         } catch (error) {
             console.warn('PromptCraft: Error loading prompts:', error);
             state.prompts = getEmptyPrompts();
-            console.log('PromptCraft: Error occurred, showing empty list');
+
             updateUIAfterPromptsLoad();
             isLoading = false; // 重置加载状态
         }
@@ -460,7 +425,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
     // 设置事件监听器
     function setupEventListeners() {
-        console.log('PromptCraft: Setting up enhanced event listeners with MutationObserver');
+    
 
         // 使用捕获阶段监听，确保能够优先处理
         document.addEventListener('input', handleInputEvent, true);
@@ -480,13 +445,13 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
             chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 // 监听数据变更通知，保持与数据服务的消息类型一致
                 if (message.type === 'DATA_CHANGED') {
-                    console.log('PromptCraft: 收到数据变更通知，重新加载提示词');
+        
                     loadPrompts();
                 }
             });
         }
 
-        console.log('PromptCraft: Enhanced event listeners setup completed');
+    
     }
 
     // 设置存储变化监听器
@@ -494,9 +459,9 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
             chrome.storage.onChanged.addListener((changes, namespace) => {
                 if (namespace === 'local' && changes.prompts) {
-                    console.log('PromptCraft: Storage prompts changed, reloading data');
-                    console.log('PromptCraft: Old prompts count:', changes.prompts.oldValue ? changes.prompts.oldValue.length : 0);
-                    console.log('PromptCraft: New prompts count:', changes.prompts.newValue ? changes.prompts.newValue.length : 0);
+        
+        
+        
                     
                     // 直接更新state中的prompts数据
                     state.prompts = changes.prompts.newValue || [];
@@ -505,7 +470,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                     updateUIAfterPromptsLoad();
                 }
             });
-            console.log('PromptCraft: Storage change listener setup completed');
+        
         } else {
             console.warn('PromptCraft: Chrome storage API not available for change listener');
         }
@@ -537,7 +502,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
             subtree: true
         });
 
-        console.log('PromptCraft: MutationObserver setup completed');
+    
     }
 
     // 扫描并绑定输入元素 - 递归检查所有子节点
@@ -568,7 +533,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         }
 
         element.dataset.promptcraftBound = 'true';
-        console.log('PromptCraft: Bound input element:', element.tagName, element.id || element.className);
+        
     }
 
     // 设置清理处理器
@@ -586,46 +551,25 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
     // 处理输入事件 - 使用防抖动优化性能
     let inputDebounceTimer = null;
     function handleInputEvent(event) {
-        // 强制输出日志，确保函数被调用
-        console.log('🔥 PromptCraft: handleInputEvent CALLED - This should always appear!');
+
 
         const target = event.target;
 
-        console.log('PromptCraft: Input event detected', {
-            tagName: target.tagName,
-            type: target.type || 'no-type',
-            id: target.id,
-            className: target.className,
-            contentEditable: target.contentEditable,
-            isInserting: state.isInserting,
-            url: window.location.href,
-            hostname: window.location.hostname,
-            eventType: event.type
-        });
+
 
         // 如果正在插入提示词，跳过处理以防止干扰
         if (state.isInserting) {
-            console.log('PromptCraft: Currently inserting prompt, ignoring input event');
+
             return;
         }
 
         // 检查是否是可编辑的输入框
         if (!isEditableElement(target)) {
-            console.log('PromptCraft: Element is not editable, ignoring', {
-                tagName: target.tagName,
-                type: target.type,
-                contentEditable: target.contentEditable,
-                id: target.id,
-                className: target.className
-            });
+
             return;
         }
 
-        console.log('PromptCraft: Valid input element detected', {
-            tagName: target.tagName,
-            id: target.id,
-            className: target.className
-        });
+
 
         // 更新当前输入元素
         state.currentInput = target;
@@ -640,26 +584,17 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
     // 处理输入变化
     function processInputChange(inputElement) {
         if (!inputElement) {
-            console.log('PromptCraft: processInputChange called with no input element');
+
             return;
         }
 
         const text = getElementText(inputElement);
         state.lastInputValue = text;
 
-        console.log('PromptCraft: Processing input change', {
-            text: text,
-            textLength: text.length,
-            triggerCommand: CONSTANTS.TRIGGER_COMMAND,
-            isUIVisible: state.isUIVisible,
-            elementType: inputElement.tagName,
-            elementId: inputElement.id,
-            url: window.location.href,
-            hostname: window.location.hostname
-        });
+
 
         if (state.isUIVisible) {
-            console.log('PromptCraft: UI is already visible, updating search');
+
             // 如果UI已激活，更新搜索
             updateSearch(text);
             return;
@@ -667,14 +602,8 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
         // 检查是否输入了触发词
         const triggerIndex = text.lastIndexOf(CONSTANTS.TRIGGER_COMMAND);
-        console.log('PromptCraft: Trigger detection', {
-            triggerIndex: triggerIndex,
-            triggerCommand: CONSTANTS.TRIGGER_COMMAND,
-            textAroundTrigger: triggerIndex >= 0 ? text.substring(Math.max(0, triggerIndex - 5), triggerIndex + CONSTANTS.TRIGGER_COMMAND.length + 5) : 'N/A'
-        });
 
         if (triggerIndex === -1) {
-            console.log('PromptCraft: No trigger command found in text');
             return;
         }
 
@@ -684,17 +613,12 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         const isAtWordBoundary = triggerIndex === 0 || !isAlphaNumeric(charBefore);
         const isFollowedBySpace = triggerIndex + CONSTANTS.TRIGGER_COMMAND.length === text.length || charAfter === ' ';
 
-        console.log('PromptCraft: Boundary check', {
-            charBefore: charBefore,
-            charAfter: charAfter,
-            isAtWordBoundary: isAtWordBoundary,
-            isFollowedBySpace: isFollowedBySpace,
-            triggerPosition: triggerIndex
-        });
+
+        // Trigger analysis debug info removed
 
         // 只有当触发词在单词边界且后面是空格或文本结束时才触发
         if (isAtWordBoundary && isFollowedBySpace) {
-            console.log('PromptCraft: Trigger conditions met, locking target and showing UI');
+    
 
             // 锁定目标输入框 - 防止目标丢失
             state.lockedTargetInput = inputElement;
@@ -705,18 +629,12 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                 state.originalInput = inputElement;
             }
 
-            console.log('PromptCraft: Target locked', {
-                lockedElement: {
-                    tagName: state.lockedTargetInput.tagName,
-                    id: state.lockedTargetInput.id,
-                    className: state.lockedTargetInput.className
-                },
-                triggerPosition: triggerIndex
-            });
+    
+            // Target input locking debug info removed
 
             showQuickInvokeUI();
         } else {
-            console.log('PromptCraft: Trigger conditions not met, not showing UI');
+    
         }
     }
 
@@ -729,20 +647,12 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
     // 处理键盘事件
     function handleKeydownEvent(event) {
-        console.log('PromptCraft: Keydown event', {
-            key: event.key,
-            code: event.code,
-            target: event.target.tagName,
-            targetId: event.target.id,
-            targetClass: event.target.className,
-            isUIVisible: state.isUIVisible,
-            url: window.location.href,
-            hostname: window.location.hostname
-        });
+
+        // Key event debug info removed
 
         // 如果UI未激活，不处理
         if (!state.isUIVisible) {
-            console.log('PromptCraft: UI not visible, ignoring keydown');
+
             return;
         }
 
@@ -865,7 +775,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
         // A. 标准HTML标签：<textarea> 和 <input type="text">
         if (tagName === 'textarea' || (tagName === 'input' && element.type === 'text')) {
-            console.log('PromptCraft: Found standard input element:', tagName);
+
             return true;
         }
 
@@ -873,13 +783,13 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         // 使用 closest 方法兼容 contentEditable 属性在父元素上的情况
         const contentEditableElement = element.closest('[contenteditable="true"]');
         if (contentEditableElement) {
-            console.log('PromptCraft: Found contentEditable element via closest()');
+
             return true;
         }
 
         // 直接检查当前元素的 contentEditable 属性
         if (element.isContentEditable) {
-            console.log('PromptCraft: Element is directly contentEditable');
+
             return true;
         }
 
@@ -899,10 +809,10 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
     // 设置元素文本内容 - 针对现代框架优化的版本
     function setElementText(element, text) {
-        console.log('PromptCraft: setElementText called with element:', element);
-        console.log('PromptCraft: setElementText text to set:', text);
-        console.log('PromptCraft: Element tag name:', element.tagName);
-        console.log('PromptCraft: Element contentEditable:', element.contentEditable);
+    
+    
+    
+    
 
         if (!element || text === undefined) {
             console.warn('PromptCraft: Invalid element or text for setElementText');
@@ -915,34 +825,34 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
             // 保存原始值用于比较
             const previousValue = element.value || '';
-            console.log('PromptCraft: Previous value:', previousValue);
+    
 
             if (element.tagName.toLowerCase() === 'textarea' || element.tagName.toLowerCase() === 'input') {
-                console.log('PromptCraft: Setting text for input/textarea element');
+
                 // 使用原生设置器绕过React的值变更检查
                 const descriptor = Object.getOwnPropertyDescriptor(element, 'value') ||
                     Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), 'value');
 
                 if (descriptor && descriptor.set) {
-                    console.log('PromptCraft: Using descriptor setter');
+
                     // 使用原型链上的原生setter
                     const prototype = Object.getPrototypeOf(element);
                     const nativeSetter = Object.getOwnPropertyDescriptor(prototype, 'value').set;
                     if (nativeSetter) {
-                        console.log('PromptCraft: Using native setter');
+    
                         nativeSetter.call(element, text);
                     } else {
-                        console.log('PromptCraft: Using descriptor setter fallback');
+    
                         descriptor.set.call(element, text);
                     }
                 } else {
-                    console.log('PromptCraft: Using direct value assignment');
+
                     // 后备方案：直接设置value
                     element.value = text;
                 }
 
             } else if (element.contentEditable === 'true' || element.contentEditable === 'plaintext-only' || element.isContentEditable) {
-                console.log('PromptCraft: Setting text for contenteditable element');
+
 
                 // 多种方法尝试设置contentEditable元素的内容
                 let success = false;
@@ -963,7 +873,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                         document.execCommand('selectAll', false, null);
                         document.execCommand('delete', false, null);
                         success = document.execCommand('insertText', false, text);
-                        console.log('PromptCraft: execCommand insertText success:', success);
+    
                     }
                 } catch (e) {
                     console.warn('PromptCraft: execCommand method failed:', e);
@@ -991,7 +901,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                         selection.addRange(range);
 
                         success = true;
-                        console.log('PromptCraft: Modern Selection API success');
+    
                     } catch (e) {
                         console.warn('PromptCraft: Modern Selection API failed:', e);
                     }
@@ -1005,21 +915,21 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                         } else {
                             element.textContent = text;
                         }
-                        console.log('PromptCraft: Direct content assignment used');
+    
                     } catch (e) {
                         console.warn('PromptCraft: Direct content assignment failed:', e);
                     }
                 }
             } else {
-                console.log('PromptCraft: Setting text for other element type');
+
                 // 其他类型的元素
                 element.value = text;
             }
 
             // 验证设置结果
             const newValue = getElementText(element);
-            console.log('PromptCraft: Value after setting:', newValue);
-            console.log('PromptCraft: Setting successful:', newValue === text);
+    
+    
 
             // 触发全面的事件以确保框架状态更新
             triggerComprehensiveEventSequence(element, previousValue, text);
@@ -1038,7 +948,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
     // 显示快速调用UI
     function showQuickInvokeUI() {
-        console.log('PromptCraft: showQuickInvokeUI called', {
+        console.log('PromptCraft: 显示快速调用UI', {
             isUIVisible: state.isUIVisible,
             hasCurrentInput: !!state.currentInput,
             currentInputElement: state.currentInput ? {
@@ -1052,7 +962,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
         // 防止重复激活
         if (state.isUIVisible) {
-            console.log('PromptCraft: UI is already visible, skipping activation');
+
             return;
         }
 
@@ -1065,20 +975,19 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
             return;
         }
 
-        console.log('PromptCraft: Activating UI with state', {
-            promptsCount: state.prompts.length,
-            triggerPosition: state.triggerPosition
-        });
+        // 记录UI显示的调试信息
+        // promptsCount: state.prompts.length,
+        // triggerPosition: state.triggerPosition
 
         // 保存原始输入元素，防止被搜索框覆盖
         state.originalInput = state.currentInput;
-        console.log('PromptCraft: Saved original input element', {
-            originalInputElement: state.originalInput ? {
-                tagName: state.originalInput.tagName,
-                id: state.originalInput.id,
-                className: state.originalInput.className
-            } : null
-        });
+
+        // 记录原始输入元素信息
+        // originalInputElement: state.originalInput ? {
+        //     tagName: state.originalInput.tagName,
+        //     id: state.originalInput.id,
+        //     className: state.originalInput.className
+        // } : null
 
         state.isActive = true;
         state.isUIVisible = true;
@@ -1087,7 +996,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         state.selectedCategory = 'all';
         state.searchTerm = '';
 
-        console.log('PromptCraft: Creating UI components');
+
         createQuickInvokeUI();
         positionUI();
         applyFilters();
@@ -1096,21 +1005,19 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         setTimeout(() => {
             const searchInput = state.uiContainer?.querySelector('.promptcraft-search-input');
             if (searchInput) {
-                console.log('PromptCraft: Focusing search input');
+        
                 searchInput.focus();
             } else {
                 console.warn('PromptCraft: Search input not found for focusing');
             }
         }, 10);
 
-        console.log('PromptCraft: Quick invoke UI activated successfully');
+
     }
 
     // 隐藏快速调用UI
     function hideQuickInvokeUI() {
         if (!state.isUIVisible) return;
-
-        console.log('PromptCraft: Hiding Quick Invoke UI');
 
         state.isUIVisible = false;
         state.isActive = false;
@@ -1118,7 +1025,6 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         // 清理输入元素引用和锁定状态
         state.originalInput = null;
         state.lockedTargetInput = null;
-        console.log('PromptCraft: Cleared input references and target lock');
 
         // 移除UI容器
         if (state.uiContainer && state.uiContainer.parentNode) {
@@ -1139,7 +1045,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         state.triggerPosition = -1;
         state.filteredPrompts = [];
 
-        console.log('PromptCraft: Quick invoke UI deactivated and cleaned up');
+    
     }
 
     // 创建快速调用UI
@@ -1243,7 +1149,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
             if (isInputInLowerHalf) {
                 // 特殊策略：输入框在下半部分时，优先显示在输入框上方
-                console.log('PromptCraft: Input in lower half, positioning above input');
+    
 
                 // 计算输入框上方的可用空间
                 const spaceAboveInput = inputRect.top;
@@ -1297,7 +1203,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
             } else {
                 // 默认策略：固定定位，整体屏幕居中
-                console.log('PromptCraft: Using default centered positioning');
+    
 
                 position = 'fixed';
                 left = (viewportWidth - uiWidth) / 2;
@@ -1331,7 +1237,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                 state.uiContainer.classList.add('positioned-above-input');
             }
 
-            console.log(`PromptCraft: UI positioned - ${position} at (${Math.round(left)}, ${Math.round(top)})`);
+    
 
         } catch (error) {
             console.warn('PromptCraft: Error positioning UI:', error);
@@ -1500,7 +1406,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
     // 插入提示词
     function insertPrompt(prompt) {
-        console.log('PromptCraft: Enhanced insertPrompt called with target locking');
+
 
         // 使用锁定的目标输入框（最高优先级）
         const targetInput = state.lockedTargetInput || state.originalInput || state.currentInput;
@@ -1546,7 +1452,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                 state.isInserting = false;
             }, 50);
 
-            console.log('PromptCraft: Prompt inserted successfully:', prompt.title);
+    
 
         } catch (error) {
             console.error('PromptCraft: Error inserting prompt:', error);
@@ -1776,8 +1682,6 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
     // 清理所有资源
     function cleanup() {
-        console.log('PromptCraft: Cleaning up resources');
-
         // 移除UI
         hideQuickInvokeUI();
 
@@ -1792,8 +1696,6 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         state.currentInput = null;
         state.triggerPosition = -1;
         state.isInitialized = false;
-
-        console.log('PromptCraft: Cleanup complete');
     }
 
     // 页面加载完成后初始化
@@ -1864,9 +1766,9 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                 styleElement.setAttribute('data-theme', 'light');
             }
             
-            console.log('PromptCraft: 应用主题模式:', currentThemeMode, '实际主题:', effectiveTheme);
+
         } catch (error) {
-            console.error('PromptCraft: 应用主题失败:', error);
+
         }
     }
     
@@ -1886,7 +1788,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
             
             // 检查是否需要更新（避免重复设置相同主题）
             if (cachedThemeMode === newThemeMode && cachedEffectiveTheme === newEffectiveTheme) {
-                console.log('PromptCraft: 主题未变化，跳过更新:', newThemeMode, '实际主题:', newEffectiveTheme);
+        
                 return;
             }
             
@@ -1902,7 +1804,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                 state.uiContainer.setAttribute('data-theme', 'light');
             }
             
-            console.log('PromptCraft: 更新UI主题:', newThemeMode, '实际主题:', newEffectiveTheme);
+    
         } catch (error) {
             console.error('PromptCraft: 更新UI主题失败:', error);
         }
@@ -1917,7 +1819,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
     function setupThemeListener() {
         // 防止重复设置监听器
         if (themeListenersSetup) {
-            console.log('PromptCraft: 主题监听器已设置，跳过重复设置');
+    
             return;
         }
         
@@ -1925,7 +1827,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
             chrome.storage.onChanged.addListener((changes, namespace) => {
                 if (namespace === 'local' && changes.themeMode) {
-                    console.log('PromptCraft: 检测到主题模式变化:', changes.themeMode.newValue);
+        
                     updateUITheme();
                 }
             });
@@ -1935,14 +1837,13 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
         mediaQuery.addEventListener('change', () => {
             if (currentThemeMode === 'auto') {
-                console.log('PromptCraft: 检测到系统主题变化');
+    
                 updateUITheme();
             }
         });
         
         // 标记监听器已设置
         themeListenersSetup = true;
-        console.log('PromptCraft: 主题监听器设置完成');
     }
 
-    })();
+})();

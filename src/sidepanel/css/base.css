@@ -1,0 +1,39 @@
+/* --- base.css --- */
+/* 包含了来自旧 sidepanel.css 和 main.css 的基础样式 */
+
+/* 基础样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body {
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background-color: var(--background-light);
+    color: var(--text-light);
+    transition: var(--transition);
+    position: relative;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+body.dark-mode {
+    background-color: var(--background-dark);
+    color: var(--text-dark);
+}
+
+/* 响应式设计 (来自旧 sidepanel.css) */
+@media (max-width: 480px) {
+  .container {
+    padding: 12px;
+  }
+  
+  .btn {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}

@@ -55,7 +55,6 @@ class DataService {
      */
     setSyncService(syncService) {
         this.syncService = syncService;
-        console.log('DataService: 同步服务已设置');
     }
 
     /**
@@ -90,7 +89,6 @@ class DataService {
             if (!currentVersion) {
                 // 首次使用，设置版本号
                 await this._setToStorage({ [STORAGE_KEYS.SCHEMA_VERSION]: CURRENT_SCHEMA_VERSION });
-                console.log('数据服务初始化完成，设置版本号:', CURRENT_SCHEMA_VERSION);
             } else if (currentVersion !== CURRENT_SCHEMA_VERSION) {
                 // 版本不匹配，可能需要数据迁移
                 console.warn('检测到数据版本不匹配:', { current: currentVersion, expected: CURRENT_SCHEMA_VERSION });
@@ -112,7 +110,6 @@ class DataService {
     async _getFromStorage(keys) {
         return new Promise((resolve, reject) => {
             try {
-                console.log(`Attempting to retrieve from storage:`, keys);
                 chrome.storage.local.get(keys, (result) => {
                     if (chrome.runtime.lastError) {
                         const error = new Error(`存储读取失败: ${chrome.runtime.lastError.message}`);
@@ -120,12 +117,6 @@ class DataService {
                         reject(error);
                         return;
                     }
-                    console.log(`Data retrieved from storage:`, {
-                        keys: keys,
-                        resultKeys: Object.keys(result),
-                        dataSize: JSON.stringify(result).length,
-                        timestamp: new Date().toISOString()
-                    });
                     resolve(result);
                 });
             } catch (error) {
@@ -150,7 +141,6 @@ class DataService {
     async _setToStorage(data, notifyChange = true) {
         return new Promise((resolve, reject) => {
             try {
-                console.log(`Attempting to save to storage:`, { dataKeys: Object.keys(data), dataSize: JSON.stringify(data).length });
                 chrome.storage.local.set(data, () => {
                     if (chrome.runtime.lastError) {
                         const error = new Error(`存储写入失败: ${chrome.runtime.lastError.message}`);
@@ -162,7 +152,6 @@ class DataService {
                         reject(error);
                         return;
                     }
-                    console.log(`Data successfully saved to storage:`, Object.keys(data));
                     // 根据参数决定是否发送变更通知
                     if (notifyChange) {
                         this._notifyDataChange(data);
@@ -195,9 +184,7 @@ class DataService {
                 Object.assign(combinedData, op);
             }
             
-            console.log('DataService: 执行原子性存储操作:', Object.keys(combinedData));
             await this._setToStorage(combinedData, notifyChange);
-            console.log('DataService: 原子性存储操作完成');
             
         } catch (error) {
             console.error('DataService: 原子性存储操作失败:', error);
@@ -233,18 +220,36 @@ class DataService {
     // ==================== 提示词数据操作接口 ====================
 
     /**
-     * 获取所有提示词
+     * 获取所有提示词（仅返回未删除的）
      * @returns {Promise<Array>} 提示词数组
      */
     async getAllPrompts() {
         await this.initialize();
         try {
             const result = await this._getFromStorage([STORAGE_KEYS.PROMPTS]);
-            const prompts = result[STORAGE_KEYS.PROMPTS] || [];
-            console.log('获取所有提示词:', prompts.length, '条');
-            return prompts;
+            const allPrompts = result[STORAGE_KEYS.PROMPTS] || [];
+            // 过滤掉已删除的提示词
+            const activePrompts = allPrompts.filter(prompt => !prompt.is_deleted);
+            return activePrompts;
         } catch (error) {
             console.error('获取提示词失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 获取所有提示词（包括已删除的）
+     * 主要用于同步服务
+     * @returns {Promise<Array>} 所有提示词数组
+     */
+    async getAllPromptsIncludingDeleted() {
+        await this.initialize();
+        try {
+            const result = await this._getFromStorage([STORAGE_KEYS.PROMPTS]);
+            const allPrompts = result[STORAGE_KEYS.PROMPTS] || [];
+            return allPrompts;
+        } catch (error) {
+            console.error('获取所有提示词失败:', error);
             throw error;
         }
     }
@@ -283,7 +288,6 @@ class DataService {
 
             // 保存到存储
             await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: prompts });
-            console.log('添加提示词成功:', newPrompt.id);
 
             // 触发云端同步
             await this._triggerSync('create', newPrompt);
@@ -327,7 +331,6 @@ class DataService {
 
             // 保存到存储
             await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: prompts });
-            console.log('更新提示词成功:', id);
 
             // 触发云端同步
             await this._triggerSync('update', updatedPrompt);
@@ -365,7 +368,6 @@ class DataService {
                 
                 prompts[existingIndex] = updatedPrompt;
                 await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: prompts });
-                console.log('更新提示词成功:', promptData.id);
                 
                 // 触发数据变更通知，让界面刷新
                 this._notifyDataChange(prompts);
@@ -383,7 +385,6 @@ class DataService {
                 
                 prompts.push(newPrompt);
                 await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: prompts });
-                console.log('添加提示词成功:', newPrompt.id);
                 
                 // 触发数据变更通知，让界面刷新
                 this._notifyDataChange(prompts);
@@ -399,17 +400,56 @@ class DataService {
 
     /**
      * 触发云端同步
-            await this._triggerSync('update', updatedPrompt);
+     * @param {string} operation - 操作类型 ('create', 'update', 'delete')
+     * @param {Object} promptData - 提示词数据
+     * @private
+     */
+    async _triggerSync(operation, promptData) {
+        try {
+            // 检查是否有同步服务实例
+            if (!this.syncService) {
+                console.debug('DataService: 同步服务未设置，添加到队列等待后续同步');
+                await this._addToSyncQueue(operation, promptData);
+                return;
+            }
 
-            return updatedPrompt;
+            // 检查用户是否已登录（避免本地用户触发同步）
+            if (!this.syncService || !this.syncService.authService) {
+                console.debug('DataService: 同步服务或认证服务未设置，跳过同步');
+                return;
+            }
+            
+            const currentUser = await this.syncService.authService.getCurrentUser();
+            if (!currentUser || currentUser.id === 'local-user') {
+                console.debug('DataService: 用户未登录或为本地用户，跳过同步');
+                return;
+            }
+
+            // 设置同步状态为进行中
+            await this.setSyncStatus('syncing');
+
+            // 异步执行同步操作，不阻塞UI
+            this._performSyncOperation(operation, promptData)
+                .then(async () => {
+                    await this.setSyncStatus('success');
+                    await this.setLastSyncTime(new Date().toISOString());
+                })
+                .catch(async (error) => {
+                    await this.setSyncStatus('error');
+                    console.error('DataService: 同步操作失败:', error);
+                    // 添加到重试队列
+                    await this._addToSyncQueue(operation, promptData, error.message);
+                });
+
         } catch (error) {
-            console.error('更新提示词失败:', error);
-            throw error;
+            // 同步失败不应该影响本地操作
+            console.error('DataService: 触发同步失败:', error);
+            await this.setSyncStatus('error');
         }
     }
 
     /**
-     * 删除提示词
+     * 删除提示词（软删除）
      * @param {string} id - 提示词ID
      * @param {boolean} throwOnNotFound - 找不到时是否抛出错误，默认true
      * @returns {Promise<boolean>} 是否删除成功
@@ -417,30 +457,37 @@ class DataService {
     async deletePrompt(id, throwOnNotFound = true) {
         await this.initialize();
         try {
-            const prompts = await this.getAllPrompts();
-            const index = prompts.findIndex(p => p.id === id);
+            // 获取所有提示词（包括已删除的）
+            const result = await this._getFromStorage([STORAGE_KEYS.PROMPTS]);
+            const allPrompts = result[STORAGE_KEYS.PROMPTS] || [];
+            const index = allPrompts.findIndex(p => p.id === id && !p.is_deleted);
 
             if (index === -1) {
                 if (throwOnNotFound) {
                     throw new Error(`未找到ID为 ${id} 的提示词`);
                 } else {
-                    console.log(`提示词 ${id} 不存在，跳过删除`);
                     return false;
                 }
             }
 
             // 获取要删除的提示词信息（用于同步）
-            const deletedPrompt = prompts[index];
+            const deletedPrompt = allPrompts[index];
 
-            // 删除提示词
-            prompts.splice(index, 1);
+            // 软删除：标记为已删除，而不是物理删除
+            allPrompts[index] = {
+                ...deletedPrompt,
+                is_deleted: true,
+                updated_at: new Date().toISOString()
+            };
 
             // 保存到存储
-            await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: prompts });
-            console.log('删除提示词成功:', id);
+            await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: allPrompts });
+            
+            // 获取未删除的提示词用于UI刷新
+            const activePrompts = allPrompts.filter(p => !p.is_deleted);
             
             // 触发数据变更通知，让界面刷新（无论是用户删除还是云端同步删除）
-            this._notifyDataChange(prompts);
+            this._notifyDataChange(activePrompts);
 
             // 触发云端同步（只有在用户主动删除时才触发）
             if (throwOnNotFound) {
@@ -495,7 +542,8 @@ class DataService {
                     content: prompt.content.trim(),
                     category: prompt.category ? prompt.category.trim() : '',
                     created_at: prompt.created_at || new Date().toISOString(),
-                    updated_at: prompt.updated_at || new Date().toISOString()
+                    updated_at: prompt.updated_at || new Date().toISOString(),
+                    is_deleted: prompt.is_deleted || false
                 };
             });
 
@@ -508,7 +556,7 @@ class DataService {
                 this._notifyDataChange({ [STORAGE_KEYS.PROMPTS]: validatedPrompts });
             }
             
-            console.log('批量设置提示词成功:', validatedPrompts.length, '条');
+
         } catch (error) {
             console.error('批量设置提示词失败:', error);
             throw error;
@@ -523,7 +571,6 @@ class DataService {
         await this.initialize();
         try {
             await this._removeFromStorage([STORAGE_KEYS.PROMPTS]);
-            console.log('清空所有提示词成功');
         } catch (error) {
             console.error('清空提示词失败:', error);
             throw error;
@@ -559,7 +606,6 @@ class DataService {
                 throw new Error('无效的主题模式');
             }
             await this._setToStorage({ [STORAGE_KEYS.THEME_MODE]: mode });
-            console.log('设置主题模式成功:', mode);
         } catch (error) {
             console.error('设置主题模式失败:', error);
             throw error;
@@ -599,7 +645,6 @@ class DataService {
                 [STORAGE_KEYS.LOAD_ERROR]: hasError,
                 [STORAGE_KEYS.ERROR_MESSAGE]: message
             });
-            console.log('设置错误状态:', { hasError, message });
         } catch (error) {
             console.error('设置错误状态失败:', error);
             throw error;
@@ -640,7 +685,6 @@ class DataService {
         await this.initialize();
         try {
             await this._setToStorage({ [STORAGE_KEYS.HAS_DATA]: hasData });
-            console.log('设置数据状态:', hasData);
         } catch (error) {
             console.error('设置数据状态失败:', error);
             throw error;
@@ -673,7 +717,6 @@ class DataService {
         await this.initialize();
         try {
             await this._setToStorage({ [STORAGE_KEYS.SYNC_STATUS]: status });
-            console.log('设置同步状态:', status);
         } catch (error) {
             console.error('设置同步状态失败:', error);
             throw error;
@@ -704,7 +747,6 @@ class DataService {
         await this.initialize();
         try {
             await this._setToStorage({ [STORAGE_KEYS.LAST_SYNC_TIME]: timestamp });
-            console.log('设置最后同步时间:', timestamp);
         } catch (error) {
             console.error('设置最后同步时间失败:', error);
             throw error;
@@ -735,7 +777,6 @@ class DataService {
         await this.initialize();
         try {
             await this._setToStorage({ [STORAGE_KEYS.SYNC_QUEUE]: queue });
-            console.log('设置同步队列，项目数:', queue.length);
         } catch (error) {
             console.error('设置同步队列失败:', error);
             throw error;
@@ -879,7 +920,7 @@ class DataService {
                 .then(async () => {
                     await this.setSyncStatus('success');
                     await this.setLastSyncTime(new Date().toISOString());
-                    console.log('DataService: 同步操作成功完成');
+                    
                 })
                 .catch(async (error) => {
                     await this.setSyncStatus('error');
@@ -905,15 +946,12 @@ class DataService {
         switch (operation) {
             case 'create':
                 await this.syncService.createPrompt(promptData);
-                console.log('DataService: 创建提示词同步成功');
                 break;
             case 'update':
                 await this.syncService.updatePrompt(promptData);
-                console.log('DataService: 更新提示词同步成功');
                 break;
             case 'delete':
                 await this.syncService.deletePrompt(promptData.id);
-                console.log('DataService: 删除提示词同步成功');
                 break;
             default:
                 throw new Error(`未知的同步操作类型: ${operation}`);
@@ -940,7 +978,6 @@ class DataService {
             };
             
             await this.addToSyncQueue(queueItem);
-            console.log('DataService: 操作已添加到同步队列:', operationId);
         } catch (error) {
             console.error('DataService: 添加到同步队列失败:', error);
         }
@@ -973,7 +1010,7 @@ class DataService {
             const hasDataFlag = await this.hasData();
             const actualPrompts = await this.getAllPrompts();
             
-            console.log('DataService: 数据一致性检查 - hasData:', hasDataFlag, 'prompts count:', actualPrompts ? actualPrompts.length : 'null/undefined');
+
             
             // 检查数据一致性
             if (hasDataFlag && (!actualPrompts || actualPrompts.length === 0)) {
@@ -986,7 +1023,7 @@ class DataService {
                 return false;
             }
             
-            console.log('DataService: 数据一致性检查通过');
+
             return true;
         } catch (error) {
             console.error('DataService: 数据一致性检查失败:', error);
@@ -1002,7 +1039,6 @@ class DataService {
         await this.initialize();
         try {
             await this._setToStorage({ [STORAGE_KEYS.DEFAULT_TEMPLATES_LOADED]: true });
-            console.log('已标记默认模板为已加载');
         } catch (error) {
             console.error('标记默认模板加载状态失败:', error);
             throw error;
@@ -1025,7 +1061,6 @@ class DataService {
             const newDefaultPrompts = defaultPrompts.filter(prompt => !existingIds.has(prompt.id));
             
             if (newDefaultPrompts.length === 0) {
-                console.log('所有默认提示词已存在，无需复制');
                 return;
             }
             
@@ -1046,8 +1081,6 @@ class DataService {
             
             // 保存到用户区域
             await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: allPrompts });
-            
-            console.log('默认提示词已复制到用户区域:', userPrompts.length, '条');
         } catch (error) {
             console.error('复制默认提示词到用户区域失败:', error);
             throw error;
@@ -1064,7 +1097,6 @@ class DataService {
             // 检查是否已经迁移过
             const isTemplatesLoaded = await this.isDefaultTemplatesLoaded();
             if (isTemplatesLoaded) {
-                console.log('数据已迁移，跳过迁移过程');
                 return;
             }
             
@@ -1082,11 +1114,11 @@ class DataService {
                 // 保存迁移后的数据
                 await this._setToStorage({ [STORAGE_KEYS.PROMPTS]: migratedPrompts });
                 
-                console.log('现有用户数据迁移完成:', migratedPrompts.length, '条');
+
             }
             
             // 标记迁移完成（但不标记默认模板已加载，让后续流程处理默认模板）
-            console.log('用户数据迁移流程完成');
+
         } catch (error) {
             console.error('用户数据迁移失败:', error);
             throw error;
@@ -1100,7 +1132,7 @@ class DataService {
     enableBatchMode() {
         this.batchMode = true;
         this.pendingNotifications = [];
-        console.log('批量操作模式已启用');
+
     }
 
     /**
@@ -1109,7 +1141,7 @@ class DataService {
     disableBatchMode() {
         this.batchMode = false;
         this.flushNotifications();
-        console.log('批量操作模式已禁用');
+
     }
 
     /**
@@ -1126,7 +1158,7 @@ class DataService {
             // 发送合并后的通知
             this._sendNotification(mergedData);
             this.pendingNotifications = [];
-            console.log(`已发送合并的数据变更通知 (合并了 ${notificationCount} 个待发送通知)`);
+
         }
     }
 
