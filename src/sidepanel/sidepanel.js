@@ -6,64 +6,16 @@
  * 描述: 纯本地存储的提示词管理扩展，无需登录，保护隐私
  */
 
-// DOM 元素引用
-const loadingOverlay = document.getElementById('loadingOverlay');
-// 移除了认证视图相关的DOM引用
-const mainView = document.getElementById('mainView');
-const formView = document.getElementById('formView');
-const addPromptBtn = document.getElementById('addPromptBtn');
-const searchInput = document.getElementById('searchInput');
-const promptsContainer = document.getElementById('promptsContainer');
-const filterContainer = document.getElementById('filterContainer');
-const backToListBtn = document.getElementById('backToListBtn');
-const cancelFormBtn = document.getElementById('cancelFormBtn');
-const savePromptBtn = document.getElementById('savePromptBtn');
-const formTitle = document.getElementById('formTitle');
-const promptIdInput = document.getElementById('promptIdInput');
-const promptTitleInput = document.getElementById('promptTitleInput');
-const promptContentInput = document.getElementById('promptContentInput');
-const promptCategoryInput = document.getElementById('promptCategoryInput');
-const promptCategorySelect = document.getElementById('promptCategorySelect');
-const settingsBtn = document.getElementById('settingsBtn');
-const settingsOverlay = document.getElementById('settingsOverlay');
-const settingsClose = document.getElementById('settingsClose');
-const importBtn = document.getElementById('importBtn');
-const exportBtn = document.getElementById('exportBtn');
-const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
-const fileInput = document.getElementById('fileInput');
-// 版本日志相关元素
-const versionNumber = document.getElementById('versionNumber');
-const versionNew = document.getElementById('versionNew');
-const versionLogOverlay = document.getElementById('versionLogOverlay');
-const versionLogClose = document.getElementById('versionLogClose');
-const versionLogBody = document.getElementById('versionLogBody');
+// DOM 元素引用已迁移到 uiManager.js 中的 ui 对象
 
 
-/**
- * @brief 自动调整textarea高度以适应内容
- * @param {HTMLTextAreaElement} textarea - 需要调整高度的textarea元素
- */
-function autoResizeTextarea(textarea) {
-    // 重置高度为最小值，以便正确计算scrollHeight
-    textarea.style.height = '120px';
-    
-    // 计算内容所需的高度
-    const scrollHeight = textarea.scrollHeight;
-    const maxHeight = parseInt(getComputedStyle(textarea).maxHeight);
-    
-    // 设置新高度，不超过最大高度
-    if (scrollHeight <= maxHeight) {
-        textarea.style.height = scrollHeight + 'px';
-    } else {
-        textarea.style.height = maxHeight + 'px';
-    }
-}
+// autoResizeTextarea 函数已迁移到 uiManager.js
 
 // 全局状态
 let allPrompts = [];
 let currentUser = null;
 let themeMode = 'auto';
-let currentView = null;
+// currentView 已迁移到 uiManager.js
 let isProcessingContextMenu = false; // 标记是否正在处理右键菜单消息
 
 // 统一的排序函数：按创建时间降序排序，最新的在前面
@@ -75,41 +27,12 @@ function sortPromptsByCreatedTime(prompts) {
     });
 }
 
-// 检测系统主题
-function getSystemTheme() {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
-// 应用主题
-function applyTheme(mode) {
-    const actualTheme = mode === 'auto' ? getSystemTheme() : mode;
-    const isDark = actualTheme === 'dark';
-    
-    if (isDark) {
-        document.body.classList.add('dark-mode');
-    } else {
-        document.body.classList.remove('dark-mode');
-    }
-    
-    // 更新主题选择器状态
-    updateThemeSelector(mode);
-}
-
-// 更新主题选择器状态
-function updateThemeSelector(mode) {
-    const themeOptions = document.querySelectorAll('.theme-option');
-    themeOptions.forEach(option => {
-        option.classList.remove('active');
-        if (option.dataset.theme === mode) {
-            option.classList.add('active');
-        }
-    });
-}
+// getSystemTheme, applyTheme, updateThemeSelector 函数已迁移到 uiManager.js
 
 // --- 实用工具函数 ---
 
-const showLoading = () => loadingOverlay.style.display = 'flex';
-const hideLoading = () => loadingOverlay.style.display = 'none';
+const showLoading = () => ui.loadingOverlay.style.display = 'flex';
+const hideLoading = () => ui.loadingOverlay.style.display = 'none';
 
 /**
  * 智能修复右键菜单文本格式
@@ -213,194 +136,27 @@ function formatContextMenuText(text) {
     return formattedText;
 }
 
-// 自定义确认弹窗
-function showCustomConfirm(message, title = '确认操作') {
-    return new Promise((resolve) => {
-        const overlay = document.getElementById('confirmOverlay');
-        const titleElement = document.getElementById('confirmTitle');
-        const messageElement = document.getElementById('confirmMessage');
-        const cancelBtn = document.getElementById('confirmCancelBtn');
-        const okBtn = document.getElementById('confirmOkBtn');
-        
-        if (!overlay || !titleElement || !messageElement || !cancelBtn || !okBtn) {
-            console.error('确认弹窗元素未找到');
-            resolve(false);
-            return;
-        }
-        
-        // 设置内容
-        titleElement.textContent = title;
-        messageElement.textContent = message;
-        
-        // 显示弹窗
-        overlay.style.display = 'flex';
-        
-        // 清除之前的事件监听器
-        const newCancelBtn = cancelBtn.cloneNode(true);
-        const newOkBtn = okBtn.cloneNode(true);
-        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-        okBtn.parentNode.replaceChild(newOkBtn, okBtn);
-        
-        // 添加事件监听器
-        newOkBtn.onclick = () => {
-            overlay.style.display = 'none';
-            resolve(true);
-        };
-        
-        newCancelBtn.onclick = () => {
-            overlay.style.display = 'none';
-            resolve(false);
-        };
-        
-        // 点击遮罩层关闭
-        overlay.onclick = (e) => {
-            if (e.target === overlay) {
-                overlay.style.display = 'none';
-                resolve(false);
-            }
-        };
-    });
-}
+// showCustomConfirm 函数已迁移到 uiManager.js
 
 // Toast 提示功能
-function showToast(message, type = 'success', duration = 3000) {
-    const toastContainer = document.getElementById('toastContainer');
-    if (!toastContainer) return;
-    
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    
-    const iconMap = {
-        success: 'fas fa-check-circle',
-        error: 'fas fa-exclamation-circle',
-        warning: 'fas fa-exclamation-triangle',
-        info: 'fas fa-info-circle'
-    };
-    
-    toast.innerHTML = `
-        <i class="${iconMap[type] || iconMap.success}"></i>
-        <span>${message}</span>
-    `;
-    
-    toastContainer.appendChild(toast);
-    
-    // 触发显示动画
-    setTimeout(() => {
-        toast.classList.add('show');
-    }, 10);
-    
-    // 自动移除
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => {
-            if (toastContainer.contains(toast)) {
-                toastContainer.removeChild(toast);
-            }
-        }, 300);
-    }, duration);
-}
+// showToast 函数已迁移到 uiManager.js
 
 // 兼容性函数，保持原有的showCustomAlert接口
 function showCustomAlert(message) {
-    showToast(message, 'info');
+    ui.showToast(message, 'info');
     return Promise.resolve();
 }
 
-function showView(viewId) {
-    
-    try {
-        // 隐藏所有视图
-        document.querySelectorAll('.view').forEach(view => {
-            view.classList.remove('active');
-        });
-        
-        // 获取目标视图元素
-        const targetView = document.getElementById(viewId);
-        if (!targetView) {
-            console.error(`错误：找不到视图元素 ID: ${viewId}`);
-            return false;
-        }
-        
-        // 显示目标视图
-        targetView.classList.add('active');
-        currentView = viewId;
-        
-        // 强制重绘以确保样式生效
-        targetView.offsetHeight;
-        
-        // 智能检查视图显示状态（避免初始化时的误报）
-        setTimeout(() => {
-            // 确保元素仍然存在且是当前视图
-            if (!targetView.parentNode || currentView !== viewId) {
-                return;
-            }
-            
-            // 检查CSS是否已加载完成
-            const isStylesLoaded = document.readyState === 'complete' && 
-                                 getComputedStyle(document.body).fontFamily !== '';
-            
-            if (!isStylesLoaded) {
-    
-                return;
-            }
-            
-            const computedStyle = window.getComputedStyle(targetView);
-            const isVisible = computedStyle.display !== 'none' && 
-                            targetView.offsetWidth > 0 && 
-                            targetView.offsetHeight > 0;
-            
-    
-            
-            // 只有在确实有问题且不是初始化阶段时才显示警告和重试
-            if (!isVisible && targetView.classList.contains('active')) {
-                // 额外检查：确保不是在页面加载的前几秒内
-                const pageLoadTime = performance.now();
-                if (pageLoadTime > 3000) { // 页面加载3秒后才报警告
-                    console.warn(`警告：视图 ${viewId} 可能未正确显示，尝试重新应用样式`);
-                    // 重新应用active类
-                    targetView.classList.remove('active');
-                    // 使用requestAnimationFrame确保DOM更新
-                    requestAnimationFrame(() => {
-                        if (currentView === viewId) {
-                            targetView.classList.add('active');
-                        }
-                    });
-                } else {
-        
-                }
-            }
-        }, 300); // 增加延迟时间，确保CSS和动画完成
-        
+// showView 函数已迁移到 uiManager.js
 
-        return true;
-    } catch (err) {
-        console.error(`切换视图到 ${viewId} 时发生错误:`, err);
-        return false;
-    }
-}
-
-function formatDate(dateString) {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
-}
-
-function escapeHtml(text) {
-    if (typeof text !== 'string') return '';
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
-
-function unescapeHtml(text) {
-    if (typeof text !== 'string') return '';
-    return text.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#039;/g, "'");
-}
+// formatDate, escapeHtml, unescapeHtml 函数已迁移到 uiManager.js
 
 
 // --- 认证功能 ---
 
 // 清除所有数据的处理函数
 async function clearAllData() {
-    const isConfirmed = await showCustomConfirm('您确定要清除所有提示词数据吗？此操作无法撤销。');
+    const isConfirmed = await ui.showCustomConfirm('您确定要清除所有提示词数据吗？此操作无法撤销。');
     if (!isConfirmed) return;
     
     safeShowLoading();
@@ -411,16 +167,16 @@ async function clearAllData() {
         
         if (response.success) {
             allPrompts = [];
-            renderPrompts([]);
-            updateFilterButtons();
-            showToast('所有数据已清除', 'success');
+            ui.renderPrompts([]);
+            ui.updateFilterButtons();
+            ui.showToast('所有数据已清除', 'success');
         } else {
             console.error('清除数据失败:', response.error);
-            showToast('清除数据失败，请稍后再试', 'error');
+            ui.showToast('清除数据失败，请稍后再试', 'error');
         }
     } catch (error) {
         console.error('清除数据失败:', error);
-        showToast('清除数据失败，请稍后再试', 'error');
+        ui.showToast('清除数据失败，请稍后再试', 'error');
     }
     
     forceHideLoading();
@@ -428,6 +184,8 @@ async function clearAllData() {
 
 
 // --- 数据处理 (CRUD) ---
+
+
 
 async function loadUserPrompts(skipLoading = false) {
 
@@ -462,14 +220,14 @@ async function loadUserPrompts(skipLoading = false) {
         // 检查是否有加载错误（从后台服务返回的错误信息）
         if (response.loadError && response.loadError.hasError) {
             console.warn('检测到数据加载错误:', response.loadError.message);
-            showToast(response.loadError.message || '数据加载失败', 'warning');
+            ui.showToast(response.loadError.message || '数据加载失败', 'warning');
         }
         
         // 按创建时间降序排序，新建的提示词在最上方
         allPrompts = sortPromptsByCreatedTime(data);
 
-        renderPrompts(allPrompts);
-        updateFilterButtons();
+        ui.renderPrompts(allPrompts);
+        ui.updateFilterButtons();
 
         
     } catch (err) {
@@ -477,9 +235,9 @@ async function loadUserPrompts(skipLoading = false) {
         console.error('错误详情:', err.message, err.stack);
         // 即使出错，也尝试显示空列表
         allPrompts = [];
-        renderPrompts([]);
-        updateFilterButtons();
-        showToast('加载数据失败，请刷新重试', 'error');
+        ui.renderPrompts([]);
+        ui.updateFilterButtons();
+        ui.showToast('加载数据失败，请刷新重试', 'error');
     } finally {
         if (!skipLoading) forceHideLoading();
     }
@@ -487,296 +245,21 @@ async function loadUserPrompts(skipLoading = false) {
 
 // createSamplePrompts函数已移除，默认提示词现在由background.js在安装时创建
 
-async function savePrompt() {
-    const id = promptIdInput.value;
-    const title = promptTitleInput.value.trim();
-    const content = promptContentInput.value.trim();
-    const category = promptCategoryInput.value.trim() || '未分类';
+// savePrompt 函数已迁移到 appController.js 的 app.handleSavePrompt()
 
-    if (!title || !content) {
-        showToast('标题和内容不能为空！', 'warning');
-        return;
-    }
-
-    // 检查内容长度（10000个字符限制）
-    if (content.length > 10000) {
-        showToast('提示词内容不能超过10000个字符！', 'warning');
-        return;
-    }
-
-    safeShowLoading();
-    
-    try {
-        const promptData = {
-            user_id: currentUser.id,
-            title,
-            content,
-            category
-        };
-        
-        let response;
-        if (id) {
-            // 更新现有提示词
-            response = await chrome.runtime.sendMessage({
-                type: 'UPDATE_PROMPT',
-                payload: {
-                    id: id,
-                    data: promptData
-                }
-            });
-            
-            if (response.success) {
-        
-                showToast('提示词更新成功', 'success');
-            } else {
-                throw new Error(response.error || '更新提示词失败');
-            }
-        } else {
-            // 添加新提示词
-            response = await chrome.runtime.sendMessage({
-                type: 'ADD_PROMPT',
-                payload: {
-                    ...promptData,
-                    is_deleted: false
-                }
-            });
-            
-            if (response.success) {
-    
-                showToast('提示词添加成功', 'success');
-            } else {
-                throw new Error(response.error || '添加提示词失败');
-            }
-        }
-        
-
-        
-        // 注意：不再手动调用loadUserPrompts()，依赖chrome.storage.onChanged自动刷新UI
-        showView('mainView');
-        
-    } catch (error) {
-        console.error('保存提示词失败:', error);
-        showToast('保存失败，请稍后再试', 'error');
-    }
-    
-    forceHideLoading();
-}
-
-async function deletePrompt(promptId) {
-    // 显示自定义确认弹窗
-    const isConfirmed = await showCustomConfirm('您确定要删除这个提示词吗？此操作无法撤销。');
-    if (!isConfirmed) return;
-
-    safeShowLoading();
-    
-    try {
-        // 使用消息通信删除提示词
-        const response = await chrome.runtime.sendMessage({
-            type: 'DELETE_PROMPT',
-            payload: promptId
-        });
-        
-        if (response.success) {
-    
-            showToast('删除成功', 'success');
-            
-            // 注意：不再手动调用loadUserPrompts()，依赖chrome.storage.onChanged自动刷新UI
-        } else {
-            throw new Error(response.error || '删除提示词失败');
-        }
-        
-    } catch (error) {
-        console.error('删除失败:', error);
-        showToast('删除失败，请稍后再试', 'error');
-    }
-    
-    forceHideLoading();
-}
+// deletePrompt 函数已迁移到 appController.js 的 app.handleDeletePrompt()
 
 // --- 渲染与 UI 更新 ---
 
-function renderPrompts(promptsToRender) {
+// renderPrompts 函数已迁移到 uiManager.js
 
-    try {
-        // 清空骨架屏占位符和所有内容
-        promptsContainer.innerHTML = '';
-    
-        if (promptsToRender.length === 0) {
-            promptsContainer.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #64748b;"><i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i><h3>空空如也</h3><p>点击上方按钮添加您的第一个提示词吧！</p></div>`;
-            return;
-        }
+// updateFilterButtons 函数已迁移到 uiManager.js
 
-    
-        promptsToRender.forEach((prompt, index) => {
-            try {
-                if (!prompt || !prompt.id) {
-                    console.error(`跳过无效提示词，索引: ${index}`, prompt);
-                    return;
-                }
-                
-                const card = document.createElement('div');
-                card.className = 'prompt-card fade-in';
-                card.dataset.id = prompt.id;
-                card.innerHTML = `
-                    <div class="prompt-header">
-                        <div class="prompt-title">${escapeHtml(prompt.title || '无标题')}</div>
-                        <div class="prompt-actions">
-                            <button class="action-btn edit-btn" data-id="${prompt.id}"><i class="fas fa-edit"></i></button>
-                            <button class="action-btn delete-btn" data-id="${prompt.id}"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                    ${prompt.category ? `<div class="prompt-category">${escapeHtml(prompt.category)}</div>` : ''}
-                    <div class="prompt-content">${escapeHtml(prompt.content || '')}</div>
-                    <div class="prompt-footer">
-                        <div>${formatDate(prompt.created_at)}</div>
-                        <button class="copy-btn" data-content="${escapeHtml(prompt.content || '')}"><i class="fas fa-copy"></i> 复制</button>
-                    </div>
-                `;
-                promptsContainer.appendChild(card);
-            } catch (cardErr) {
-                console.error(`渲染提示词卡片错误，索引: ${index}`, cardErr);
-            }
-        });
-        
-    
-        addCardEventListeners();
-    
-    } catch (err) {
-        console.error('渲染提示词时发生错误:', err);
-        console.error('错误详情:', err.message, err.stack);
-    }
-}
+// updateCategoryOptions 函数已迁移到 uiManager.js
 
-function updateFilterButtons() {
-    const categories = ['全部', ...new Set(allPrompts.map(p => p.category).filter(Boolean))];
-    filterContainer.innerHTML = '';
-    categories.forEach(cat => {
-        const btn = document.createElement('button');
-        btn.className = 'filter-btn';
-        if (cat === '全部') btn.classList.add('active');
-        btn.textContent = cat;
-        btn.addEventListener('click', () => handleFilter(cat));
-        filterContainer.appendChild(btn);
-    });
-    
-    // 更新分类下拉选项
-    updateCategoryOptions();
-}
+// setupCategoryInput 函数已迁移到 uiManager.js
 
-function updateCategoryOptions() {
-    const existingCategories = [...new Set(allPrompts.map(p => p.category).filter(Boolean))];
-    promptCategorySelect.innerHTML = '<option value="">选择分类</option>';
-    existingCategories.forEach(category => {
-        const option = document.createElement('option');
-        option.value = category;
-        option.textContent = category;
-        promptCategorySelect.appendChild(option);
-    });
-}
-
-function setupCategoryInput() {
-    // 创建分类建议容器
-    const suggestionContainer = document.createElement('div');
-    suggestionContainer.style.cssText = `
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: var(--card-light);
-        border: 1px solid var(--border-light);
-        border-radius: 8px;
-        max-height: 150px;
-        overflow-y: auto;
-        z-index: 1000;
-        display: none;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    `;
-    
-    // 设置分类输入框的父容器为相对定位
-    promptCategoryInput.parentElement.style.position = 'relative';
-    promptCategoryInput.parentElement.appendChild(suggestionContainer);
-    
-    // 输入框获得焦点时显示建议
-    promptCategoryInput.addEventListener('focus', () => {
-        updateCategorySuggestions();
-    });
-    
-    // 输入框输入时更新建议
-    promptCategoryInput.addEventListener('input', () => {
-        updateCategorySuggestions();
-    });
-    
-    // 点击其他地方时隐藏建议
-    document.addEventListener('click', (e) => {
-        if (!promptCategoryInput.contains(e.target) && !suggestionContainer.contains(e.target)) {
-            suggestionContainer.style.display = 'none';
-        }
-    });
-    
-    function updateCategorySuggestions() {
-        const existingCategories = [...new Set(allPrompts.map(p => p.category).filter(Boolean))];
-        const inputValue = promptCategoryInput.value.toLowerCase();
-        
-        // 过滤匹配的分类
-        const filteredCategories = existingCategories.filter(cat => 
-            cat.toLowerCase().includes(inputValue)
-        );
-        
-        if (filteredCategories.length > 0) {
-            suggestionContainer.innerHTML = '';
-            filteredCategories.forEach(category => {
-                const item = document.createElement('div');
-                item.style.cssText = `
-                    padding: 8px 12px;
-                    cursor: pointer;
-                    border-bottom: 1px solid var(--border-light);
-                    color: var(--text-light);
-                    background-color: var(--background-light);
-                `;
-                item.textContent = category;
-                
-                // 暗色模式样式
-                if (document.body.classList.contains('dark-mode')) {
-                    item.style.color = 'var(--text-dark)';
-                    item.style.backgroundColor = 'var(--background-dark)';
-                    item.style.borderColor = 'var(--border-dark)';
-                }
-                
-                item.addEventListener('mouseenter', () => {
-                    item.style.backgroundColor = 'var(--primary-color)';
-                    item.style.color = 'white';
-                });
-                
-                item.addEventListener('mouseleave', () => {
-                    item.style.backgroundColor = document.body.classList.contains('dark-mode') ? 'var(--background-dark)' : 'var(--background-light)';
-                    item.style.color = document.body.classList.contains('dark-mode') ? 'var(--text-dark)' : 'var(--text-light)';
-                });
-                
-                item.addEventListener('click', () => {
-                    promptCategoryInput.value = category;
-                    suggestionContainer.style.display = 'none';
-                });
-                
-                suggestionContainer.appendChild(item);
-            });
-            suggestionContainer.style.display = 'block';
-        } else {
-            suggestionContainer.style.display = 'none';
-        }
-    }
-}
-
-function handleFilter(category) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-
-    if (category === '全部') {
-        renderPrompts(allPrompts);
-    } else {
-        const filtered = allPrompts.filter(p => p.category === category);
-        renderPrompts(filtered);
-    }
-}
+// handleFilter 函数已迁移到 uiManager.js
 
 function handleSearch(term) {
     const lowerCaseTerm = term.toLowerCase();
@@ -785,166 +268,15 @@ function handleSearch(term) {
         p.content.toLowerCase().includes(lowerCaseTerm) ||
         (p.category && p.category.toLowerCase().includes(lowerCaseTerm))
     );
-    renderPrompts(filtered);
+    ui.renderPrompts(filtered);
 }
-    // 重置表单为新建状态
-    function resetForm() {
-        promptIdInput.value = '';
-        promptTitleInput.value = '';
-        promptContentInput.value = '';
-        promptCategoryInput.value = '';
-        promptCategorySelect.value = '';
-        promptCategorySelect.style.display = 'none';
-        promptCategoryInput.style.display = 'block';
-        formTitle.textContent = '添加新提示词';
-        // 重置textarea高度
-        autoResizeTextarea(promptContentInput);
-    }
-    // 重置表单为新建状态
-    function resetForm() {
-        promptIdInput.value = '';
-        promptTitleInput.value = '';
-        promptContentInput.value = '';
-        promptCategoryInput.value = '';
-        promptCategorySelect.value = '';
-        promptCategorySelect.style.display = 'none';
-        promptCategoryInput.style.display = 'block';
-        formTitle.textContent = '添加新提示词';
-        // 重置textarea高度
-        autoResizeTextarea(promptContentInput);
-    }
+// resetForm 函数已迁移到 appController.js 中的 app.resetForm()
 // --- 预览功能 ---
-
-function showPreview(prompt) {
-    const overlay = document.createElement('div');
-    overlay.className = 'preview-overlay';
-    
-    const modal = document.createElement('div');
-    modal.className = 'preview-modal';
-    
-    modal.innerHTML = `
-        <div class="preview-header">
-            <div class="preview-title-section">
-                <h2 class="preview-title">${escapeHtml(prompt.title || '无标题')}</h2>
-                ${prompt.category ? `<div class="preview-category">${escapeHtml(prompt.category)}</div>` : ''}
-            </div>
-            <button class="preview-close">&times;</button>
-        </div>
-        <div class="preview-body">
-            <div class="preview-content">${escapeHtml(prompt.content || '')}</div>
-        </div>
-        <div class="preview-footer">
-            <div class="preview-date">${formatDate(prompt.created_at)}</div>
-            <button class="preview-copy-btn"><i class="fas fa-copy"></i> 复制</button>
-        </div>
-    `;
-    
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-    
-    // 关闭按钮事件
-    modal.querySelector('.preview-close').onclick = () => {
-        // document.body.removeChild(overlay);
-        overlay && overlay.remove()
-    };
-    
-    // 点击遮罩关闭
-    overlay.onclick = (e) => {
-        if (e.target === overlay) {
-            // document.body.removeChild(overlay);
-            overlay && overlay.remove()
-        }
-    };
-    
-    // 复制按钮事件
-    const copyBtn = modal.querySelector('.preview-copy-btn');
-    copyBtn.onclick = () => {
-        navigator.clipboard.writeText(prompt.content || '').then(() => {
-            const originalText = copyBtn.innerHTML;
-            copyBtn.innerHTML = '<i class="fas fa-check"></i> 已复制!';
-            copyBtn.style.background = 'var(--success)';
-            setTimeout(() => {
-                copyBtn.innerHTML = originalText;
-                copyBtn.style.background = '';
-            }, 1500);
-        });
-    };
-    
-    // ESC键关闭
-    const handleEsc = (e) => {
-        if (e.key === 'Escape') {
-            // document.body.removeChild(overlay);
-            overlay && overlay.remove()
-            document.removeEventListener('keydown', handleEsc);
-        }
-    };
-    document.addEventListener('keydown', handleEsc);
-}
+// showPreview 函数已迁移到 uiManager.js
 
 // --- 事件监听器设置 ---
 
-function addCardEventListeners() {
-    // 添加卡片点击预览事件
-    document.querySelectorAll('.prompt-card').forEach(card => {
-        card.addEventListener('click', (e) => {
-            // 如果点击的是按钮，不触发预览
-            if (e.target.closest('.copy-btn, .edit-btn, .delete-btn')) {
-                return;
-            }
-            
-            const id = card.dataset.id;
-            const prompt = allPrompts.find(p => p.id == id);
-            if (prompt) {
-                showPreview(prompt);
-            }
-        });
-    });
-
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const id = e.currentTarget.dataset.id;
-            const prompt = allPrompts.find(p => p.id == id);
-            if (prompt) {
-                promptIdInput.value = prompt.id;
-                promptTitleInput.value = prompt.title;
-                promptContentInput.value = prompt.content;
-                promptCategoryInput.value = prompt.category || '';
-                promptCategorySelect.value = prompt.category || '';
-                promptCategorySelect.style.display = 'none';
-                promptCategoryInput.style.display = 'block';
-                formTitle.textContent = '编辑提示词';
-                showView('formView');
-                // 调整textarea高度以适应内容
-                autoResizeTextarea(promptContentInput);
-            }
-        });
-    });
-
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const id = e.currentTarget.dataset.id;
-            deletePrompt(id);
-        });
-    });
-
-    document.querySelectorAll('.copy-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const content = e.currentTarget.dataset.content;
-            navigator.clipboard.writeText(unescapeHtml(content)).then(() => {
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> 已复制!';
-                btn.style.background = 'var(--success)';
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.style.background = '';
-                }, 1500);
-            });
-        });
-    });
-}
+// addCardEventListeners 函数已迁移到 uiManager.js
 
 function setupEventListeners() {
     // 监听数据变更事件，实现实时界面刷新
@@ -957,7 +289,7 @@ function setupEventListeners() {
             const selectedTheme = themeOption.dataset.theme;
             if (selectedTheme !== themeMode) {
                 themeMode = selectedTheme;
-                applyTheme(themeMode);
+                ui.applyTheme(themeMode);
                 
                 // 通过消息通信保存主题模式
                 chrome.runtime.sendMessage({ 
@@ -977,20 +309,19 @@ function setupEventListeners() {
     // 监听系统主题变化
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
         if (themeMode === 'auto') {
-            applyTheme('auto');
+            ui.applyTheme('auto');
         }
     });
     
 
 
-    addPromptBtn.addEventListener('click', () => {
-        resetForm();
-        showView('formView');
+    ui.addPromptBtn.addEventListener('click', () => {
+        app.handleAddPrompt();
     });
 
     // 搜索延迟处理
     let searchTimeout = null;
-    searchInput.addEventListener('input', (e) => {
+    ui.searchInput.addEventListener('input', (e) => {
         const searchTerm = e.target.value.trim();
         
         // 清除之前的延迟
@@ -1015,15 +346,17 @@ function setupEventListeners() {
         }, 300);
     });
     
-    backToListBtn.addEventListener('click', () => showView('mainView'));
-    cancelFormBtn.addEventListener('click', () => showView('mainView'));
-    savePromptBtn.addEventListener('click', savePrompt);
+    ui.backToListBtn.addEventListener('click', () => ui.showView('mainView'));
+    ui.cancelFormBtn.addEventListener('click', () => ui.showView('mainView'));
+    ui.savePromptBtn.addEventListener('click', () => {
+        app.handleSavePrompt();
+    });
     
     // 字符计数功能
     const characterCountElement = document.getElementById('characterCount');
     
-    promptContentInput.addEventListener('input', () => {
-        const currentLength = promptContentInput.value.length;
+    ui.promptContentInput.addEventListener('input', () => {
+        const currentLength = ui.promptContentInput.value.length;
         characterCountElement.textContent = `${currentLength} / 10000`;
         
         // 当接近限制时改变颜色
@@ -1036,24 +369,24 @@ function setupEventListeners() {
         }
         
         // 自动调整textarea高度
-        autoResizeTextarea(promptContentInput);
+        ui.autoResizeTextarea(ui.promptContentInput);
     });
     
     // 页面加载时也调整一次高度（用于编辑现有提示词的情况）
-    autoResizeTextarea(promptContentInput);
+    ui.autoResizeTextarea(ui.promptContentInput);
     
     // 初始化字符计数显示
     const updateCharacterCount = () => {
-        const currentLength = promptContentInput.value.length;
+        const currentLength = ui.promptContentInput.value.length;
         if (characterCountElement) {
             characterCountElement.textContent = `${currentLength} / 10000`;
         }
     };
     
     // 在表单显示时更新字符计数
-     const originalShowView = window.showView;
-     window.showView = function(viewName) {
-         originalShowView(viewName);
+     const originalShowView = ui.showView;
+     ui.showView = function(viewName) {
+         originalShowView.call(ui, viewName);
          if (viewName === 'formView') {
              setTimeout(updateCharacterCount, 0);
          }
@@ -1133,8 +466,10 @@ function setupEventListeners() {
             
             // 监听提示词数据的变化
             if (changes.prompts) {
-    
-                loadUserPrompts();
+                const newPrompts = changes.prompts.newValue || [];
+                allPrompts = sortPromptsByCreatedTime(newPrompts);
+                ui.renderPrompts(allPrompts);
+                ui.updateFilterButtons();
             }
         });
     }
@@ -1150,13 +485,13 @@ async function handleDownloadTemplate() {
         safeShowLoading();
         const result = await window.JSONUtils.downloadTemplate();
         if (result.success) {
-            showToast('JSON模板下载成功！', 'success');
+            ui.showToast('JSON模板下载成功！', 'success');
         } else {
-            showToast(result.message, 'error');
+            ui.showToast(result.message, 'error');
         }
     } catch (error) {
         console.error('下载模板失败:', error);
-        showToast('下载模板失败，请稍后再试', 'error');
+        ui.showToast('下载模板失败，请稍后再试', 'error');
     } finally {
         forceHideLoading();
     }
@@ -1166,20 +501,20 @@ async function handleDownloadTemplate() {
 async function handleExport() {
     try {
         if (allPrompts.length === 0) {
-            showToast('没有可导出的提示词', 'warning');
+            ui.showToast('没有可导出的提示词', 'warning');
             return;
         }
         
         safeShowLoading();
         const result = await window.JSONUtils.exportToJSON(allPrompts);
         if (result.success) {
-            showToast(result.message, 'success');
+            ui.showToast(result.message, 'success');
         } else {
-            showToast(result.message, 'error');
+            ui.showToast(result.message, 'error');
         }
     } catch (error) {
         console.error('导出失败:', error);
-        showToast('导出失败，请稍后再试', 'error');
+        ui.showToast('导出失败，请稍后再试', 'error');
     } finally {
         forceHideLoading();
     }
@@ -1199,7 +534,7 @@ async function handleFileImport(event) {
         // 检查文件类型
         const fileName = file.name.toLowerCase();
         if (!fileName.endsWith('.json')) {
-            showToast('请选择JSON文件（.json格式）', 'warning');
+            ui.showToast('请选择JSON文件（.json格式）', 'warning');
             return;
         }
         
@@ -1207,16 +542,16 @@ async function handleFileImport(event) {
         const importResult = await window.JSONUtils.importFromJSON(file);
         
         if (!importResult.success) {
-            showToast(importResult.message || '导入失败', 'error');
+            ui.showToast(importResult.message || '导入失败', 'error');
             return;
         }
         
         const { prompts: importedPrompts, errors, total, imported } = importResult;
         
         if (imported === 0) {
-            showToast(`导入完成：共 ${total} 条记录，全部导入失败。请检查JSON格式是否正确。`, 'error');
+            ui.showToast(`导入完成：共 ${total} 条记录，全部导入失败。请检查JSON格式是否正确。`, 'error');
             if (errors && errors.length > 0) {
-                const downloadFailed = await showCustomConfirm('是否下载失败记录？');
+                const downloadFailed = await ui.showCustomConfirm('是否下载失败记录？');
                 if (downloadFailed) {
                     await window.JSONUtils.exportFailedRecords(errors);
                 }
@@ -1245,16 +580,16 @@ async function handleFileImport(event) {
                  message += `\n失败 ${errors.length} 条`;
              }
              
-             showToast(message, addedCount > 0 || updatedCount > 0 ? 'success' : 'warning');
+             ui.showToast(message, addedCount > 0 || updatedCount > 0 ? 'success' : 'warning');
              // 注意：不再手动调用loadUserPrompts()，依赖chrome.storage.onChanged自动刷新UI
          } else {
              console.error('导入失败:', response.error);
-             showToast('导入失败：' + response.error, 'error');
+             ui.showToast('导入失败：' + response.error, 'error');
          }
         
         // 如果有失败记录，询问是否下载
         if (errors && errors.length > 0) {
-            const downloadFailed = await showCustomConfirm('是否下载失败记录？');
+            const downloadFailed = await ui.showCustomConfirm('是否下载失败记录？');
             if (downloadFailed) {
                 await window.JSONUtils.exportFailedRecords(errors);
             }
@@ -1262,7 +597,7 @@ async function handleFileImport(event) {
         
     } catch (error) {
         console.error('导入失败:', error);
-        showToast('导入失败：' + error.message, 'error');
+        ui.showToast('导入失败：' + error.message, 'error');
     } finally {
         forceHideLoading();
     }
@@ -1290,7 +625,7 @@ function safeShowLoading() {
         forceHideLoading();
         // 如果没有用户设置，显示主界面
         if (!currentUser) {
-            showView('mainView');
+            ui.showView('mainView');
         }
     }, 10000);
 }
@@ -1312,7 +647,7 @@ async function initializeApp() {
                                  getComputedStyle(document.body).fontFamily !== '';
             
             if (isStylesLoaded) {
-                showView('mainView');
+                ui.showView('mainView');
             } else {
         
                 // 监听load事件或使用短延迟重试
@@ -1337,17 +672,17 @@ async function initializeApp() {
             // 直接从dataService获取主题模式，避免不必要的消息通信
             const dataService = new DataService();
             themeMode = await dataService.getThemeMode();
-            applyTheme(themeMode);
+            ui.applyTheme(themeMode);
     
         } catch (error) {
             console.error('获取主题模式时发生错误:', error);
             themeMode = 'light'; // 默认主题
-            applyTheme(themeMode);
+            ui.applyTheme(themeMode);
         }
 
         // 设置事件监听器
         setupEventListeners();
-        setupCategoryInput();
+        ui.setupCategoryInput();
         
         // 预加载登录资源（异步执行，不阻塞主流程）
         try {
@@ -1390,8 +725,8 @@ async function initializeApp() {
             // 即使查询失败也继续正常流程，保持本地模式
         }
         
-        // 使用数据服务获取数据后再渲染
-        await loadUserPrompts(true); // 跳过loading显示，因为有骨架屏
+        // 使用应用控制器获取数据后再渲染
+        await app.initializeApp(); // 调用重构后的初始化方法
         
         // 初始化版本日志功能
         initializeVersionLog();
@@ -1399,11 +734,10 @@ async function initializeApp() {
     } catch (error) {
         console.error('初始化应用时发生错误:', error);
         // 即使出错也尝试进入主界面
-        showView('mainView');
+        ui.showView('mainView');
         // 清空骨架屏，显示错误状态
-        const promptsContainer = document.getElementById('promptsContainer');
-        if (promptsContainer) {
-            promptsContainer.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #64748b;"><i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; color: #ef4444;"></i><h3>加载失败</h3><p>请刷新页面重试</p></div>`;
+        if (ui.promptsContainer) {
+            ui.promptsContainer.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #64748b;"><i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; color: #ef4444;"></i><h3>加载失败</h3><p>请刷新页面重试</p></div>`;
         }
     }
 }
@@ -1490,7 +824,7 @@ async function handleGoogleSignIn() {
                 setLoginButtonLoading(false);
             } else {
                 console.error('登录命令发送失败或后台处理失败:', response?.error);
-                showToast('登录启动失败，请重试', 'error');
+                ui.showToast('登录启动失败，请重试', 'error');
                 // 登录失败时恢复按钮状态
                 setLoginButtonLoading(false);
             }
@@ -1511,7 +845,7 @@ async function handleLogout() {
     chrome.runtime.sendMessage({ type: 'LOGOUT' }, (response) => {
         if (chrome.runtime.lastError || !response.success) {
             console.error('退出命令发送失败或后台处理失败:', response?.error);
-            showToast('退出启动失败，请重试', 'error');
+            ui.showToast('退出启动失败，请重试', 'error');
         } else {
         
             // 移除"正在退出中"提示，避免与"已退出登录"Toast重复
@@ -1621,7 +955,7 @@ async function handleManualSync() {
     
     // 检查用户是否已登录
     if (!currentUser || currentUser.id === 'local-user') {
-        showToast('请先登录以使用云端同步功能', 'warning');
+        ui.showToast('请先登录以使用云端同步功能', 'warning');
         return;
     }
     
@@ -1647,15 +981,15 @@ async function handleManualSync() {
     
             // 更新同步时间
             updateSyncTime();
-            showToast('同步成功！', 'success');
+            ui.showToast('同步成功！', 'success');
         } else {
             console.error('手动同步失败:', response?.error);
-            showToast('同步失败: ' + (response?.error || '未知错误'), 'error');
+            ui.showToast('同步失败: ' + (response?.error || '未知错误'), 'error');
         }
         
     } catch (error) {
         console.error('手动同步失败:', error);
-        showToast('同步失败，请重试', 'error');
+        ui.showToast('同步失败，请重试', 'error');
     } finally {
         // 移除旋转动画并恢复按钮状态
         manualSyncBtn.classList.remove('syncing');
@@ -1747,14 +1081,14 @@ function updateSyncStatus(status, lastSyncTime) {
             } else {
                 updateSyncTime();
             }
-            showToast('云端同步完成', 'success');
+            ui.showToast('云端同步完成', 'success');
             break;
             
         case 'error':
             if (syncTimeElement) {
                 syncTimeElement.textContent = '同步失败';
             }
-            showToast('同步失败，请稍后重试', 'error');
+            ui.showToast('同步失败，请稍后重试', 'error');
             break;
             
         case 'idle':
@@ -1775,7 +1109,7 @@ function updateSyncUI(status, message) {
     // 对于新的UI，只需要更新同步时间
     if (status === 'success' && message && message.includes('同步完成')) {
         updateSyncTime();
-        showToast('云端同步完成，数据已更新', 'success');
+        ui.showToast('云端同步完成，数据已更新', 'success');
     }
 }
 
@@ -1785,61 +1119,44 @@ function updateSyncUI(status, message) {
  // 初始化逻辑已在 initializeApp() 函数内部的 showMainViewWhenReady() 中处理
 
 // 全局消息监听器 - 接收来自 background.js 的 UI 更新指令
+// 【新代码】请复制这段完整的代码来替换
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // 处理来自后台的消息
     switch (message.type) {
         case 'UPDATE_AUTH_UI':
-    
+            console.log('Sidepanel: 收到 UPDATE_AUTH_UI 消息', message.session);
             updateUIForAuthState(message.session);
-            
-            // 恢复登录按钮状态（无论登录成功还是退出登录）
             setLoginButtonLoading(false);
-            
-            // 根据认证状态显示相应的提示
             if (message.session) {
-                showToast('登录成功！', 'success');
-                // 关闭下拉菜单
+                ui.showToast('登录成功！', 'success');
                 const userDropdown = document.getElementById('userDropdown');
                 if (userDropdown) {
                     userDropdown.classList.remove('show');
                 }
             } else {
-                showToast('已退出登录', 'success');
+                ui.showToast('已退出登录', 'success');
             }
             break;
             
         case 'LOGIN_PROGRESS':
-
-            // 更新登录按钮的进度文本
             setLoginButtonLoading(true, message.message);
             break;
             
         case 'LOGIN_ERROR':
-
-            showToast('登录失败: ' + message.error, 'error');
-            // 登录错误时恢复按钮状态
+            ui.showToast('登录失败: ' + message.error, 'error');
             setLoginButtonLoading(false);
             break;
             
         case 'LOGIN_CANCELLED':
-
-            // 用户取消登录时静默恢复按钮状态，不显示错误提示
             setLoginButtonLoading(false);
             break;
             
         case 'LOGOUT_ERROR':
-
-            showToast('退出失败: ' + message.error, 'error');
-            break;
-            
-        case 'GET_THEME_MODE':
-        case 'getPrompts':
-            // 静默忽略主题模式查询和获取提示词消息
+            ui.showToast('退出失败: ' + message.error, 'error');
             break;
             
         case 'DATA_CHANGED':
-
-            // 异步刷新界面，避免阻塞
             setTimeout(() => {
                 loadUserPrompts(true).catch(error => {
                     console.error('数据变更后刷新界面失败:', error);
@@ -1848,113 +1165,68 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             break;
             
         case 'SYNC_STATUS_CHANGED':
-
             if (message.operation === 'SYNC_COMPLETED') {
-                // 同步完成，更新同步时间显示
                 updateSyncTime();
             }
             break;
             
-        case 'SYNC_PROGRESS':
-
-            break;
-            
         case 'ADD_FROM_CONTEXT_MENU':
             if (message.data?.content) {
-                
-                // 设置标志，防止checkUserSession的延迟检查干扰
                 isProcessingContextMenu = true;
-                
-                // 等待应用完全初始化后再处理
                 const waitForInitialization = async () => {
-                    // 检查必要的元素是否存在
-                    if (currentUser && addPromptBtn && promptContentInput) {
-                        
-                        // 检查是否正在编辑现有提示词
-                        const isEditing = promptIdInput.value && promptIdInput.value.trim() !== '';
-                        
-                        if (currentView !== 'formView') {
-                            // 不在表单视图，直接切换并填充
-                            showView('formView');
-                            // 使用 requestAnimationFrame 确保 DOM 更新后再填充
+                    if (currentUser && ui.addPromptBtn && ui.promptContentInput) {
+                        const isEditing = ui.promptIdInput.value && ui.promptIdInput.value.trim() !== '';
+                        if (ui.currentView !== 'formView') {
+                            ui.showView('formView');
                             requestAnimationFrame(() => {
-                                // 确保是新建状态
-                                resetForm();
-                                promptContentInput.value = formatContextMenuText(message.data.content);
-                                promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
-                                // 切换到添加界面并填充内容
-                                
-                                // 处理完成后重置标志
-                                setTimeout(() => {
-                                    isProcessingContextMenu = false;
-                                }, 1000);
-                                
+                                app.resetForm();
+                                ui.promptContentInput.value = formatContextMenuText(message.data.content);
+                                ui.promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                setTimeout(() => { isProcessingContextMenu = false; }, 1000);
                                 sendResponse({ status: "success", message: "Content received and form populated via rAF after view switch." });
                             });
                         } else if (isEditing) {
-                            // 正在编辑状态，询问用户是否要放弃当前编辑
-                            const userConfirm = await showCustomConfirm('💡 是否要放弃当前编辑并创建新的提示词？');
+                            const userConfirm = await ui.showCustomConfirm('💡 是否要放弃当前编辑并创建新的提示词？');
                             if (userConfirm) {
                                 requestAnimationFrame(() => {
-                                    // 重置表单为新建状态
-                                    resetForm();
-                                    promptContentInput.value = formatContextMenuText(message.data.content);
-                                    promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
-                                    // 用户确认放弃编辑，创建新提示词
-                                    
-                                    setTimeout(() => {
-                                        isProcessingContextMenu = false;
-                                    }, 1000);
-                                    
+                                    app.resetForm();
+                                    ui.promptContentInput.value = formatContextMenuText(message.data.content);
+                                    ui.promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                    setTimeout(() => { isProcessingContextMenu = false; }, 1000);
                                     sendResponse({ status: "success", message: "User confirmed to abandon edit and create new prompt." });
                                 });
                             } else {
-                                // 用户取消了右键添加操作
-                                setTimeout(() => {
-                                    isProcessingContextMenu = false;
-                                }, 100);
+                                setTimeout(() => { isProcessingContextMenu = false; }, 100);
                                 sendResponse({ status: "cancelled", message: "User cancelled the operation." });
                             }
                         } else {
-                            // 在表单视图但不是编辑状态，直接填充
                             requestAnimationFrame(() => {
-                                // 确保是新建状态
                                 resetForm();
-                                promptContentInput.value = formatContextMenuText(message.data.content);
-                                promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
-                                // 已在添加界面，填充内容
-                                
-                                setTimeout(() => {
-                                    isProcessingContextMenu = false;
-                                }, 1000);
-                                
+                                ui.promptContentInput.value = formatContextMenuText(message.data.content);
+                                ui.promptContentInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                setTimeout(() => { isProcessingContextMenu = false; }, 1000);
                                 sendResponse({ status: "success", message: "Content received and form populated via rAF in existing view." });
                             });
                         }
                     } else {
-                        // 应用尚未完全初始化，继续等待
-                        // 如果应用还未初始化完成，继续等待
                         setTimeout(waitForInitialization, 100);
                     }
                 };
-                
-                // 开始等待初始化完成
                 waitForInitialization();
-                return true; // 保持消息通道开放
+                return true; // 保持消息通道开放以进行异步响应
             }
             break;
             
+        // 对于所有其他类型的消息，我们都静默处理，不做任何响应。
+        // 这样就不会干扰 background.js 的工作了。
         default:
-            // 检查是否是action类型的消息（没有type字段但有action字段）
-            if (message.action) {
-                // 忽略action类型的消息
-            } else if (message.type) {
-    
-            }
+            // 不做任何事情
+            break;
     }
-    
-    // 发送响应确认消息已处理
-    sendResponse({ success: true });
+
+    // 默认返回 false 或 undefined，表示我们是同步处理的，并且已经处理完毕。
+    // 这就把响应的机会留给了其他脚本。
+    return false;
 });
 
 // 应用启动入口 - 确保只初始化一次

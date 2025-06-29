@@ -374,7 +374,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
             if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
                 // 从background script获取内存中的提示词数据
                 chrome.runtime.sendMessage({ action: 'getPrompts' }, (response) => {
-        
+                    console.log('PromptCraft: Received response from background:', response);
 
                     if (chrome.runtime.lastError) {
                         const errorMsg = chrome.runtime.lastError.message || chrome.runtime.lastError.toString();
@@ -394,15 +394,18 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                         state.prompts = getEmptyPrompts();
         
                     } else if (response && response.prompts && response.prompts.length > 0) {
+                        console.log('PromptCraft: Setting prompts:', response.prompts.length, 'items');
                         state.prompts = response.prompts;
 
 
                     } else {
                         // 如果内存中没有数据，显示空列表
+                        console.log('PromptCraft: No prompts data, using empty array');
                         state.prompts = getEmptyPrompts();
 
 
                     }
+                    console.log('PromptCraft: Final state.prompts length:', state.prompts.length);
                     updateUIAfterPromptsLoad();
                     isLoading = false; // 重置加载状态
                 });
@@ -459,12 +462,11 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
             chrome.storage.onChanged.addListener((changes, namespace) => {
                 if (namespace === 'local' && changes.prompts) {
-                // 直接更新state中的prompts数据，并过滤掉已软删除的项
-                 state.prompts = (changes.prompts.newValue || []).filter(p => !p.is_deleted);
-                 // 如果当前有显示的UI，立即更新
-                updateUIAfterPromptsLoad();
-    }
-});
+                    // 当数据变化时，重新从background获取最新数据，确保数据一致性
+                    console.log('PromptCraft: Detected prompts data change, reloading...');
+                    loadPrompts();
+                }
+            });
         
         } else {
             console.warn('PromptCraft: Chrome storage API not available for change listener');
@@ -1317,6 +1319,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
     // 应用所有筛选条件
     function applyFilters() {
+        console.log('PromptCraft: applyFilters called, state.prompts length:', state.prompts.length);
         let filtered = [...state.prompts];
 
         // 按分类筛选
@@ -1339,6 +1342,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
         state.filteredPrompts = filtered;
         state.selectedIndex = 0;
+        console.log('PromptCraft: applyFilters result, filteredPrompts length:', state.filteredPrompts.length);
         updatePromptList();
     }
 
@@ -1350,6 +1354,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
     // 更新提示词列表
     function updatePromptList() {
+        console.log('PromptCraft: updatePromptList called, filteredPrompts length:', state.filteredPrompts.length);
         if (!state.uiContainer) return;
 
         const listContainer = state.uiContainer.querySelector('.promptcraft-prompt-list');
