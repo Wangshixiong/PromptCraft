@@ -459,17 +459,12 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
             chrome.storage.onChanged.addListener((changes, namespace) => {
                 if (namespace === 'local' && changes.prompts) {
-        
-        
-        
-                    
-                    // 直接更新state中的prompts数据
-                    state.prompts = changes.prompts.newValue || [];
-                    
-                    // 如果当前有显示的UI，立即更新
-                    updateUIAfterPromptsLoad();
-                }
-            });
+                // 直接更新state中的prompts数据，并过滤掉已软删除的项
+                 state.prompts = (changes.prompts.newValue || []).filter(p => !p.is_deleted);
+                 // 如果当前有显示的UI，立即更新
+                updateUIAfterPromptsLoad();
+    }
+});
         
         } else {
             console.warn('PromptCraft: Chrome storage API not available for change listener');
