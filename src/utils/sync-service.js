@@ -322,6 +322,41 @@ class SyncService {
                 throw new Error('用户未登录，无法执行同步');
             }
             
+            // 1.1 检查会话状态
+            const { session } = await this.authService.getSession();
+            if (!session) {
+                throw new Error('用户会话已过期，请重新登录');
+            }
+            
+            console.log('同步开始 - 用户信息:', {
+                userId: currentUser.id,
+                email: currentUser.email,
+                sessionValid: !!session,
+                sessionExpiry: session.expires_at
+            });
+            
+            // 1.2 验证Supabase客户端状态
+            if (!this.supabaseClient) {
+                throw new Error('Supabase客户端未初始化');
+            }
+            
+            // 1.3 测试网络连接
+            try {
+                const testQuery = await this.supabaseClient
+                    .from('prompts')
+                    .select('id')
+                    .limit(1);
+                    
+                if (testQuery.error) {
+                    console.error('网络连接测试失败:', testQuery.error);
+                    throw new Error(`网络连接失败: ${testQuery.error.message}`);
+                }
+                console.log('网络连接测试成功');
+            } catch (networkError) {
+                console.error('网络连接异常:', networkError);
+                throw new Error(`网络连接异常: ${networkError.message}`);
+            }
+            
             // 2. 获取本地和云端数据
             const [localPrompts, cloudPrompts] = await Promise.all([
                 this.dataService.getAllPromptsIncludingDeleted(),
@@ -367,11 +402,11 @@ class SyncService {
                 syncResults.deleted = deleteResult.count;
             }
             
-            // 5. 更新同步时间戳
-            await this._updateLastSyncTime();
-            
-
+            // 5. 更新同步状态为成功
             this._updateSyncStatus(SYNC_STATUS.SUCCESS, '同步完成');
+            
+            // 6. 只有在所有操作都成功后才更新同步时间戳
+            await this._updateLastSyncTime();
             
             return {
                 success: true,
@@ -381,6 +416,12 @@ class SyncService {
             
         } catch (error) {
             console.error('完整同步失败:', error);
+            console.error('错误详情:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+                cause: error.cause
+            });
             this._updateSyncStatus(SYNC_STATUS.ERROR);
             throw new Error(`同步失败: ${error.message}`);
         } finally {
@@ -558,6 +599,12 @@ class SyncService {
                 
                 if (error) {
                     console.error('批量上传失败:', error);
+                    console.error('Supabase错误详情:', {
+                        code: error.code,
+                        message: error.message,
+                        details: error.details,
+                        hint: error.hint
+                    });
                     throw new Error(`批量上传失败: ${error.message}`);
                 }
                 
@@ -592,6 +639,12 @@ class SyncService {
             
             if (error) {
                 console.error('获取云端数据失败:', error);
+                console.error('Supabase错误详情:', {
+                    code: error.code,
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint
+                });
                 throw new Error(`获取云端数据失败: ${error.message}`);
             }
             

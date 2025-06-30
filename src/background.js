@@ -454,6 +454,45 @@ chrome.runtime.onStartup.addListener(async () => {
       return true;
     }
     
+    // 处理GET_LAST_VIEWED_VERSION请求（获取最后查看的版本）
+    if (message.type === 'GET_LAST_VIEWED_VERSION') {
+      (async () => {
+        try {
+          const result = await chrome.storage.local.get(['lastViewedVersion']);
+          sendResponse({
+            success: true,
+            data: result.lastViewedVersion
+          });
+        } catch (error) {
+          console.error('PromptCraft: 处理GET_LAST_VIEWED_VERSION请求时发生错误:', error);
+          sendResponse({
+            success: false,
+            error: error.message
+          });
+        }
+      })();
+      return true;
+    }
+    
+    // 处理SET_LAST_VIEWED_VERSION请求（设置最后查看的版本）
+    if (message.type === 'SET_LAST_VIEWED_VERSION') {
+      (async () => {
+        try {
+          await chrome.storage.local.set({ lastViewedVersion: message.payload });
+          sendResponse({
+            success: true
+          });
+        } catch (error) {
+          console.error('PromptCraft: 处理SET_LAST_VIEWED_VERSION请求时发生错误:', error);
+          sendResponse({
+            success: false,
+            error: error.message
+          });
+        }
+      })();
+      return true;
+    }
+    
     // 处理IMPORT_PROMPTS请求（导入提示词）
     if (message.type === 'IMPORT_PROMPTS') {
   

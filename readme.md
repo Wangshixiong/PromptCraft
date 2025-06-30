@@ -183,37 +183,57 @@ PromptCraft/
 ├── 📄 manifest.json             # Chrome扩展配置文件 (Manifest V3)
 ├── 📦 package.json              # 项目依赖配置 (纯原生，无外部依赖)
 ├── 📖 README.md                 # 项目说明文档
+├── 📄 项目函数调用逻辑文件.md     # 项目数据流和函数调用关系文档
+├── 📁 .agent/                   # AI Agent 配置目录
+│   ├── rules/                   # 开发规则目录
+│   │   ├── bug_fix.md           # Bug修复规则
+│   │   ├── new_feature.md       # 新功能开发规则
+│   │   └── refactor.md          # 代码重构规则
+│   └── tasks/                   # 任务记录目录
 ├── 📁 .trae/                    # Trae AI 配置目录
 │   └── rules/
 │       └── project_rules.md     # 项目开发规范
 ├── 📁 docs/                     # 文档目录
-│   ├── TODO.md                  # 开发任务和规范
-│   ├── 云同步需求说明书.md       # 云同步功能需求文档
-│   └── *.md                     # 任务规划文档
+│   ├── 修复手动同步失败但时间更新Bug-bugfix-20241228-190000.md
+│   ├── 手动同步失败诊断指南-debug-20241228-191500.md
+│   ├── JavaScript逻辑分层重构-refactor-20241228-170000.md
+│   ├── js重构.md                # JavaScript重构计划
+│   └── *.md                     # 其他Bug修复和功能文档
+├── 📁 _locales/                 # 国际化语言包
+│   ├── en/
+│   │   └── messages.json        # 英文语言包
+│   └── zh_CN/
+│       └── messages.json        # 中文语言包
 ├── 📁 assets/                   # 静态资源目录
 │   ├── icons/                   # 图标文件目录
 │   │   ├── icon16.png           # 16x16 主图标
 │   │   ├── icon32.png           # 32x32 图标
 │   │   ├── icon48.png           # 48x48 图标
 │   │   ├── icon128.png          # 128x128 高分辨率图标
-│   │   ├── Settings.svg         # 设置图标 (SVG矢量)
-│   │   └── User.svg             # 用户图标 (SVG矢量)
+│   │   ├── setting.svg          # 设置图标 (SVG矢量)
+│   │   └── user-icon.svg        # 用户图标 (SVG矢量)
 │   └── data/                    # 数据文件目录
-│       └── default-prompts.json # 默认提示词数据集
+│       ├── default-prompts.json # 默认提示词数据集
+│       └── version-log.json     # 版本更新日志
 └── 📁 src/                      # 源代码目录
     ├── 🔧 background.js         # 后台服务脚本 (Service Worker)
     ├── 🌐 content_script.js     # 内容脚本 (页面注入)
+    ├── 📁 background/           # 后台服务模块
+    │   └── auth-handler.js      # 认证处理器
+    ├── 📁 libs/                 # 第三方库目录
+    │   └── supabase.min.js      # Supabase客户端库
     ├── 📁 utils/                # 工具函数目录 (核心模块)
     │   ├── auth-service.js      # 认证服务层 (OAuth & Supabase)
     │   ├── data-service.js      # 数据服务层 (单一数据源)
-    │   ├── sync-service.js      # 云端同步服务
+    │   ├── sync-service.js      # 云端同步服务 (增强错误诊断)
     │   ├── json-utils.js        # JSON处理工具
     │   └── uuid.js              # UUID生成工具
     └── 📁 sidepanel/            # 侧边栏界面目录
         ├── sidepanel.html       # 主界面HTML结构
-        ├── sidepanel.css        # 样式文件 (支持明暗主题)
-        ├── sidepanel.js         # 主要逻辑脚本
-        └── styles/              # 样式模块目录
+        ├── sidepanel.js         # 启动器脚本 (纯启动器)
+        ├── appController.js     # 应用控制器 (业务逻辑)
+        ├── uiManager.js         # UI管理器 (界面组件)
+        └── css/                 # 样式文件目录
 ```
 
 ### 🔧 核心模块说明
@@ -222,23 +242,45 @@ PromptCraft/
 |------|------|--------|
 | **🔐 认证服务层** | 用户认证和会话管理 | Chrome Identity API + Supabase Auth |
 | **📊 数据服务层** | 统一数据访问接口 | Chrome Storage API + 单一数据源模式 |
-| **🔄 同步服务层** | 云端数据同步逻辑 | Supabase Database + RLS 安全策略 |
+| **🔄 同步服务层** | 云端数据同步逻辑 | Supabase Database + RLS 安全策略 + 增强错误诊断 |
+| **🎮 应用控制层** | 业务逻辑处理 | 手动同步、主题管理、数据操作 |
+| **🎨 UI管理层** | 界面组件管理 | 同步状态显示、Toast通知、自定义提示 |
 | **🔧 后台服务** | 扩展生命周期管理 | Service Worker (Manifest V3) |
 | **🌐 内容脚本** | 页面交互和文本插入 | DOM API + 跨框架兼容 |
-| **🎨 用户界面** | 响应式界面组件 | 原生 HTML5 + CSS3 + ES6+ |
+| **🚀 启动器** | 应用初始化 | 纯启动器，委托业务逻辑给控制层 |
 
 ### 🔄 数据流架构
 
 ```mermaid
 graph TD
-    A[用户操作] --> B[UI组件]
-    B --> C[业务逻辑层]
-    C --> D[认证服务层]
-    C --> E[数据服务层]
-    D --> F[Google OAuth]
-    D --> G[Supabase Auth]
-    E --> H[Chrome Storage]
-    E --> I[Supabase Database]
+    A[用户操作] --> B[sidepanel.js 启动器]
+    B --> C[appController.js 应用控制器]
+    C --> D[uiManager.js UI管理器]
+    C --> E[data-service.js 数据服务]
+    E --> F[Chrome Storage]
+    C --> G[sync-service.js 同步服务]
+    G --> H[Supabase Cloud]
+    I[auth-service.js 认证服务] --> G
+    I --> C
+    J[background.js] --> K[content_script.js]
+    K --> L[页面文本插入]
+    
+    subgraph "手动同步流程"
+        M[用户点击同步] --> N[appController.handleManualSync]
+        N --> O[sync-service.performFullSync]
+        O --> P[会话状态检查]
+        O --> Q[网络连接验证]
+        O --> R[Supabase客户端验证]
+        O --> S[数据同步执行]
+        S --> T[ui.updateSyncTime]
+    end
+    
+    subgraph "错误诊断机制"
+        U[同步失败] --> V[详细错误日志]
+        V --> W[会话过期检测]
+        V --> X[网络状态检查]
+        V --> Y[Supabase连接状态]
+    end
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
@@ -246,6 +288,18 @@ graph TD
     style D fill:#fff3e0
     style E fill:#fce4ec
 ```
+
+**数据流说明**：
+1. **启动器层**: sidepanel.js 作为纯启动器，负责应用初始化
+2. **控制器层**: appController.js 处理所有业务逻辑和用户交互
+3. **UI管理层**: uiManager.js 统一管理界面组件和状态显示
+4. **数据访问层**: data-service.js 提供统一的数据访问接口
+5. **本地存储**: Chrome Storage API 作为主要数据源
+6. **云端同步**: sync-service.js 负责与 Supabase 的数据同步，包含增强错误诊断
+7. **认证管理**: auth-service.js 处理用户认证和会话管理
+8. **内容注入**: content_script.js 实现跨网站的文本插入功能
+9. **手动同步**: 完整的手动同步流程，包含多层验证和错误处理
+10. **错误诊断**: 全面的错误诊断机制，帮助快速定位问题根因
 
 ---
 
@@ -300,6 +354,25 @@ graph TD
 ---
 
 ## 📝 更新日志
+
+### v1.3.1 (2025-06-30)
+- 🐛 **手动同步失败Bug修复**: 修复 `ReferenceError: updateSyncTime is not defined` 错误
+- 🔧 **函数调用修正**: 将 `appController.js` 中的 `updateSyncTime()` 更正为 `ui.updateSyncTime()`
+- 📊 **增强错误诊断**: 在 `sync-service.js` 中添加详细错误日志记录
+- 🔍 **会话状态检查**: 新增用户会话过期检测和详细日志记录
+- 🌐 **网络连接验证**: 添加网络连接测试和Supabase客户端状态验证
+- 📝 **诊断指南**: 创建手动同步失败诊断指南文档
+- 📋 **项目文档更新**: 更新项目函数调用逻辑文件，记录最新数据流和修复历史
+
+### v1.3.0 (2025-06-30)
+- 🔧 **代码架构重构**: 完成JavaScript代码模块化重构，提升代码质量和可维护性
+- 📁 **文件结构优化**: 重新组织项目文件结构，实现更清晰的分层架构
+- 🐛 **语法错误修复**: 修复所有JavaScript语法错误，确保代码稳定运行
+- ⚡ **性能提升**: 优化函数调用逻辑，提升应用响应速度
+- 📝 **代码规范**: 统一代码风格，添加完整的JSDoc注释
+- 🔄 **版本日志系统**: 新增版本更新日志功能，用户可查看版本变更历史
+- 🎮 **职责分离**: sidepanel.js 成为纯启动器，业务逻辑迁移到 appController.js
+- 🎨 **UI组件化**: 将UI管理功能统一到 uiManager.js 中
 
 ### v1.2.2 (2025-06-27)
 

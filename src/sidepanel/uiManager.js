@@ -293,7 +293,7 @@ const ui = {
             btn.className = 'filter-btn';
             if (cat === '全部') btn.classList.add('active');
             btn.textContent = cat;
-            btn.addEventListener('click', (e) => this.handleFilter(cat, e));
+            btn.addEventListener('click', (e) => app.handleFilter(cat, e));
             this.filterContainer.appendChild(btn);
         });
         
@@ -410,20 +410,7 @@ const ui = {
         }
     },
 
-    /**
-     * 处理分类筛选
-     */
-    handleFilter(category, event) {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        event.target.classList.add('active');
 
-        if (category === '全部') {
-            this.renderPrompts(allPrompts);
-        } else {
-            const filtered = allPrompts.filter(p => p.category === category);
-            this.renderPrompts(filtered);
-        }
-    },
 
     /**
      * 为提示词卡片添加事件监听器
@@ -491,6 +478,255 @@ const ui = {
         });
     },
 
+    // 认证与同步UI函数
+    /**
+     * 设置登录按钮的加载状态
+     * @param {boolean} isLoading - 是否显示加载状态
+     */
+    setLoginButtonLoading(isLoading, progressText = '') {
+        const googleSignInBtn = document.getElementById('googleSignInBtn');
+        if (!googleSignInBtn) return;
+        
+        const googleIcon = googleSignInBtn.querySelector('.google-icon');
+        const btnText = googleSignInBtn.querySelector('.btn-text');
+        
+        if (isLoading) {
+            // 添加加载状态类
+            googleSignInBtn.classList.add('loading');
+            
+            // 隐藏Google图标，显示加载动画
+            if (googleIcon) {
+                googleIcon.style.display = 'none';
+            }
+            
+            // 创建并插入加载动画
+            const existingSpinner = googleSignInBtn.querySelector('.loading-spinner');
+            if (!existingSpinner) {
+                const spinner = document.createElement('div');
+                spinner.className = 'loading-spinner';
+                googleSignInBtn.insertBefore(spinner, btnText);
+            }
+            
+            // 更改按钮文字
+            if (btnText) {
+                btnText.textContent = progressText || '正在登录...';
+            }
+        } else {
+            // 移除加载状态类
+            googleSignInBtn.classList.remove('loading');
+            
+            // 显示Google图标
+            if (googleIcon) {
+                googleIcon.style.display = 'block';
+            }
+            
+            // 移除加载动画
+            const spinner = googleSignInBtn.querySelector('.loading-spinner');
+            if (spinner) {
+                spinner.remove();
+            }
+            
+            // 恢复按钮文字
+            if (btnText) {
+                btnText.textContent = '使用 Google 登录';
+            }
+        }
+    },
+
+    /**
+     * 根据认证状态更新UI
+     * @param {Object|null} session - 用户会话信息
+     */
+    updateUIForAuthState(session) {
+        // 设置页面元素
+        const loggedOutSection = document.getElementById('loggedOutSection');
+        const loggedInSection = document.getElementById('loggedInSection');
+        const userAvatar = document.getElementById('userAvatar');
+        const defaultAvatar = document.getElementById('defaultAvatar');
+        const userName = document.getElementById('userName');
+        const userEmail = document.getElementById('userEmail');
+        
+        if (session && session.user) {
+            // 已登录状态
+            const user = session.user;
+            
+            // 更新设置页面中的用户信息
+            if (loggedInSection) loggedInSection.style.display = 'block';
+            if (loggedOutSection) loggedOutSection.style.display = 'none';
+            
+            // 更新用户头像
+            if (userAvatar && user.user_metadata?.avatar_url) {
+                const avatarImg = userAvatar.querySelector('.avatar-img');
+                if (avatarImg) {
+                    avatarImg.src = user.user_metadata.avatar_url;
+                    userAvatar.style.display = 'block';
+                    if (defaultAvatar) defaultAvatar.style.display = 'none';
+                }
+            } else {
+                if (userAvatar) userAvatar.style.display = 'none';
+                if (defaultAvatar) {
+                    defaultAvatar.style.display = 'flex';
+                    // 设置默认头像的首字母
+                    const firstLetter = (user.email || 'U').charAt(0).toUpperCase();
+                    defaultAvatar.textContent = firstLetter;
+                }
+            }
+            
+            // 更新用户昵称和邮箱
+            if (userName) {
+                // 优先使用用户元数据中的姓名，否则使用邮箱前缀
+                const displayName = user.user_metadata?.full_name || 
+                                   user.user_metadata?.name || 
+                                   (user.email ? user.email.split('@')[0] : '用户');
+                userName.textContent = displayName;
+                userName.title = displayName; // 添加hover显示完整用户名
+            }
+            
+            if (userEmail) {
+                const email = user.email || '未知邮箱';
+                userEmail.textContent = email;
+                userEmail.title = email; // 添加hover显示完整邮箱
+            }
+            
+            // 初始化同步时间显示
+            this.updateSyncTime();
+            
+            // 更新全局用户状态
+            currentUser = {
+                id: user.id,
+                email: user.email,
+                avatar_url: user.user_metadata?.avatar_url
+            };
+        } else {
+            // 未登录状态
+            // 更新设置页面状态
+            if (loggedOutSection) loggedOutSection.style.display = 'block';
+            if (loggedInSection) loggedInSection.style.display = 'none';
+            
+            // 保持本地用户状态以确保本地功能正常
+            if (!currentUser) {
+                currentUser = {
+                    id: 'local-user',
+                    email: 'local@example.com'
+                };
+            }
+        }
+    },
+
+    /**
+     * 更新同步时间显示
+     */
+    async updateSyncTime() {
+        const syncTimeElement = document.getElementById('syncTime');
+        if (syncTimeElement) {
+            try {
+                console.log('[DEBUG] 开始获取最后同步时间...');
+                // 从存储中获取真实的最后同步时间
+                const response = await chrome.runtime.sendMessage({
+                    type: 'GET_LAST_SYNC_TIME'
+                });
+                
+                console.log('[DEBUG] GET_LAST_SYNC_TIME 响应:', response);
+                
+                if (response && response.success && response.data) {
+                    console.log('[DEBUG] 同步时间数据:', response.data);
+                    const syncTime = new Date(response.data);
+                    console.log('[DEBUG] 解析后的时间对象:', syncTime);
+                    console.log('[DEBUG] UTC时间:', syncTime.toISOString());
+                    console.log('[DEBUG] 本地时间:', syncTime.toString());
+                    
+                    // 使用北京时间格式化
+                    const timeString = syncTime.toLocaleString('zh-CN', {
+                        timeZone: 'Asia/Shanghai',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    });
+                    console.log('[DEBUG] 格式化后的时间字符串:', timeString);
+                    syncTimeElement.textContent = `最后同步时间: ${timeString}`;
+                } else {
+                    console.log('[DEBUG] 没有同步时间数据，显示"尚未同步"');
+                    console.log('[DEBUG] response.success:', response?.success);
+                    console.log('[DEBUG] response.data:', response?.data);
+                    syncTimeElement.textContent = '尚未同步';
+                }
+            } catch (error) {
+                console.error('[DEBUG] 获取同步时间失败:', error);
+                syncTimeElement.textContent = '同步时间获取失败';
+            }
+        } else {
+            console.error('[DEBUG] 找不到syncTime元素');
+        }
+    },
+
+    /**
+     * 更新同步状态
+     * @param {string} status - 同步状态
+     * @param {string} lastSyncTime - 最后同步时间
+     */
+    updateSyncStatus(status, lastSyncTime) {
+        const syncTimeElement = document.getElementById('syncTime');
+        
+        switch (status) {
+            case 'syncing':
+                if (syncTimeElement) {
+                    syncTimeElement.textContent = '正在同步...';
+                }
+                break;
+                
+            case 'success':
+                if (lastSyncTime) {
+                    const syncTime = new Date(lastSyncTime);
+                    const timeString = syncTime.toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                    if (syncTimeElement) {
+                        syncTimeElement.textContent = `最后同步时间: ${timeString}`;
+                    }
+                } else {
+                    this.updateSyncTime();
+                }
+                this.showToast('云端同步完成', 'success');
+                break;
+                
+            case 'error':
+                if (syncTimeElement) {
+                    syncTimeElement.textContent = '同步失败';
+                }
+                this.showToast('同步失败，请稍后重试', 'error');
+                break;
+                
+            case 'idle':
+            default:
+                if (syncTimeElement) {
+                    syncTimeElement.textContent = '尚未同步';
+                }
+                break;
+        }
+    },
+
+    /**
+     * 更新同步UI状态（保留用于兼容性）
+     * @param {string} status - 同步状态
+     * @param {string} message - 状态消息
+     */
+    updateSyncUI(status, message) {
+        // 对于新的UI，只需要更新同步时间
+        if (status === 'success' && message && message.includes('同步完成')) {
+            this.updateSyncTime();
+            this.showToast('云端同步完成，数据已更新', 'success');
+        }
+    },
+
     /**
      * 检测系统主题
      * @returns {string} 'dark' 或 'light'
@@ -537,7 +773,7 @@ const ui = {
      * @param {string} type - 消息类型：'success', 'error', 'warning', 'info'
      * @param {number} duration - 显示持续时间（毫秒）
      */
-    showToast(message, type = 'success', duration = 3000) {
+    showToast(message, type = 'success', duration = 1500) {
         const toastContainer = document.getElementById('toastContainer');
         if (!toastContainer) return;
         
@@ -572,6 +808,16 @@ const ui = {
                 }
             }, 300);
         }, duration);
+    },
+
+    /**
+     * 兼容性函数，保持原有的showCustomAlert接口
+     * @param {string} message - 提示消息
+     * @returns {Promise<void>}
+     */
+    showCustomAlert(message) {
+        this.showToast(message, 'info');
+        return Promise.resolve();
     },
 
     /**
@@ -626,6 +872,199 @@ const ui = {
                 }
             };
         });
+    },
+
+    // ===== 版本日志UI函数 =====
+    
+    /**
+     * 显示版本日志弹窗
+     */
+    async showVersionLog() {
+        const versionData = await app.loadVersionLogData();
+        if (!versionData) {
+            console.error('无法加载版本日志数据');
+            return;
+        }
+
+        // 清空之前的内容
+        this.versionLogBody.innerHTML = '';
+
+        // 按版本号倒序显示（最新版本在前）
+        const sortedVersions = versionData.versions.sort((a, b) => {
+            // 简单的版本号比较（假设格式为 x.y.z）
+            const aVersion = a.version.split('.').map(Number);
+            const bVersion = b.version.split('.').map(Number);
+            
+            for (let i = 0; i < Math.max(aVersion.length, bVersion.length); i++) {
+                const aPart = aVersion[i] || 0;
+                const bPart = bVersion[i] || 0;
+                if (aPart !== bPart) {
+                    return bPart - aPart; // 倒序
+                }
+            }
+            return 0;
+        });
+
+        // 生成版本日志HTML
+        sortedVersions.forEach(version => {
+            const versionItem = document.createElement('div');
+            versionItem.className = 'version-item';
+            
+            const versionHeader = document.createElement('div');
+            versionHeader.className = 'version-header';
+            
+            const versionTitle = document.createElement('h3');
+            versionTitle.className = 'version-title';
+            versionTitle.textContent = `v${version.version}`;
+            
+            const versionDate = document.createElement('span');
+            versionDate.className = 'version-date';
+            versionDate.textContent = version.date;
+            
+            versionHeader.appendChild(versionTitle);
+            versionHeader.appendChild(versionDate);
+            
+            const versionContent = document.createElement('div');
+            versionContent.className = 'version-content';
+            
+            if (version.title) {
+                const titleElement = document.createElement('h4');
+                titleElement.className = 'version-subtitle';
+                titleElement.textContent = version.title;
+                versionContent.appendChild(titleElement);
+            }
+            
+            const changesList = document.createElement('ul');
+            changesList.className = 'version-changes';
+            
+            version.changes.forEach(change => {
+                const changeItem = document.createElement('li');
+                changeItem.textContent = change;
+                changesList.appendChild(changeItem);
+            });
+            
+            versionContent.appendChild(changesList);
+            
+            versionItem.appendChild(versionHeader);
+            versionItem.appendChild(versionContent);
+            
+            this.versionLogBody.appendChild(versionItem);
+        });
+
+        // 显示弹窗
+        this.versionLogOverlay.style.display = 'flex';
+        
+        // 标记用户已查看最新版本
+        await this.markVersionAsViewed(versionData.currentVersion);
+    },
+
+    /**
+     * 隐藏版本日志弹窗
+     */
+    hideVersionLog() {
+        this.versionLogOverlay.style.display = 'none';
+    },
+
+    /**
+     * 检查是否有新版本
+     */
+    async checkForNewVersion() {
+        const versionData = await app.loadVersionLogData();
+        if (!versionData) {
+            return;
+        }
+
+        try {
+            // 从background script获取用户最后查看的版本
+            const response = await chrome.runtime.sendMessage({ type: 'GET_LAST_VIEWED_VERSION' });
+            
+            if (response && response.success) {
+                const lastViewedVersion = response.data;
+                
+                // 如果用户从未查看过版本日志，或者当前版本比最后查看的版本新
+                if (!lastViewedVersion || versionData.currentVersion !== lastViewedVersion) {
+                    // 显示NEW标识
+                    this.versionNew.style.display = 'inline-block';
+                } else {
+                    // 隐藏NEW标识
+                    this.versionNew.style.display = 'none';
+                }
+            } else {
+                console.error('获取最后查看版本失败:', response?.error);
+            }
+        } catch (error) {
+            console.error('检查新版本失败:', error);
+        }
+    },
+
+    /**
+     * 标记版本为已查看
+     * @param {string} version 版本号
+     */
+    async markVersionAsViewed(version) {
+        try {
+            const response = await chrome.runtime.sendMessage({ 
+                type: 'SET_LAST_VIEWED_VERSION', 
+                payload: version 
+            });
+            
+            if (response && response.success) {
+                // 隐藏NEW标识
+                this.versionNew.style.display = 'none';
+            } else {
+                console.error('设置最后查看版本失败:', response?.error);
+            }
+        } catch (error) {
+            console.error('标记版本为已查看失败:', error);
+        }
+    },
+
+    // ===== 加载动画UI函数 =====
+    
+    /**
+     * 显示加载动画
+     */
+    showLoading() {
+        this.loadingOverlay.style.display = 'flex';
+    },
+
+    /**
+     * 隐藏加载动画
+     */
+    hideLoading() {
+        this.loadingOverlay.style.display = 'none';
+    },
+
+    /**
+     * 强制隐藏加载动画
+     */
+    forceHideLoading() {
+        this.hideLoading();
+        if (window.loadingTimeout) {
+            clearTimeout(window.loadingTimeout);
+            window.loadingTimeout = null;
+        }
+    },
+
+    /**
+     * 安全显示加载动画（带超时保护）
+     */
+    safeShowLoading() {
+        this.showLoading();
+        // 10秒后强制隐藏loading
+        if (window.loadingTimeout) clearTimeout(window.loadingTimeout);
+        window.loadingTimeout = setTimeout(() => {
+            this.forceHideLoading();
+            // 如果没有用户设置，显示主界面
+            if (!window.currentUser) {
+                this.showView('mainView');
+            }
+        }, 10000);
+    },
+
+    // 导出ui对象供其他模块使用
+    getUI() {
+        return this;
     }
 };
 

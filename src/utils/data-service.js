@@ -463,6 +463,15 @@ class DataService {
             const index = allPrompts.findIndex(p => p.id === id && !p.is_deleted);
 
             if (index === -1) {
+                // 【修复】添加详细的调试信息
+                const existingPrompt = allPrompts.find(p => p.id === id);
+                if (existingPrompt) {
+                    console.warn(`提示词 ${id} 已被标记为删除，跳过重复删除`);
+                    return true; // 已删除的提示词视为删除成功
+                } else {
+                    console.error(`提示词 ${id} 不存在于数据库中`);
+                }
+                
                 if (throwOnNotFound) {
                     throw new Error(`未找到ID为 ${id} 的提示词`);
                 } else {
