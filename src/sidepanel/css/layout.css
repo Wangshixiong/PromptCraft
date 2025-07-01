@@ -12,6 +12,8 @@
     --text-dark: #f1f5f9;
     --card-light: #f8fafc;
     --card-dark: #334155;
+    --card-hover-light: #f1f5f9;
+    --card-hover-dark: #475569;
     --border-light: #e2e8f0;
     --border-dark: #475569;
     --success: #10b981;
@@ -25,20 +27,22 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
-    padding: 16px;
+    /* padding: 16px; */
     position: relative;
     overflow: hidden;
 }
 
 /* 头部样式 */
 .header {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    padding-bottom: 16px;
+    gap: 16px;
+    padding: 8px 16px 8px 16px; 
     border-bottom: 1px solid var(--border-light);
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     flex-shrink: 0;
+    height: 48px;
 }
 
 .dark-mode .header {
@@ -48,41 +52,46 @@
 .logo {
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: flex-start;
+    min-width: 32px;
 }
 
 .logo-icon {
     background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
     color: white;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 18px;
+    font-size: 14px;
 }
 
-.logo-text {
-    font-weight: 700;
-    font-size: 20px;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
+
 
 .controls {
     display: flex;
-    gap: 12px;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-end;
 }
 
 /* 提示词容器样式 */
 .prompts-container {
     flex: 1;
     overflow-y: auto;
-    padding-right: 4px;
+    padding-left: 16px;
+    padding-right: 16px;
+    
+    /* === 新增内容开始 === */
+    display: grid;
+    /* align-content: start; 会让所有卡片紧凑地从顶部开始排列，避免不必要的拉伸 */
+    align-content: start; 
+    /* 使用 gap 替代 margin-bottom，这是Grid布局中设置间距的最佳方式 */
+    gap: 4px; 
+    /* === 新增内容结束 === */
 }
 
 .prompts-container::-webkit-scrollbar {

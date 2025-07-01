@@ -39,41 +39,52 @@
 }
 
 /* 设置按钮特殊样式 */
-#settingsBtn {
-    position: relative;
+.settings-btn {
+    background: transparent;
+    border: none;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    color: #6b7280;
+    font-size: 16px;
 }
 
-#settingsBtn:hover {
+.settings-btn:hover {
     color: var(--primary-color);
+    transform: translateY(-2px) rotate(90deg);
+    text-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
 }
 
-.dark-mode #settingsBtn:hover {
-    color: var(--primary-color);
+.dark-mode .settings-btn {
+    color: #9ca3af;
 }
 
-#settingsBtn svg {
-    transition: transform 0.3s ease;
-}
-
-#settingsBtn:hover svg {
-    transform: rotate(90deg);
+.dark-mode .settings-btn:hover {
+    color: var(--primary-light);
 }
 
 /* 搜索容器样式 */
 .search-container {
     position: relative;
-    margin-bottom: 16px;
+    flex: 1;
+    max-width: none;
+    min-width: 0;
 }
 
 .search-box {
     width: 100%;
-    padding: 12px 16px 12px 42px;
-    border-radius: 10px;
-    border: 1px solid var(--border-light);
-    background-color: var(--card-light);
-    color: var(--text-light);
-    font-size: 14px;
-    transition: var(--transition);
+    padding: 6px 8px 6px 28px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 13px;
+    height: 28px;
+    transition: all 0.2s ease;
     outline: none;
 }
 
@@ -90,11 +101,12 @@
 
 .search-icon {
     position: absolute;
-    left: 16px;
+    left: 8px;
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-light);
     pointer-events: none;
+    font-size: 12px;
 }
 
 .dark-mode .search-icon {
@@ -104,101 +116,109 @@
 /* 过滤器容器样式 */
 .filter-container {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
-    margin-bottom: 16px;
-    max-height: 120px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 4px 0;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 16px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    /* margin-left: 0; */
 }
 
 .filter-container::-webkit-scrollbar {
-    width: 8px;
-}
-
-.filter-container::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.filter-container::-webkit-scrollbar-thumb {
-    background: rgba(156, 163, 175, 0.5);
-    border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-}
-
-.filter-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(156, 163, 175, 0.8);
-    background-clip: content-box;
+    display: none;
 }
 
 /* 过滤器按钮样式 */
 .filter-btn {
-    padding: 8px 16px;
-    border-radius: 20px;
-    background-color: var(--card-light);
-    border: 1px solid var(--border-light);
-    color: var(--text-light);
-    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background-color: #f3f4f6;
+    border: none;
+    color: #6b7280;
+    font-size: 11px;
+    font-weight: 500;
     white-space: nowrap;
     cursor: pointer;
-    transition: var(--transition);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: fit-content;
 }
 
 .dark-mode .filter-btn {
-    background-color: var(--card-dark);
-    border-color: var(--border-dark);
-    color: var(--text-dark);
+    background-color: #374151;
+    color: #9ca3af;
 }
 
-.filter-btn.active, .filter-btn:hover {
-    background-color: var(--primary-color);
+.filter-btn.active {
+    background-color: #4f46e5;
     color: white;
-    border-color: var(--primary-color);
 }
 
-body.dark-mode .filter-btn.active, 
-body.dark-mode .filter-btn:hover {
-    background-color: var(--primary-color) !important;
-    color: white !important;
-    border-color: var(--primary-color) !important;
+.filter-btn:hover:not(.active) {
+    background-color: #e5e7eb;
+    color: #374151;
+}
+
+.dark-mode .filter-btn.active {
+    background-color: #4f46e5;
+    color: white;
+}
+
+.dark-mode .filter-btn:hover:not(.active) {
+    background-color: #4b5563;
+    color: #d1d5db;
 }
 
 /* 添加按钮样式 */
-.add-btn {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+.add-btn-icon {
+    background: var(--primary-color);
     color: white;
     border: none;
-    padding: 12px 20px;
-    border-radius: 10px;
-    font-weight: 600;
+    padding: 6px;
+    border-radius: 6px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    transition: var(--transition);
-    margin-bottom: 16px;
-    box-shadow: var(--shadow);
-    width: 100%;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(99, 102, 241, 0.2);
+    width: 28px;
+    height: 28px;
 }
 
-.add-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+.add-btn-icon:hover {
+    background: var(--primary-light);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
 }
 
 /* 提示词卡片样式 */
 .prompt-card {
-    background-color: var(--card-light);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
+    background: var(--card-light);
     border: 1px solid var(--border-light);
-    transition: var(--transition);
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+    color: var(--text-light);
+    overflow: visible;
     position: relative;
-    cursor: pointer; /* Add cursor pointer for better UX */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    /* margin-bottom: 8px;删除 .prompt-card 上的 margin-bottom: 8px;，完全交给父容器 .prompts-container 的 gap 属性来统一管理间距。 */
+
+    /* === 新增内容开始 === */
+    display: grid;
+    /* 定义三行网格：头部(auto)、内容(1fr)、底部(auto) */
+    grid-template-rows: auto 1fr auto; 
+    /* === 新增内容结束 === */
 }
 
 .dark-mode .prompt-card {
@@ -207,73 +227,144 @@ body.dark-mode .filter-btn:hover {
 }
 
 .prompt-card:hover {
-    transform: translateY(-3px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transform: translateY(-4px) scale(1.02);
+    border-color: var(--primary-color);
+    background: var(--card-hover-light);
 }
 
-.prompt-header {
+.dark-mode .prompt-card:hover {
+    background: var(--card-hover-dark);
+}
+
+.prompt-card-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
+    align-items: flex-start;
+    margin-bottom: 8px;
 }
 
 .prompt-title {
+    font-size: 14px;
     font-weight: 600;
-    font-size: 16px;
-    color: var(--primary-dark);
-    word-break: break-all;
+    color: var(--text-light);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    margin-right: 8px;
 }
 
 .dark-mode .prompt-title {
-    color: var(--primary-light);
+    color: var(--text-dark);
 }
 
-.prompt-actions {
+.copy-btn {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
     display: flex;
-    gap: 8px;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
     flex-shrink: 0;
-    margin-left: 8px;
+    position: relative;
+    /* align-self: flex-start;解决第一张卡片和后续卡片上的复制按钮不在同一水平线上
+    从 .copy-btn 的样式规则中移除 align-self: flex-start;。这样，它就会遵循其父容器 .card-footer 设置的 align-items: center; 规则，从而实现完美的垂直对齐。 */
 }
+
+.copy-btn:hover {
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.copy-btn.copied {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    color: white;
+}
+
+/* .copy-btn.copied::after {
+    content: "已复制";
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 1000;
+}
+
+.dark-mode .copy-btn {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+    color: white;
+} */
+
+.dark-mode .copy-btn:hover {
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.dark-mode .copy-btn.copied::after {
+    background: rgba(255, 255, 255, 0.9);
+    color: #000;
+}
+
+
 
 .action-btn {
     width: 28px;
     height: 28px;
     border-radius: 6px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #6b7280;
+    font-size: 12px;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(99, 102, 241, 0.1);
-    color: var(--primary-color);
-    cursor: pointer;
-    transition: var(--transition);
-    border: none;
-}
-
-.dark-mode .action-btn {
-    background-color: rgba(248, 250, 252, 0.1);
-    color: var(--text-dark);
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .action-btn:hover {
-    background-color: var(--primary-color);
-    color: white;
+    background: rgba(255, 255, 255, 1);
+    color: var(--text-light);
+    transform: scale(1.1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-.action-btn.delete-btn:hover {
-    background-color: var(--danger);
+.edit-btn:hover {
+    color: #3b82f6;
+    border-color: rgba(59, 130, 246, 0.3);
 }
 
-.prompt-category {
-    display: inline-block;
-    padding: 4px 10px;
-    background-color: rgba(99, 102, 241, 0.1);
-    color: var(--primary-color);
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 500;
-    margin-bottom: 12px;
+.delete-btn:hover {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
 }
+
+.dark-mode .action-btn {
+    background: rgba(0, 0, 0, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #9ca3af;
+}
+
+.dark-mode .action-btn:hover {
+    background: rgba(0, 0, 0, 0.8);
+    color: var(--text-dark);
+}
+
 
 .dark-mode .prompt-category {
     background-color: rgba(34, 197, 94, 0.3);
@@ -281,32 +372,131 @@ body.dark-mode .filter-btn:hover {
 }
 
 .prompt-content {
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 12px;
+    line-height: 1.4;
     color: var(--text-light);
-    margin-bottom: 16px;
-    max-height: 60px;
+    margin-bottom: 8px;
+    white-space: nowrap;
     overflow: hidden;
-    position: relative;
-    word-break: break-word;
+    text-overflow: ellipsis;
 }
 
 .dark-mode .prompt-content {
     color: var(--text-dark);
 }
 
-.prompt-content:after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 30px;
-    background: linear-gradient(to bottom, transparent, var(--card-light));
+/* 整行布局 (.card-footer) */
+.card-footer {
+    display: flex;
+    justify-content: space-between; /* 核心：让左右两组分开 */
+    align-items: center;          /* 核心：让左右两组垂直对齐 */
+    width: 100%;                  /* 确保占满整行宽度 */
+    margin-top: 8px;              /* 和上方内容的间距 */
 }
 
-.dark-mode .prompt-content:after {
-    background: linear-gradient(to bottom, transparent, var(--card-dark));
+/* 左侧信息组 (.meta-info) */
+.meta-info {
+    display: flex;         /* 启用Flexbox布局 */
+    align-items: center;   /* 魔法发生的地方：让所有子元素垂直居中对齐 */
+    gap: 8px;              /* 控制元素之间的间距 */
+}
+
+.prompt-category {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.creation-date {
+    font-size: 11px;
+    color: #9ca3af;
+    white-space: nowrap;
+    line-height: 1;
+    flex-shrink: 0; /* 防止空间不足时日期文本被压缩 */
+}
+
+.dark-mode .creation-date {
+    color: #6b7280;
+}
+
+/* 右侧操作按钮组 (.card-actions) */
+.card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* 按钮之间的间距 */
+}
+
+/* 默认隐藏悬浮按钮组 */
+.actions-on-hover {
+    display: none;
+}
+
+/* 当鼠标悬浮在整个卡片上时，显示悬浮按钮组 */
+.prompt-card:hover .actions-on-hover {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.category-blue {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.category-green {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+}
+
+.category-purple {
+    background-color: rgba(147, 51, 234, 0.1);
+    color: #9333ea;
+}
+
+.category-orange {
+    background-color: rgba(249, 115, 22, 0.1);
+    color: #f97316;
+}
+
+.category-pink {
+    background-color: rgba(236, 72, 153, 0.1);
+    color: #ec4899;
+}
+
+.category-indigo {
+    background-color: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+}
+
+.dark-mode .category-blue {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+}
+
+.dark-mode .category-green {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+}
+
+.dark-mode .category-purple {
+    background-color: rgba(147, 51, 234, 0.2);
+    color: #a855f7;
+}
+
+.dark-mode .category-orange {
+    background-color: rgba(249, 115, 22, 0.2);
+    color: #fb923c;
+}
+
+.dark-mode .category-pink {
+    background-color: rgba(236, 72, 153, 0.2);
+    color: #f472b6;
+}
+
+.dark-mode .category-indigo {
+    background-color: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
 }
 
 .prompt-footer {
@@ -317,25 +507,7 @@ body.dark-mode .filter-btn:hover {
     color: #64748b;
 }
 
-/* 复制按钮样式 */
-.copy-btn {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: var(--transition);
-}
 
-.copy-btn:hover {
-    transform: scale(1.03);
-}
 
 /* 骨架屏样式 */
 .skeleton-card {

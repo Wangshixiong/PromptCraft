@@ -136,18 +136,26 @@ const ui = {
                     card.className = 'prompt-card fade-in';
                     card.dataset.id = prompt.id;
                     card.innerHTML = `
-                        <div class="prompt-header">
+                        <div class="prompt-card-header">
                             <div class="prompt-title">${this.escapeHtml(prompt.title || '无标题')}</div>
-                            <div class="prompt-actions">
-                                <button class="action-btn edit-btn" data-id="${prompt.id}"><i class="fas fa-edit"></i></button>
-                                <button class="action-btn delete-btn" data-id="${prompt.id}"><i class="fas fa-trash"></i></button>
-                            </div>
+                            <button class="copy-btn" data-content="${this.escapeHtml(prompt.content || '')}">复制</button>
                         </div>
-                        ${prompt.category ? `<div class="prompt-category">${this.escapeHtml(prompt.category)}</div>` : ''}
                         <div class="prompt-content">${this.escapeHtml(prompt.content || '')}</div>
-                        <div class="prompt-footer">
-                            <div>${this.formatDate(prompt.created_at)}</div>
-                            <button class="copy-btn" data-content="${this.escapeHtml(prompt.content || '')}"><i class="fas fa-copy"></i> 复制</button>
+                        <div class="card-footer">
+                            <div class="meta-info">
+                                ${prompt.category ? `<span class="prompt-category category-${this.getCategoryColor(prompt.category)}">${this.escapeHtml(prompt.category)}</span>` : ''}
+                                <span class="creation-date">${this.formatDate(prompt.created_at)}</span>
+                            </div>
+                            <div class="card-actions">
+                                <div class="actions-on-hover">
+                                    <button class="action-btn edit-btn" data-id="${prompt.id}" title="编辑">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="action-btn delete-btn" data-id="${prompt.id}" title="删除">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     `;
                     this.promptsContainer.appendChild(card);
@@ -184,6 +192,20 @@ const ui = {
         if (typeof text !== 'string') return '';
         return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     },
+
+    /**
+     * 获取分类颜色
+     * @param {string} category - 分类名称
+     * @returns {string} 颜色类名
+     */
+    getCategoryColor(category) {
+         const colors = ['blue', 'green', 'purple', 'orange', 'pink', 'indigo'];
+         let hash = 0;
+         for (let i = 0; i < category.length; i++) {
+             hash = category.charCodeAt(i) + ((hash << 5) - hash);
+         }
+         return colors[Math.abs(hash) % colors.length];
+     },
 
     /**
      * HTML反转义函数
@@ -466,13 +488,20 @@ const ui = {
                 e.stopPropagation();
                 const content = e.currentTarget.dataset.content;
                 navigator.clipboard.writeText(this.unescapeHtml(content)).then(() => {
-                    const originalText = btn.innerHTML;
-                    btn.innerHTML = '<i class="fas fa-check"></i> 已复制!';
-                    btn.style.background = 'var(--success)';
-                    setTimeout(() => {
-                        btn.innerHTML = originalText;
-                        btn.style.background = '';
-                    }, 1500);
+                    // 添加复制成功的视觉反馈
+                     btn.classList.add('copied');
+                     const originalText = btn.innerHTML;
+                     btn.innerHTML = '已复制!';
+                     btn.style.background = 'var(--success)';
+                     
+                     // 2秒后恢复原状
+                     setTimeout(() => {
+                         btn.classList.remove('copied');
+                         btn.innerHTML = originalText;
+                         btn.style.background = '';
+                     }, 2000);
+                }).catch(err => {
+                    console.error('复制失败:', err);
                 });
             });
         });

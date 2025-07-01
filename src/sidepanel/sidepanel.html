@@ -17,22 +17,30 @@
             <div class="header">
                 <div class="logo">
                     <div class="logo-icon">P</div>
-                    <div class="logo-text">Prompt管理助手</div>
+                </div>
+                <div class="search-container">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" class="search-box" placeholder="搜索提示词..." id="searchInput">
                 </div>
                 <div class="controls">
-                    <button class="btn settings-btn" id="settingsBtn" title="设置">
-                        <i class="fas fa-cog settings-icon"></i>
+                    <button class="add-btn-icon" id="addPromptBtn" title="添加新提示词">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    <button class="settings-btn" id="settingsBtn" title="设置">
+                        <i class="fas fa-cog"></i>
                     </button>
                 </div>
-            </div>
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-box" id="searchInput" placeholder="搜索提示词...">
             </div>
             <div class="filter-container" id="filterContainer">
                 <!-- 分类按钮将动态生成 -->
             </div>
-            <button class="add-btn" id="addPromptBtn"><i class="fas fa-plus"></i><span>添加新提示词</span></button>
+
             <div class="prompts-container" id="promptsContainer">
                 <!-- 骨架屏占位符 -->
                 <div class="skeleton-card">
@@ -257,7 +265,7 @@
                         <div class="version-info">
                             <span class="version-label">版本信息</span>
                             <div class="version-container">
-                                <span class="version-number clickable" id="versionNumber">v1.3.0</span>
+                                <span class="version-number clickable" id="versionNumber">v1.3.5</span>
                                 <span class="version-new" id="versionNew" style="display: none;">NEW</span>
                             </div>
                         </div>

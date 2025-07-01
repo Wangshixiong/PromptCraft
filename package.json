@@ -1,6 +1,6 @@
 {
   "name": "prompt-manager-extension",
-  "version": "1.3.0",
+  "version": "1.3.5",
   "description": "一个安全、可靠的本地提示词管理工具",
   "main": "src/background.js",
   "scripts": {
