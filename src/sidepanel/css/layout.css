@@ -86,9 +86,8 @@
     padding-right: 16px;
     
     /* === 新增内容开始 === */
-    display: grid;
-    /* align-content: start; 会让所有卡片紧凑地从顶部开始排列，避免不必要的拉伸 */
-    align-content: start; 
+    display: flex;              /* 将 grid 修改为 flex */
+    flex-direction: column;     /* 新增：指定为纵向flex布局 */
     /* 使用 gap 替代 margin-bottom，这是Grid布局中设置间距的最佳方式 */
     gap: 4px; 
     /* === 新增内容结束 === */
