@@ -501,6 +501,101 @@
     color: #818cf8;
 }
 
+/* 标签样式 */
+.prompt-tag {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-right: 4px;
+    display: inline-block;
+}
+
+.tag-blue {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.tag-green {
+    background-color: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.tag-purple {
+    background-color: rgba(147, 51, 234, 0.1);
+    color: #9333ea;
+    border: 1px solid rgba(147, 51, 234, 0.2);
+}
+
+.tag-orange {
+    background-color: rgba(249, 115, 22, 0.1);
+    color: #f97316;
+    border: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+.tag-pink {
+    background-color: rgba(236, 72, 153, 0.1);
+    color: #ec4899;
+    border: 1px solid rgba(236, 72, 153, 0.2);
+}
+
+.tag-indigo {
+    background-color: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+/* 暗色主题标签样式 */
+.dark-mode .tag-blue {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.dark-mode .tag-green {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.dark-mode .tag-purple {
+    background-color: rgba(147, 51, 234, 0.2);
+    color: #a855f7;
+    border-color: rgba(147, 51, 234, 0.3);
+}
+
+.dark-mode .tag-orange {
+    background-color: rgba(249, 115, 22, 0.2);
+    color: #fb923c;
+    border-color: rgba(249, 115, 22, 0.3);
+}
+
+.dark-mode .tag-pink {
+    background-color: rgba(236, 72, 153, 0.2);
+    color: #f472b6;
+    border-color: rgba(236, 72, 153, 0.3);
+}
+
+.dark-mode .tag-indigo {
+    background-color: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* 作者样式 */
+.prompt-author {
+    font-size: 11px;
+    color: #6b7280;
+    font-style: italic;
+    margin-right: 8px;
+}
+
+.dark-mode .prompt-author {
+    color: #9ca3af;
+}
+
 .prompt-footer {
     display: flex;
     justify-content: space-between;
@@ -569,7 +664,7 @@
     background-color: rgba(248, 250, 252, 0.1);
 }
 
-.skeleton-category {
+.skeleton-tags {
     height: 24px;
     width: 80px;
     background-color: rgba(99, 102, 241, 0.1);
@@ -577,7 +672,7 @@
     margin-bottom: 12px;
 }
 
-.dark-mode .skeleton-category {
+.dark-mode .skeleton-tags {
     background-color: rgba(34, 197, 94, 0.2);
 }
 
@@ -967,6 +1062,35 @@
 .dark-mode .preview-category {
     background-color: rgba(34, 197, 94, 0.3);
     color: #22c55e;
+}
+
+/* 预览弹窗中的标签和作者样式 */
+.preview-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.preview-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.preview-tags .prompt-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+}
+
+.preview-author {
+    font-size: 11px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.dark-mode .preview-author {
+    color: #9ca3af;
 }
 
 .preview-body {

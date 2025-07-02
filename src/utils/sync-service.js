@@ -261,7 +261,8 @@ class SyncService {
                 user_id: currentUser.id,
                 title: prompt.title,
                 content: prompt.content,
-                category: prompt.category || '默认分类',
+                tags: prompt.tags || (prompt.category ? [prompt.category] : ['默认分类']),
+                author: prompt.author || '',
                 created_at: prompt.created_at || new Date().toISOString(),
                 updated_at: prompt.updated_at || new Date().toISOString(),
                 is_deleted: false
@@ -674,7 +675,8 @@ class SyncService {
                 id: prompt.id,
                 title: prompt.title,
                 content: prompt.content,
-                category: prompt.category,
+                tags: prompt.tags || (prompt.category ? [prompt.category] : []),
+                author: prompt.author || '',
                 source: prompt.source || 'user_created', // 确保source字段有默认值
                 user_id: currentUser.id,
                 created_at: prompt.created_at || new Date().toISOString(),
@@ -717,7 +719,8 @@ class SyncService {
             const updateData = {
                 title: prompt.title,
                 content: prompt.content,
-                category: prompt.category,
+                tags: prompt.tags || (prompt.category ? [prompt.category] : []),
+                author: prompt.author || '',
                 source: prompt.source || 'user_created', // 确保source字段有默认值
                 updated_at: new Date().toISOString()
             };
@@ -874,8 +877,8 @@ class SyncService {
         return (
             prompt1.title === prompt2.title &&
             prompt1.content === prompt2.content &&
-            prompt1.category === prompt2.category &&
-            JSON.stringify(prompt1.tags || []) === JSON.stringify(prompt2.tags || [])
+            JSON.stringify(prompt1.tags || []) === JSON.stringify(prompt2.tags || []) &&
+            (prompt1.author || '') === (prompt2.author || '')
         );
     }
     
@@ -900,7 +903,8 @@ class SyncService {
                 user_id: currentUser.id,
                 title: prompt.title,
                 content: prompt.content,
-                category: prompt.category || '默认分类',
+                tags: prompt.tags || (prompt.category ? [prompt.category] : []),
+                author: prompt.author || '',
                 created_at: prompt.created_at || new Date().toISOString(),
                 updated_at: new Date().toISOString(),
                 is_deleted: prompt.is_deleted || false
@@ -949,7 +953,8 @@ class SyncService {
                         id: cloudPrompt.id,
                         title: cloudPrompt.title,
                         content: cloudPrompt.content,
-                        category: cloudPrompt.category,
+                        tags: cloudPrompt.tags || (cloudPrompt.category ? [cloudPrompt.category] : []),
+                        author: cloudPrompt.author || '',
                         created_at: cloudPrompt.created_at,
                         updated_at: cloudPrompt.updated_at,
                         is_deleted: false  // 确保下载的活跃数据标记为未删除

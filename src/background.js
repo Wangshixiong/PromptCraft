@@ -279,6 +279,36 @@ chrome.runtime.onStartup.addListener(async () => {
       return true; // 保持消息通道开放以支持异步响应
     }
     
+    // 处理GET_ALL_TAGS请求（获取所有标签）
+    if (message.type === 'GET_ALL_TAGS') {
+      
+      (async () => {
+        try {
+          // 调用数据服务获取所有标签
+          const tags = await dataService.getAllTags();
+          
+          // 返回标准化的响应格式
+          sendResponse({
+            success: true,
+            data: tags,
+            error: null
+          });
+          
+        } catch (error) {
+          console.error('PromptCraft: 处理GET_ALL_TAGS请求时发生错误:', error);
+          
+          // 返回错误响应
+          sendResponse({
+            success: false,
+            data: null,
+            error: `获取标签失败: ${error.message}`
+          });
+        }
+      })();
+      
+      return true; // 保持消息通道开放以支持异步响应
+    }
+    
     // 处理ADD_PROMPT请求（添加新提示词）
     if (message.type === 'ADD_PROMPT') {
   
@@ -520,7 +550,8 @@ chrome.runtime.onStartup.addListener(async () => {
               finalPrompts[existingIndex] = {
                 ...finalPrompts[existingIndex],
                 content: newPrompt.content,
-                category: newPrompt.category,
+                tags: newPrompt.tags || (newPrompt.category ? [newPrompt.category] : []),
+                author: newPrompt.author || '未知',
                 updated_at: new Date().toISOString()
               };
               updatedCount++;

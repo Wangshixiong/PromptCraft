@@ -21,8 +21,7 @@ const ui = {
     promptIdInput: document.getElementById('promptIdInput'),
     promptTitleInput: document.getElementById('promptTitleInput'),
     promptContentInput: document.getElementById('promptContentInput'),
-    promptCategoryInput: document.getElementById('promptCategoryInput'),
-    promptCategorySelect: document.getElementById('promptCategorySelect'),
+    promptAuthorInput: document.getElementById('promptAuthorInput'),
     settingsBtn: document.getElementById('settingsBtn'),
     settingsOverlay: document.getElementById('settingsOverlay'),
     settingsClose: document.getElementById('settingsClose'),
@@ -140,10 +139,11 @@ const ui = {
                             <div class="prompt-title">${this.escapeHtml(prompt.title || '无标题')}</div>
                             <button class="copy-btn" data-content="${this.escapeHtml(prompt.content || '')}">复制</button>
                         </div>
+                        ${prompt.author ? `<div class="prompt-author">作者: ${this.escapeHtml(prompt.author)}</div>` : ''}
                         <div class="prompt-content">${this.escapeHtml(prompt.content || '')}</div>
                         <div class="card-footer">
                             <div class="meta-info">
-                                ${prompt.category ? `<span class="prompt-category category-${this.getCategoryColor(prompt.category)}">${this.escapeHtml(prompt.category)}</span>` : ''}
+                                ${this.renderTags(prompt.tags || prompt.category ? [prompt.category] : [])}
                                 <span class="creation-date">${this.formatDate(prompt.created_at)}</span>
                             </div>
                             <div class="card-actions">
@@ -180,7 +180,7 @@ const ui = {
     formatDate(dateString) {
         if (!dateString) return '';
         const date = new Date(dateString);
-        return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+        return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
     },
 
     /**
@@ -194,18 +194,39 @@ const ui = {
     },
 
     /**
-     * 获取分类颜色
-     * @param {string} category - 分类名称
+     * 获取标签颜色
+     * @param {string} tag - 标签名称
      * @returns {string} 颜色类名
      */
-    getCategoryColor(category) {
+    getTagColor(tag) {
+         // 参数验证：确保tag是有效的字符串
+         if (!tag || typeof tag !== 'string') {
+             return 'blue'; // 返回默认颜色
+         }
+         
          const colors = ['blue', 'green', 'purple', 'orange', 'pink', 'indigo'];
          let hash = 0;
-         for (let i = 0; i < category.length; i++) {
-             hash = category.charCodeAt(i) + ((hash << 5) - hash);
+         for (let i = 0; i < tag.length; i++) {
+             hash = tag.charCodeAt(i) + ((hash << 5) - hash);
          }
          return colors[Math.abs(hash) % colors.length];
      },
+
+    /**
+     * 渲染标签
+     * @param {Array} tags - 标签数组
+     * @returns {string} 标签HTML字符串
+     */
+    renderTags(tags) {
+        if (!tags || !Array.isArray(tags) || tags.length === 0) {
+            return '';
+        }
+        
+        return tags.filter(tag => tag && typeof tag === 'string').map(tag => {
+            const colorClass = this.getTagColor(tag);
+            return `<span class="prompt-tag tag-${colorClass}">${this.escapeHtml(tag)}</span>`;
+        }).join('');
+    },
 
     /**
      * HTML反转义函数
@@ -248,11 +269,18 @@ const ui = {
         const modal = document.createElement('div');
         modal.className = 'preview-modal';
         
+        // 获取标签和作者信息
+        const tags = prompt.tags || (prompt.category ? [prompt.category] : []);
+        const author = prompt.author || '';
+        
         modal.innerHTML = `
             <div class="preview-header">
                 <div class="preview-title-section">
                     <h2 class="preview-title">${this.escapeHtml(prompt.title || '无标题')}</h2>
-                    ${prompt.category ? `<div class="preview-category">${this.escapeHtml(prompt.category)}</div>` : ''}
+                    <div class="preview-meta">
+                        ${tags.length > 0 ? `<div class="preview-tags">${this.renderTags(tags)}</div>` : ''}
+                        ${author ? `<div class="preview-author">作者: ${this.escapeHtml(author)}</div>` : ''}
+                    </div>
                 </div>
                 <button class="preview-close">&times;</button>
             </div>
@@ -305,132 +333,34 @@ const ui = {
     },
 
     /**
-     * 更新分类筛选按钮
+     * 更新标签筛选按钮
      */
     updateFilterButtons() {
-        const categories = ['全部', ...new Set(allPrompts.map(p => p.category).filter(Boolean))];
+        // 收集所有标签（包括兼容旧的category字段）
+        const allTags = new Set();
+        allPrompts.forEach(p => {
+            if (p.tags && Array.isArray(p.tags)) {
+                p.tags.forEach(tag => allTags.add(tag));
+            } else if (p.category) {
+                allTags.add(p.category);
+            }
+        });
+        
+        const tags = ['全部', ...Array.from(allTags)];
         this.filterContainer.innerHTML = '';
-        categories.forEach(cat => {
+        tags.forEach(tag => {
             const btn = document.createElement('button');
             btn.className = 'filter-btn';
-            if (cat === '全部') btn.classList.add('active');
-            btn.textContent = cat;
-            btn.addEventListener('click', (e) => app.handleFilter(cat, e));
+            if (tag === '全部') btn.classList.add('active');
+            btn.textContent = tag;
+            btn.addEventListener('click', (e) => app.handleFilter(tag, e));
             this.filterContainer.appendChild(btn);
         });
-        
-        // 更新分类下拉选项
-        this.updateCategoryOptions();
     },
 
-    /**
-     * 更新分类下拉选项
-     */
-    updateCategoryOptions() {
-        const existingCategories = [...new Set(allPrompts.map(p => p.category).filter(Boolean))];
-        this.promptCategorySelect.innerHTML = '<option value="">选择分类</option>';
-        existingCategories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = category;
-            this.promptCategorySelect.appendChild(option);
-        });
-    },
 
-    /**
-     * 设置分类输入框的自动建议功能
-     */
-    setupCategoryInput() {
-        // 创建分类建议容器
-        const suggestionContainer = document.createElement('div');
-        suggestionContainer.style.cssText = `
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: var(--card-light);
-            border: 1px solid var(--border-light);
-            border-radius: 8px;
-            max-height: 150px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        `;
-        
-        // 设置分类输入框的父容器为相对定位
-        this.promptCategoryInput.parentElement.style.position = 'relative';
-        this.promptCategoryInput.parentElement.appendChild(suggestionContainer);
 
-        // 监听输入框聚焦事件
-        this.promptCategoryInput.addEventListener('focus', () => {
-            updateCategorySuggestions();
-        });
-        
-        // 输入框输入时更新建议
-        this.promptCategoryInput.addEventListener('input', () => {
-            updateCategorySuggestions();
-        });
-        
-        // 点击其他地方时隐藏建议
-        document.addEventListener('click', (e) => {
-            if (!this.promptCategoryInput.contains(e.target) && !suggestionContainer.contains(e.target)) {
-                suggestionContainer.style.display = 'none';
-            }
-        });
-        
-        const updateCategorySuggestions = () => {
-            const existingCategories = [...new Set(allPrompts.map(p => p.category).filter(Boolean))];
-            const inputValue = this.promptCategoryInput.value.toLowerCase();
-            
-            // 过滤匹配的分类
-            const filteredCategories = existingCategories.filter(cat => 
-                cat.toLowerCase().includes(inputValue)
-            );
-            
-            if (filteredCategories.length > 0) {
-                suggestionContainer.innerHTML = '';
-                filteredCategories.forEach(category => {
-                    const item = document.createElement('div');
-                    item.style.cssText = `
-                        padding: 8px 12px;
-                        cursor: pointer;
-                        border-bottom: 1px solid var(--border-light);
-                        color: var(--text-light);
-                        background-color: var(--background-light);
-                    `;
-                    item.textContent = category;
-                    
-                    // 暗色模式样式
-                    if (document.body.classList.contains('dark-mode')) {
-                        item.style.color = 'var(--text-dark)';
-                        item.style.backgroundColor = 'var(--background-dark)';
-                        item.style.borderColor = 'var(--border-dark)';
-                    }
-                    
-                    item.addEventListener('mouseenter', () => {
-                        item.style.backgroundColor = 'var(--primary-color)';
-                        item.style.color = 'white';
-                    });
-                    
-                    item.addEventListener('mouseleave', () => {
-                        item.style.backgroundColor = document.body.classList.contains('dark-mode') ? 'var(--background-dark)' : 'var(--background-light)';
-                        item.style.color = document.body.classList.contains('dark-mode') ? 'var(--text-dark)' : 'var(--text-light)';
-                    });
-                    
-                    item.addEventListener('click', () => {
-                        this.promptCategoryInput.value = category;
-                        suggestionContainer.style.display = 'none';
-                    });
-                    
-                    suggestionContainer.appendChild(item);
-                });
-                suggestionContainer.style.display = 'block';
-            } else {
-                suggestionContainer.style.display = 'none';
-            }
-        }
-    },
+
 
 
 
@@ -463,10 +393,12 @@ const ui = {
                     this.promptIdInput.value = prompt.id;
                     this.promptTitleInput.value = prompt.title;
                     this.promptContentInput.value = prompt.content;
-                    this.promptCategoryInput.value = prompt.category || '';
-                    this.promptCategorySelect.value = prompt.category || '';
-                    this.promptCategorySelect.style.display = 'none';
-                    this.promptCategoryInput.style.display = 'block';
+                    // 处理标签字段（兼容旧的category字段）
+                    const tags = prompt.tags || (prompt.category ? [prompt.category] : []);
+                    this.promptTagsInput.value = tags.join(', ');
+                    
+                    // 处理作者字段
+                    this.promptAuthorInput.value = prompt.author || '';
                     this.formTitle.textContent = '编辑提示词';
                     this.showView('formView');
                     // 调整textarea高度以适应内容

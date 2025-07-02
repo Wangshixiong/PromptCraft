@@ -259,7 +259,8 @@ class DataService {
      * @param {Object} promptData - 提示词数据
      * @param {string} promptData.title - 标题
      * @param {string} promptData.content - 内容
-     * @param {string} [promptData.category] - 分类
+     * @param {Array<string>} [promptData.tags] - 标签数组
+     * @param {string} [promptData.author] - 作者
      * @returns {Promise<Object>} 添加后的提示词对象（包含ID）
      */
     async addPrompt(promptData) {
@@ -278,7 +279,8 @@ class DataService {
                 id: this._generateId(),
                 title: promptData.title.trim(),
                 content: promptData.content.trim(),
-                category: promptData.category ? promptData.category.trim() : '',
+                tags: Array.isArray(promptData.tags) ? promptData.tags.filter(tag => tag && tag.trim()).map(tag => tag.trim()) : [],
+                author: promptData.author ? promptData.author.trim() : '',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
@@ -528,6 +530,39 @@ class DataService {
     }
 
     /**
+     * 获取所有标签
+     * @returns {Promise<Array<string>>} 去重后的标签数组
+     */
+    async getAllTags() {
+        await this.initialize();
+        try {
+            const prompts = await this.getAllPrompts();
+            const tagSet = new Set();
+            
+            prompts.forEach(prompt => {
+                // 处理新的tags字段（数组格式）
+                if (Array.isArray(prompt.tags)) {
+                    prompt.tags.forEach(tag => {
+                        if (tag && typeof tag === 'string' && tag.trim()) {
+                            tagSet.add(tag.trim());
+                        }
+                    });
+                }
+                // 兼容旧的category字段（字符串格式）
+                else if (prompt.category && typeof prompt.category === 'string' && prompt.category.trim()) {
+                    tagSet.add(prompt.category.trim());
+                }
+            });
+            
+            // 转换为数组并排序
+            return Array.from(tagSet).sort();
+        } catch (error) {
+            console.error('获取所有标签失败:', error);
+            throw error;
+        }
+    }
+
+    /**
      * 批量设置提示词（用于导入）
      * @param {Array} prompts - 提示词数组
      * @returns {Promise<void>}
@@ -545,11 +580,21 @@ class DataService {
                 if (!prompt.title || !prompt.content) {
                     throw new Error('每个提示词都必须包含标题和内容');
                 }
+                
+                // 处理数据迁移：如果存在category字段但没有tags字段，将category转换为tags
+                let tags = [];
+                if (Array.isArray(prompt.tags)) {
+                    tags = prompt.tags.filter(tag => tag && tag.trim()).map(tag => tag.trim());
+                } else if (prompt.category && prompt.category.trim()) {
+                    tags = [prompt.category.trim()];
+                }
+                
                 return {
                     id: prompt.id || this._generateId(),
                     title: prompt.title.trim(),
                     content: prompt.content.trim(),
-                    category: prompt.category ? prompt.category.trim() : '',
+                    tags: tags,
+                    author: prompt.author ? prompt.author.trim() : '',
                     created_at: prompt.created_at || new Date().toISOString(),
                     updated_at: prompt.updated_at || new Date().toISOString(),
                     is_deleted: prompt.is_deleted || false

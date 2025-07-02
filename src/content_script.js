@@ -195,10 +195,11 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-pr
 }
 html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-item.selected .promptcraft-prompt-title,
 html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-item.selected .promptcraft-prompt-preview,
-html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-item.selected .promptcraft-prompt-category .category {
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-item.selected .promptcraft-prompt-meta .tag,
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-item.selected .promptcraft-prompt-meta .author {
     color: white;
 }
-html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-item.selected .promptcraft-prompt-category .category {
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-item.selected .promptcraft-prompt-meta .tag {
     background-color: rgba(255,255,255,0.1);
     border-color: rgba(255,255,255,0.2);
 }
@@ -207,10 +208,37 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-pr
 html body #promptcraft-quick-invoke-container .promptcraft-prompt-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 html body #promptcraft-quick-invoke-container .promptcraft-prompt-title { font-weight: 600; font-size: 14px; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 html body #promptcraft-quick-invoke-container .promptcraft-prompt-preview { font-size: 13px; color: var(--text-secondary-light); line-height: 1.5; max-height: 40px; overflow: hidden; }
-html body #promptcraft-quick-invoke-container .promptcraft-prompt-category .category { font-size: 11px; padding: 2px 8px; border-radius: 10px; background-color: var(--card-light); border: 1px solid var(--border-light); }
 
+/* 标签和作者元信息容器 */
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+/* 标签样式 */
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-meta .tag { 
+    font-size: 11px; 
+    padding: 2px 8px; 
+    border-radius: 10px; 
+    background-color: var(--card-light); 
+    border: 1px solid var(--border-light);
+    color: var(--text-primary-light);
+}
+
+/* 作者样式 */
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-meta .author { 
+    font-size: 11px; 
+    color: var(--text-secondary-light);
+    font-style: italic;
+}
+
+/* 暗色主题 */
 html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-preview { color: var(--text-secondary-dark); }
-html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-category .category { background-color: var(--card-dark); border-color: var(--border-dark); }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-meta .tag { 
+    background-color: var(--card-dark); 
+    border-color: var(--border-dark);
+    color: var(--text-primary-dark);
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-meta .author { 
+    color: var(--text-secondary-dark);
+}
 
 /* 底部帮助文本 */
 html body #promptcraft-quick-invoke-container .promptcraft-help-text {
@@ -1073,7 +1101,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                     <span class="promptcraft-help-keys">Esc</span> 取消
                 </div>
                 <div class="promptcraft-help-trigger">
-                    输入 <span class="promptcraft-help-command">pp</span> 唤起 • 支持搜索和分类筛选
+                    输入 <span class="promptcraft-help-command">pp</span> 唤起 • 支持搜索和标签筛选
                 </div>
             </div>
         `;
@@ -1254,14 +1282,22 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         const tabsContainer = state.uiContainer.querySelector('.promptcraft-category-tabs');
         if (!tabsContainer) return;
 
-        // 获取所有分类
-        const categories = ['all', ...new Set(state.prompts.map(p => p.category).filter(Boolean))];
+        // 获取所有标签（兼容旧的分类字段）
+        const allTags = new Set();
+        state.prompts.forEach(prompt => {
+            if (prompt.tags && Array.isArray(prompt.tags)) {
+                prompt.tags.forEach(tag => allTags.add(tag));
+            } else if (prompt.category) {
+                allTags.add(prompt.category);
+            }
+        });
+        const tags = ['all', ...Array.from(allTags)];
 
-        // 创建分类标签
-        tabsContainer.innerHTML = categories.map(category => {
-            const displayName = category === 'all' ? '全部' : category;
-            const isActive = category === state.selectedCategory;
-            return `<button class="promptcraft-category-tab ${isActive ? 'active' : ''}" data-category="${category}">${escapeHtml(displayName)}</button>`;
+        // 创建标签标签
+        tabsContainer.innerHTML = tags.map(tag => {
+            const displayName = tag === 'all' ? '全部' : tag;
+            const isActive = tag === state.selectedCategory;
+            return `<button class="promptcraft-category-tab ${isActive ? 'active' : ''}" data-category="${tag}">${escapeHtml(displayName)}</button>`;
         }).join('');
 
         // 添加点击事件
@@ -1322,19 +1358,40 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         console.log('PromptCraft: applyFilters called, state.prompts length:', state.prompts.length);
         let filtered = [...state.prompts];
 
-        // 按分类筛选
+        // 按标签筛选（兼容旧的分类字段）
         if (state.selectedCategory !== 'all') {
-            filtered = filtered.filter(prompt => prompt.category === state.selectedCategory);
+            filtered = filtered.filter(prompt => {
+                // 优先使用tags数组，如果不存在则兼容旧的category字段
+                if (prompt.tags && Array.isArray(prompt.tags)) {
+                    return prompt.tags.includes(state.selectedCategory);
+                } else if (prompt.category) {
+                    return prompt.category === state.selectedCategory;
+                }
+                return false;
+            });
         }
 
         // 按搜索词筛选
         if (state.searchTerm.trim()) {
             const term = state.searchTerm.toLowerCase();
-            filtered = filtered.filter(prompt =>
-                prompt.title.toLowerCase().includes(term) ||
-                prompt.content.toLowerCase().includes(term) ||
-                (prompt.category && prompt.category.toLowerCase().includes(term))
-            );
+            filtered = filtered.filter(prompt => {
+                // 搜索标题和内容
+                const titleMatch = prompt.title.toLowerCase().includes(term);
+                const contentMatch = prompt.content.toLowerCase().includes(term);
+                
+                // 搜索标签（优先使用tags数组，兼容旧的category字段）
+                let tagMatch = false;
+                if (prompt.tags && Array.isArray(prompt.tags)) {
+                    tagMatch = prompt.tags.some(tag => tag.toLowerCase().includes(term));
+                } else if (prompt.category) {
+                    tagMatch = prompt.category.toLowerCase().includes(term);
+                }
+                
+                // 搜索作者
+                const authorMatch = prompt.author && prompt.author.toLowerCase().includes(term);
+                
+                return titleMatch || contentMatch || tagMatch || authorMatch;
+            });
         }
 
         // 按创建时间降序排序，确保与侧边栏显示顺序一致
@@ -1365,15 +1422,28 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
             return;
         }
 
-        listContainer.innerHTML = state.filteredPrompts.map((prompt, index) => `
-            <div class="promptcraft-prompt-item ${index === state.selectedIndex ? 'selected' : ''}" data-index="${index}">
-                <div class="promptcraft-prompt-header">
-                    <div class="promptcraft-prompt-title">${escapeHtml(prompt.title)}</div>
-                    ${prompt.category ? `<div class="promptcraft-prompt-category"><span class="category">${escapeHtml(prompt.category)}</span></div>` : ''}
+        listContainer.innerHTML = state.filteredPrompts.map((prompt, index) => {
+            // 渲染标签（优先使用tags数组，兼容旧的category字段）
+            let tagsHtml = '';
+            if (prompt.tags && Array.isArray(prompt.tags) && prompt.tags.length > 0) {
+                tagsHtml = prompt.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
+            } else if (prompt.category) {
+                tagsHtml = `<span class="tag">${escapeHtml(prompt.category)}</span>`;
+            }
+            
+            // 渲染作者
+            const authorHtml = prompt.author ? `<span class="author">by ${escapeHtml(prompt.author)}</span>` : '';
+            
+            return `
+                <div class="promptcraft-prompt-item ${index === state.selectedIndex ? 'selected' : ''}" data-index="${index}">
+                    <div class="promptcraft-prompt-header">
+                        <div class="promptcraft-prompt-title">${escapeHtml(prompt.title)}</div>
+                        ${tagsHtml || authorHtml ? `<div class="promptcraft-prompt-meta">${tagsHtml}${authorHtml}</div>` : ''}
+                    </div>
+                    <div class="promptcraft-prompt-preview">${escapeHtml(prompt.content.substring(0, 100))}${prompt.content.length > 100 ? '...' : ''}</div>
                 </div>
-                <div class="promptcraft-prompt-preview">${escapeHtml(prompt.content.substring(0, 100))}${prompt.content.length > 100 ? '...' : ''}</div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         // 添加鼠标按下事件（避免与blur事件冲突）
         listContainer.querySelectorAll('.promptcraft-prompt-item').forEach((item) => {

@@ -19,7 +19,10 @@ const app = {
         
         // 设置事件监听器
         this.setupEventListeners();
-        ui.setupCategoryInput();
+        
+        // 初始化标签组件管理器
+        this.tagManager = new TagComponentManager();
+        await this.initializeTagComponent();
         
         try {
             // 显示主视图
@@ -46,6 +49,28 @@ const app = {
         } catch (error) {
             console.error('初始化应用失败:', error);
             ui.showToast('加载数据失败，请刷新页面重试', 'error');
+        }
+    },
+
+    /**
+     * 初始化标签组件
+     */
+    async initializeTagComponent() {
+        try {
+            // 使用dataService.getAllTags()获取所有标签
+            const response = await chrome.runtime.sendMessage({ type: 'GET_ALL_TAGS' });
+            let availableTags = [];
+            
+            if (response.success && response.data) {
+                availableTags = response.data;
+            }
+            
+            // 初始化标签组件
+            await this.tagManager.initialize('smartTagInputContainer', [], availableTags);
+        } catch (error) {
+            console.error('初始化标签组件失败:', error);
+            // 即使失败也要初始化基本组件
+            await this.tagManager.initialize('smartTagInputContainer', [], []);
         }
     },
 
@@ -196,11 +221,24 @@ const app = {
      */
     handleSearch(term) {
         const lowerCaseTerm = term.toLowerCase();
-        const filtered = allPrompts.filter(p =>
-            p.title.toLowerCase().includes(lowerCaseTerm) ||
-            p.content.toLowerCase().includes(lowerCaseTerm) ||
-            (p.category && p.category.toLowerCase().includes(lowerCaseTerm))
-        );
+        const filtered = allPrompts.filter(p => {
+            // 搜索标题和内容
+            const titleMatch = p.title.toLowerCase().includes(lowerCaseTerm);
+            const contentMatch = p.content.toLowerCase().includes(lowerCaseTerm);
+            
+            // 搜索标签（优先使用tags数组，兼容旧的category字段）
+            let tagMatch = false;
+            if (p.tags && Array.isArray(p.tags)) {
+                tagMatch = p.tags.some(tag => tag.toLowerCase().includes(lowerCaseTerm));
+            } else if (p.category) {
+                tagMatch = p.category.toLowerCase().includes(lowerCaseTerm);
+            }
+            
+            // 搜索作者
+            const authorMatch = p.author && p.author.toLowerCase().includes(lowerCaseTerm);
+            
+            return titleMatch || contentMatch || tagMatch || authorMatch;
+        });
         ui.renderPrompts(filtered);
     },
 
@@ -433,7 +471,8 @@ const app = {
         const id = ui.promptIdInput.value;
         const title = ui.promptTitleInput.value.trim();
         const content = ui.promptContentInput.value.trim();
-        const category = ui.promptCategoryInput.value.trim() || '未分类';
+        const tags = this.tagManager.getTags();
+        const author = ui.promptAuthorInput ? ui.promptAuthorInput.value.trim() : '';
 
         if (!title || !content) {
             ui.showToast('标题和内容不能为空！', 'warning');
@@ -453,7 +492,8 @@ const app = {
                 user_id: currentUser.id,
                 title,
                 content,
-                category
+                tags: tags.length > 0 ? tags : ['未分类'],
+                author: author || ''
             };
             
             let response;
@@ -508,10 +548,17 @@ const app = {
         ui.promptIdInput.value = '';
         ui.promptTitleInput.value = '';
         ui.promptContentInput.value = '';
-        ui.promptCategoryInput.value = '';
-        ui.promptCategorySelect.value = '';
-        ui.promptCategorySelect.style.display = 'none';
-        ui.promptCategoryInput.style.display = 'block';
+        
+        // 清空标签组件
+        if (this.tagManager) {
+            this.tagManager.clear();
+        }
+        
+        // 清空作者字段
+        if (ui.promptAuthorInput) {
+            ui.promptAuthorInput.value = '';
+        }
+        
         ui.formTitle.textContent = '添加新提示词';
         // 重置textarea高度
         ui.autoResizeTextarea(ui.promptContentInput);
@@ -753,14 +800,22 @@ const app = {
     /**
      * 处理分类筛选
      */
-    handleFilter(category, event) {
+    handleFilter(tag, event) {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         event.target.classList.add('active');
 
-        if (category === '全部') {
+        if (tag === '全部') {
             ui.renderPrompts(allPrompts);
         } else {
-            const filtered = allPrompts.filter(p => p.category === category);
+            const filtered = allPrompts.filter(p => {
+                // 优先使用tags数组，如果不存在则兼容旧的category字段
+                if (p.tags && Array.isArray(p.tags)) {
+                    return p.tags.includes(tag);
+                } else if (p.category) {
+                    return p.category === tag;
+                }
+                return false;
+            });
             ui.renderPrompts(filtered);
         }
     },

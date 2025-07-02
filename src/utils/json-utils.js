@@ -14,7 +14,8 @@ function exportToJSON(prompts) {
                 updated_at: prompt.updated_at || new Date().toISOString(),
                 title: prompt.title || '',
                 content: prompt.content || '',
-                category: prompt.category || '',
+                tags: prompt.tags || (prompt.category ? [prompt.category] : []),
+                author: prompt.author || '',
                 is_deleted: prompt.is_deleted || false
             }))
         };
@@ -61,7 +62,8 @@ function downloadTemplate() {
                     updated_at: new Date().toISOString(),
                     title: '示例提示词标题',
                     content: '这里是提示词的具体内容，请详细描述您的需求...',
-                    category: '工作',
+                    tags: ['工作'],
+                    author: '示例作者',
                     is_deleted: false
                 },
                 {
@@ -70,7 +72,8 @@ function downloadTemplate() {
                     updated_at: new Date().toISOString(),
                     title: '另一个示例',
                     content: '您可以添加更多的提示词条目...',
-                    category: '学习',
+                    tags: ['学习'],
+                    author: '示例作者',
                     is_deleted: false
                 }
             ]
@@ -136,7 +139,8 @@ function importFromJSON(file) {
                         id: prompt.id || '', // 如果有id则保留，否则在添加时会自动生成
                         title: prompt.title.trim(),
                         content: prompt.content.trim(),
-                        category: (prompt.category || '未分类').trim(),
+                        tags: prompt.tags || (prompt.category ? [prompt.category] : ['未分类']),
+                        author: (prompt.author || '').trim(),
                         created_at: prompt.created_at || prompt.createdAt || new Date().toISOString(),
                         updated_at: prompt.updated_at || prompt.updatedAt || new Date().toISOString(),
                         is_deleted: prompt.is_deleted || false
