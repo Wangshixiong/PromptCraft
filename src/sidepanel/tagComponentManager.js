@@ -16,59 +16,32 @@ class TagComponentManager {
     }
 
     /**
-     * 获取标签颜色类（与主界面保持一致）
-     * @param {string} tag - 标签名称
-     * @returns {string} 颜色类名
-     */
-    getTagColor(tag) {
-        // 参数验证：确保tag是有效的字符串
-        if (!tag || typeof tag !== 'string') {
-            return 'blue'; // 返回默认颜色
-        }
-        
-        // 初始化颜色使用记录
-        if (!this.colorUsageMap) {
-            this.colorUsageMap = new Map();
-        }
-        
-        // 如果已经为这个标签分配过颜色，直接返回
-        if (this.colorUsageMap.has(tag)) {
-            return this.colorUsageMap.get(tag);
-        }
-        
-        const colors = ['blue', 'green', 'purple', 'orange', 'pink', 'indigo', 'red', 'yellow', 'teal', 'gray'];
-        
-        // 统计当前颜色使用情况
-        const colorCount = {};
-        colors.forEach(color => colorCount[color] = 0);
-        
-        // 计算已使用的颜色频次
-        for (let usedColor of this.colorUsageMap.values()) {
-            if (colorCount[usedColor] !== undefined) {
-                colorCount[usedColor]++;
-            }
-        }
-        
-        // 找到使用次数最少的颜色
-        let minCount = Math.min(...Object.values(colorCount));
-        let availableColors = colors.filter(color => colorCount[color] === minCount);
-        
-        // 如果有多个最少使用的颜色，使用哈希算法选择一个
-        let selectedColor;
-        if (availableColors.length === 1) {
-            selectedColor = availableColors[0];
-        } else {
-            let hash = 0;
-            for (let i = 0; i < tag.length; i++) {
-                hash = tag.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            selectedColor = availableColors[Math.abs(hash) % availableColors.length];
-        }
-        
-        // 记录颜色分配
-        this.colorUsageMap.set(tag, selectedColor);
-        return selectedColor;
-    }
+      * 获取标签颜色类（使用全局颜色管理器）
+      * @param {string} tag - 标签名称
+      * @returns {string} 颜色类名
+      */
+     getTagColor(tag) {
+         // 使用全局颜色管理器
+         if (window.getGlobalTagColor) {
+             return window.getGlobalTagColor(tag);
+         }
+         
+         // 降级处理：如果全局管理器不可用，使用简单哈希算法
+         if (!tag || typeof tag !== 'string') {
+             return 'blue';
+         }
+         
+         let hash = 0;
+         for (let i = 0; i < tag.length; i++) {
+             const char = tag.charCodeAt(i);
+             hash = ((hash << 5) - hash) + char;
+             hash = hash & hash;
+         }
+         
+         const availableColors = ['blue', 'green', 'purple', 'orange', 'pink', 'indigo', 'red', 'yellow', 'teal', 'gray'];
+         const colorIndex = Math.abs(hash) % availableColors.length;
+         return availableColors[colorIndex];
+     }
 
     /**
      * 初始化标签组件

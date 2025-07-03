@@ -125,10 +125,19 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
     /* margin-left: 0; */
+    transition: all 0.3s ease;
 }
 
 .filter-container::-webkit-scrollbar {
     display: none;
+}
+
+/* 展开状态的过滤器容器 */
+.filter-container.expanded {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    overflow-y: visible;
+    max-height: none;
 }
 
 /* 过滤器按钮样式 */
@@ -157,23 +166,195 @@
 }
 
 .filter-btn.active {
-    background-color: #4f46e5;
-    color: white;
+    background-color: #4f46e5 !important;
+    color: white !important;
+    border-color: #4f46e5 !important;
 }
 
-.filter-btn:hover:not(.active) {
+.filter-btn:hover:not(.active):not([class*="filter-tag-"]) {
     background-color: #e5e7eb;
     color: #374151;
 }
 
 .dark-mode .filter-btn.active {
-    background-color: #4f46e5;
-    color: white;
+    background-color: #4f46e5 !important;
+    color: white !important;
+    border-color: #4f46e5 !important;
 }
 
-.dark-mode .filter-btn:hover:not(.active) {
+.dark-mode .filter-btn:hover:not(.active):not([class*="filter-tag-"]) {
     background-color: #4b5563;
     color: #d1d5db;
+}
+
+/* 更多按钮样式 */
+.filter-more-btn {
+    padding: 4px 8px;
+    border-radius: 12px;
+    background-color: #f3f4f6;
+    border: none;
+    color: #6b7280;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: fit-content;
+    gap: 4px;
+    margin-left: auto; /* 推到最右边 */
+}
+
+.dark-mode .filter-more-btn {
+    background-color: #374151;
+    color: #9ca3af;
+}
+
+.filter-more-btn:hover {
+    background-color: #e5e7eb;
+    color: #374151;
+}
+
+.dark-mode .filter-more-btn:hover {
+    background-color: #4b5563;
+    color: #d1d5db;
+}
+
+/* 筛选标签颜色样式 - 与卡片标签保持一致 */
+.filter-tag-blue {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    color: #3b82f6 !important;
+    border: 1px solid rgba(59, 130, 246, 0.2) !important;
+}
+
+.filter-tag-green {
+    background-color: rgba(34, 197, 94, 0.1) !important;
+    color: #22c55e !important;
+    border: 1px solid rgba(34, 197, 94, 0.2) !important;
+}
+
+.filter-tag-purple {
+    background-color: rgba(147, 51, 234, 0.1) !important;
+    color: #9333ea !important;
+    border: 1px solid rgba(147, 51, 234, 0.2) !important;
+}
+
+.filter-tag-orange {
+    background-color: rgba(249, 115, 22, 0.1) !important;
+    color: #f97316 !important;
+    border: 1px solid rgba(249, 115, 22, 0.2) !important;
+}
+
+.filter-tag-pink {
+    background-color: rgba(236, 72, 153, 0.1) !important;
+    color: #ec4899 !important;
+    border: 1px solid rgba(236, 72, 153, 0.2) !important;
+}
+
+.filter-tag-indigo {
+    background-color: rgba(99, 102, 241, 0.1) !important;
+    color: #6366f1 !important;
+    border: 1px solid rgba(99, 102, 241, 0.2) !important;
+}
+
+.filter-tag-red {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    color: #ef4444 !important;
+    border: 1px solid rgba(239, 68, 68, 0.2) !important;
+}
+
+.filter-tag-yellow {
+    background-color: rgba(245, 158, 11, 0.1) !important;
+    color: #f59e0b !important;
+    border: 1px solid rgba(245, 158, 11, 0.2) !important;
+}
+
+.filter-tag-teal {
+    background-color: rgba(20, 184, 166, 0.1) !important;
+    color: #14b8a6 !important;
+    border: 1px solid rgba(20, 184, 166, 0.2) !important;
+}
+
+.filter-tag-gray {
+    background-color: rgba(107, 114, 128, 0.1) !important;
+    color: #6b7280 !important;
+    border: 1px solid rgba(107, 114, 128, 0.2) !important;
+}
+
+/* 暗色主题筛选标签样式 */
+.dark-mode .filter-tag-blue {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+    color: #60a5fa !important;
+    border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.dark-mode .filter-tag-green {
+    background-color: rgba(34, 197, 94, 0.2) !important;
+    color: #4ade80 !important;
+    border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+.dark-mode .filter-tag-purple {
+    background-color: rgba(147, 51, 234, 0.2) !important;
+    color: #a855f7 !important;
+    border-color: rgba(147, 51, 234, 0.3) !important;
+}
+
+.dark-mode .filter-tag-orange {
+    background-color: rgba(249, 115, 22, 0.2) !important;
+    color: #fb923c !important;
+    border-color: rgba(249, 115, 22, 0.3) !important;
+}
+
+.dark-mode .filter-tag-pink {
+    background-color: rgba(236, 72, 153, 0.2) !important;
+    color: #f472b6 !important;
+    border-color: rgba(236, 72, 153, 0.3) !important;
+}
+
+.dark-mode .filter-tag-indigo {
+    background-color: rgba(99, 102, 241, 0.2) !important;
+    color: #818cf8 !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+.dark-mode .filter-tag-red {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    color: #fca5a5 !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.dark-mode .filter-tag-yellow {
+    background-color: rgba(245, 158, 11, 0.2) !important;
+    color: #fbbf24 !important;
+    border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+.dark-mode .filter-tag-teal {
+    background-color: rgba(20, 184, 166, 0.2) !important;
+    color: #5eead4 !important;
+    border-color: rgba(20, 184, 166, 0.3) !important;
+}
+
+.dark-mode .filter-tag-gray {
+    background-color: rgba(107, 114, 128, 0.2) !important;
+    color: #9ca3af !important;
+    border-color: rgba(107, 114, 128, 0.3) !important;
+}
+
+/* 筛选标签悬停效果 */
+.filter-btn[class*="filter-tag-"]:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    opacity: 0.9;
+}
+
+.dark-mode .filter-btn[class*="filter-tag-"]:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 /* 添加按钮样式 */

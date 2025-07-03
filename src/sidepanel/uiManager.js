@@ -230,55 +230,29 @@ const ui = {
         });
     },
 
+    // 使用全局标签颜色管理器
     getTagColor(tag) {
-         // 参数验证：确保tag是有效的字符串
-         if (!tag || typeof tag !== 'string') {
-             return 'blue'; // 返回默认颜色
-         }
-         
-         // 初始化颜色使用记录
-         if (!this.colorUsageMap) {
-             this.colorUsageMap = new Map();
-         }
-         
-         // 如果已经为这个标签分配过颜色，直接返回
-         if (this.colorUsageMap.has(tag)) {
-             return this.colorUsageMap.get(tag);
-         }
-         
-         const colors = ['blue', 'green', 'purple', 'orange', 'pink', 'indigo', 'red', 'yellow', 'teal', 'gray'];
-         
-         // 统计当前颜色使用情况
-         const colorCount = {};
-         colors.forEach(color => colorCount[color] = 0);
-         
-         // 计算已使用的颜色频次
-         for (let usedColor of this.colorUsageMap.values()) {
-             if (colorCount[usedColor] !== undefined) {
-                 colorCount[usedColor]++;
-             }
-         }
-         
-         // 找到使用次数最少的颜色
-         let minCount = Math.min(...Object.values(colorCount));
-         let availableColors = colors.filter(color => colorCount[color] === minCount);
-         
-         // 如果有多个最少使用的颜色，使用哈希算法选择一个
-         let selectedColor;
-         if (availableColors.length === 1) {
-             selectedColor = availableColors[0];
-         } else {
-             let hash = 0;
-             for (let i = 0; i < tag.length; i++) {
-                 hash = tag.charCodeAt(i) + ((hash << 5) - hash);
-             }
-             selectedColor = availableColors[Math.abs(hash) % availableColors.length];
-         }
-         
-         // 记录颜色分配
-         this.colorUsageMap.set(tag, selectedColor);
-         return selectedColor;
-     },
+        // 使用全局颜色管理器
+        if (window.getGlobalTagColor) {
+            return window.getGlobalTagColor(tag);
+        }
+        
+        // 降级处理：如果全局管理器不可用，使用简单哈希算法
+        if (!tag || typeof tag !== 'string') {
+            return 'blue';
+        }
+        
+        let hash = 0;
+        for (let i = 0; i < tag.length; i++) {
+            const char = tag.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        
+        const availableColors = ['blue', 'green', 'purple', 'orange', 'pink', 'indigo', 'red', 'yellow', 'teal', 'gray'];
+        const colorIndex = Math.abs(hash) % availableColors.length;
+        return availableColors[colorIndex];
+    },
 
     /**
      * 渲染标签
@@ -401,7 +375,7 @@ const ui = {
     },
 
     /**
-     * 更新标签筛选按钮
+     * 更新标签筛选按钮 - 支持溢出检测和"更多"按钮
      */
     updateFilterButtons() {
         // 收集所有标签（包括兼容旧的category字段）
@@ -415,15 +389,127 @@ const ui = {
         });
         
         const tags = ['全部', ...Array.from(allTags)];
+        
+        // 初始化标签状态
+        if (!this.filterState) {
+            this.filterState = {
+                allTags: tags,
+                isExpanded: false,
+                maxVisibleCount: 0
+            };
+        } else {
+            this.filterState.allTags = tags;
+        }
+        
+        this.renderFilterButtons();
+    },
+
+    /**
+     * 渲染标签筛选按钮
+     */
+    renderFilterButtons() {
+        if (!this.filterState) return;
+        
+        const { allTags, isExpanded } = this.filterState;
         this.filterContainer.innerHTML = '';
+        
+        // 根据展开状态设置容器样式
+        if (isExpanded) {
+            this.filterContainer.classList.add('expanded');
+        } else {
+            this.filterContainer.classList.remove('expanded');
+        }
+        
+        // 如果标签数量少或已展开，显示所有标签
+        if (allTags.length <= 4 || isExpanded) {
+            this.renderAllTags(allTags, isExpanded);
+        } else {
+            this.renderPartialTags(allTags);
+        }
+    },
+
+    /**
+     * 渲染所有标签
+     */
+    renderAllTags(tags, showCollapseBtn = false) {
         tags.forEach(tag => {
-            const btn = document.createElement('button');
-            btn.className = 'filter-btn';
-            if (tag === '全部') btn.classList.add('active');
-            btn.textContent = tag;
-            btn.addEventListener('click', (e) => app.handleFilter(tag, e));
+            const btn = this.createFilterButton(tag);
             this.filterContainer.appendChild(btn);
         });
+        
+        // 如果是展开状态，在最右边添加"收起"按钮
+        if (showCollapseBtn && tags.length > 4) {
+            const collapseBtn = this.createMoreButton(false);
+            this.filterContainer.appendChild(collapseBtn);
+        }
+    },
+
+    /**
+     * 渲染部分标签 + "更多"按钮
+     */
+    renderPartialTags(tags) {
+        // 显示前3个标签
+        const visibleTags = tags.slice(0, 3);
+        visibleTags.forEach(tag => {
+            const btn = this.createFilterButton(tag);
+            this.filterContainer.appendChild(btn);
+        });
+        
+        // 在最右边添加"更多"按钮
+        const moreBtn = this.createMoreButton(true);
+        this.filterContainer.appendChild(moreBtn);
+    },
+
+    /**
+     * 创建标签筛选按钮
+     */
+    createFilterButton(tag) {
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn';
+        
+        // 如果不是"全部"，使用标签颜色系统
+        if (tag !== '全部') {
+            const colorClass = this.getTagColor(tag);
+            btn.classList.add(`filter-tag-${colorClass}`);
+        }
+        
+        if (tag === '全部') btn.classList.add('active');
+        btn.textContent = tag;
+        btn.addEventListener('click', (e) => app.handleFilter(tag, e));
+        return btn;
+    },
+
+    /**
+     * 创建"更多"/"收起"按钮
+     */
+    createMoreButton(isMore = true) {
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn filter-more-btn';
+        
+        if (isMore) {
+            btn.innerHTML = '<i class="fas fa-ellipsis-h"></i>';
+            btn.title = '显示更多标签';
+        } else {
+            btn.innerHTML = '<i class="fas fa-chevron-up"></i>';
+            btn.title = '收起标签';
+        }
+        
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleFilterExpanded();
+        });
+        
+        return btn;
+    },
+
+    /**
+     * 切换标签展开/收起状态
+     */
+    toggleFilterExpanded() {
+        if (!this.filterState) return;
+        
+        this.filterState.isExpanded = !this.filterState.isExpanded;
+        this.renderFilterButtons();
     },
 
 

@@ -48,6 +48,7 @@
                 "assets/icons/*",
                 "assets/data/*",
                 "src/utils/*",
+                "src/shared/*",
                 "src/libs/supabase.min.js"
             ],
             "matches": ["<all_urls>"]

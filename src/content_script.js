@@ -236,6 +236,135 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-pr
     border-color: var(--border-dark);
     color: var(--text-primary-dark);
 }
+
+/* 标签颜色样式 - 明亮模式 */
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-meta .tag.tag-blue { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; border-color: rgba(59, 130, 246, 0.3); }
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-meta .tag.tag-green { background-color: rgba(34, 197, 94, 0.1); color: #22c55e; border-color: rgba(34, 197, 94, 0.3); }
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-meta .tag.tag-purple { background-color: rgba(147, 51, 234, 0.1); color: #9333ea; border-color: rgba(147, 51, 234, 0.3); }
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-meta .tag.tag-orange { background-color: rgba(249, 115, 22, 0.1); color: #f97316; border-color: rgba(249, 115, 22, 0.3); }
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-meta .tag.tag-pink { background-color: rgba(236, 72, 153, 0.1); color: #ec4899; border-color: rgba(236, 72, 153, 0.3); }
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-meta .tag.tag-indigo { background-color: rgba(99, 102, 241, 0.1); color: #6366f1; border-color: rgba(99, 102, 241, 0.3); }
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-meta .tag.tag-red { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-meta .tag.tag-yellow { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); }
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-meta .tag.tag-teal { background-color: rgba(20, 184, 166, 0.1); color: #14b8a6; border-color: rgba(20, 184, 166, 0.3); }
+html body #promptcraft-quick-invoke-container .promptcraft-prompt-meta .tag.tag-gray { background-color: rgba(107, 114, 128, 0.1); color: #6b7280; border-color: rgba(107, 114, 128, 0.3); }
+
+/* 标签颜色样式 - 暗色模式 */
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-meta .tag.tag-blue { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.4); }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-meta .tag.tag-green { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; border-color: rgba(34, 197, 94, 0.4); }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-meta .tag.tag-purple { background-color: rgba(147, 51, 234, 0.2); color: #a855f7; border-color: rgba(147, 51, 234, 0.4); }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-meta .tag.tag-orange { background-color: rgba(249, 115, 22, 0.2); color: #fb923c; border-color: rgba(249, 115, 22, 0.4); }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-meta .tag.tag-pink { background-color: rgba(236, 72, 153, 0.2); color: #f472b6; border-color: rgba(236, 72, 153, 0.4); }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-meta .tag.tag-indigo { background-color: rgba(99, 102, 241, 0.2); color: #818cf8; border-color: rgba(99, 102, 241, 0.4); }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-meta .tag.tag-red { background-color: rgba(239, 68, 68, 0.2); color: #f87171; border-color: rgba(239, 68, 68, 0.4); }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-meta .tag.tag-yellow { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: rgba(245, 158, 11, 0.4); }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-meta .tag.tag-teal { background-color: rgba(20, 184, 166, 0.2); color: #2dd4bf; border-color: rgba(20, 184, 166, 0.4); }
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-meta .tag.tag-gray { background-color: rgba(107, 114, 128, 0.2); color: #9ca3af; border-color: rgba(107, 114, 128, 0.4); }
+
+/* 分类标签颜色样式 - 明亮模式 */
+html body #promptcraft-quick-invoke-container .category-tab-blue {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border-color: #93c5fd;
+}
+html body #promptcraft-quick-invoke-container .category-tab-green {
+    background-color: #dcfce7;
+    color: #166534;
+    border-color: #86efac;
+}
+html body #promptcraft-quick-invoke-container .category-tab-purple {
+    background-color: #f3e8ff;
+    color: #7c3aed;
+    border-color: #c4b5fd;
+}
+html body #promptcraft-quick-invoke-container .category-tab-orange {
+    background-color: #fed7aa;
+    color: #ea580c;
+    border-color: #fdba74;
+}
+html body #promptcraft-quick-invoke-container .category-tab-pink {
+    background-color: #fce7f3;
+    color: #be185d;
+    border-color: #f9a8d4;
+}
+html body #promptcraft-quick-invoke-container .category-tab-indigo {
+    background-color: #e0e7ff;
+    color: #4338ca;
+    border-color: #a5b4fc;
+}
+html body #promptcraft-quick-invoke-container .category-tab-red {
+    background-color: #fee2e2;
+    color: #dc2626;
+    border-color: #fca5a5;
+}
+html body #promptcraft-quick-invoke-container .category-tab-yellow {
+    background-color: #fef3c7;
+    color: #d97706;
+    border-color: #fcd34d;
+}
+html body #promptcraft-quick-invoke-container .category-tab-teal {
+    background-color: #ccfbf1;
+    color: #0f766e;
+    border-color: #5eead4;
+}
+html body #promptcraft-quick-invoke-container .category-tab-gray {
+    background-color: #f3f4f6;
+    color: #374151;
+    border-color: #d1d5db;
+}
+
+/* 分类标签颜色样式 - 暗色模式 */
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .category-tab-blue {
+    background-color: #1e3a8a;
+    color: #93c5fd;
+    border-color: #3b82f6;
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .category-tab-green {
+    background-color: #14532d;
+    color: #86efac;
+    border-color: #22c55e;
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .category-tab-purple {
+    background-color: #581c87;
+    color: #c4b5fd;
+    border-color: #8b5cf6;
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .category-tab-orange {
+    background-color: #9a3412;
+    color: #fdba74;
+    border-color: #f97316;
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .category-tab-pink {
+    background-color: #831843;
+    color: #f9a8d4;
+    border-color: #ec4899;
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .category-tab-indigo {
+    background-color: #312e81;
+    color: #a5b4fc;
+    border-color: #6366f1;
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .category-tab-red {
+    background-color: #991b1b;
+    color: #fca5a5;
+    border-color: #ef4444;
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .category-tab-yellow {
+    background-color: #92400e;
+    color: #fcd34d;
+    border-color: #f59e0b;
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .category-tab-teal {
+    background-color: #134e4a;
+    color: #5eead4;
+    border-color: #14b8a6;
+}
+html body #promptcraft-quick-invoke-container[data-theme="dark"] .category-tab-gray {
+    background-color: #374151;
+    color: #d1d5db;
+    border-color: #6b7280;
+}
+
 html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-prompt-meta .author { 
     color: var(--text-secondary-dark);
 }
@@ -1293,11 +1422,12 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         });
         const tags = ['all', ...Array.from(allTags)];
 
-        // 创建标签标签
+        // 创建分类标签（添加颜色支持）
         tabsContainer.innerHTML = tags.map(tag => {
             const displayName = tag === 'all' ? '全部' : tag;
             const isActive = tag === state.selectedCategory;
-            return `<button class="promptcraft-category-tab ${isActive ? 'active' : ''}" data-category="${tag}">${escapeHtml(displayName)}</button>`;
+            const colorClass = tag === 'all' ? '' : `category-tab-${tagColorManager.getTagColor(tag)}`;
+            return `<button class="promptcraft-category-tab ${isActive ? 'active' : ''} ${colorClass}" data-category="${tag}">${escapeHtml(displayName)}</button>`;
         }).join('');
 
         // 添加点击事件
@@ -1409,6 +1539,67 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         applyFilters();
     }
 
+    // 全局标签颜色管理器
+    // 注入全局颜色管理器脚本
+    function injectGlobalTagColorManager() {
+        return new Promise((resolve) => {
+            // 检查是否已经存在
+            if (window.globalTagColorManager) {
+                resolve(window.globalTagColorManager);
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = chrome.runtime.getURL('src/shared/globalTagColorManager.js');
+            script.onload = function() {
+                script.remove();
+                resolve(window.globalTagColorManager);
+            };
+            script.onerror = function() {
+                script.remove();
+                resolve(null);
+            };
+            (document.head || document.documentElement).appendChild(script);
+        });
+    }
+    
+    // 统一的颜色管理器
+    const tagColorManager = {
+        getTagColor(tag) {
+            // 优先使用全局颜色管理器
+            if (window.getGlobalTagColor) {
+                return window.getGlobalTagColor(tag);
+            }
+            
+            // 降级处理：使用简单哈希算法
+            if (!tag || typeof tag !== 'string') {
+                return 'blue';
+            }
+            
+            let hash = 0;
+            for (let i = 0; i < tag.length; i++) {
+                const char = tag.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            
+            const availableColors = ['blue', 'green', 'purple', 'orange', 'pink', 'indigo', 'red', 'yellow', 'teal', 'gray'];
+            const colorIndex = Math.abs(hash) % availableColors.length;
+            return availableColors[colorIndex];
+        }
+    };
+    
+    // 预加载全局颜色管理器
+    injectGlobalTagColorManager().then(globalManager => {
+        if (globalManager) {
+            console.log('Global tag color manager loaded in content script');
+        } else {
+            console.warn('Failed to load global tag color manager, using fallback');
+        }
+    }).catch(err => {
+        console.error('Failed to load global tag color manager:', err);
+    });
+
     // 更新提示词列表
     function updatePromptList() {
         console.log('PromptCraft: updatePromptList called, filteredPrompts length:', state.filteredPrompts.length);
@@ -1426,9 +1617,13 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
             // 渲染标签（优先使用tags数组，兼容旧的category字段）
             let tagsHtml = '';
             if (prompt.tags && Array.isArray(prompt.tags) && prompt.tags.length > 0) {
-                tagsHtml = prompt.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
+                tagsHtml = prompt.tags.map(tag => {
+                    const colorClass = tagColorManager.getTagColor(tag);
+                    return `<span class="tag tag-${colorClass}">${escapeHtml(tag)}</span>`;
+                }).join('');
             } else if (prompt.category) {
-                tagsHtml = `<span class="tag">${escapeHtml(prompt.category)}</span>`;
+                const colorClass = tagColorManager.getTagColor(prompt.category);
+                tagsHtml = `<span class="tag tag-${colorClass}">${escapeHtml(prompt.category)}</span>`;
             }
             
             // 渲染作者
