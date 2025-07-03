@@ -401,6 +401,8 @@
     display: flex;         /* 启用Flexbox布局 */
     align-items: center;   /* 魔法发生的地方：让所有子元素垂直居中对齐 */
     gap: 8px;              /* 控制元素之间的间距 */
+    flex-wrap: wrap;       /* 允许标签换行，防止卡片变形 */
+    flex: 1;               /* 占用可用空间，为右侧按钮留出空间 */
 }
 
 .prompt-category {
@@ -416,6 +418,7 @@
     white-space: nowrap;
     line-height: 1;
     flex-shrink: 0; /* 防止空间不足时日期文本被压缩 */
+    margin-left: auto; /* 当标签换行时，确保时间显示在右侧 */
 }
 
 .dark-mode .creation-date {
@@ -508,6 +511,7 @@
     font-size: 11px;
     font-weight: 500;
     margin-right: 4px;
+    margin-bottom: 2px; /* 为换行的标签添加垂直间距 */
     display: inline-block;
 }
 
@@ -725,6 +729,50 @@
 
 .form-group {
     margin-bottom: 20px;
+}
+
+/* 表单行布局 - 用于将多个表单组件放在同一行 */
+.form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+/* 表单列 - 用于行布局中的各个列 */
+.form-col {
+    flex: 1;
+    min-width: 0; /* 防止flex项目溢出 */
+}
+
+/* 标题列占更多空间，作者列占较少空间 */
+.form-col.title-col {
+    flex: 2;
+}
+
+.form-col.author-col {
+    flex: 1;
+}
+
+/* 行布局中的表单组件不需要额外的底部边距 */
+.form-row .form-group {
+    margin-bottom: 0;
+}
+
+/* 响应式设计：小屏幕下恢复垂直布局 */
+@media (max-width: 480px) {
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .form-row .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-col.title-col,
+    .form-col.author-col {
+        flex: 1;
+    }
 }
 
 .form-label {

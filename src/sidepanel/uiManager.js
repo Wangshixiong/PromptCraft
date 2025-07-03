@@ -143,7 +143,7 @@ const ui = {
                         <div class="prompt-content">${this.escapeHtml(prompt.content || '')}</div>
                         <div class="card-footer">
                             <div class="meta-info">
-                                ${this.renderTags(prompt.tags || prompt.category ? [prompt.category] : [])}
+                                ${this.renderTags(prompt.tags || (prompt.category ? [prompt.category] : []))}
                                 <span class="creation-date">${this.formatDate(prompt.created_at)}</span>
                             </div>
                             <div class="card-actions">
@@ -388,22 +388,8 @@ const ui = {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const id = e.currentTarget.dataset.id;
-                const prompt = allPrompts.find(p => p.id == id);
-                if (prompt) {
-                    this.promptIdInput.value = prompt.id;
-                    this.promptTitleInput.value = prompt.title;
-                    this.promptContentInput.value = prompt.content;
-                    // 处理标签字段（兼容旧的category字段）
-                    const tags = prompt.tags || (prompt.category ? [prompt.category] : []);
-                    this.promptTagsInput.value = tags.join(', ');
-                    
-                    // 处理作者字段
-                    this.promptAuthorInput.value = prompt.author || '';
-                    this.formTitle.textContent = '编辑提示词';
-                    this.showView('formView');
-                    // 调整textarea高度以适应内容
-                    this.autoResizeTextarea(this.promptContentInput);
-                }
+                // 调用appController的编辑处理函数
+                app.handleEditPrompt(id);
             });
         });
 

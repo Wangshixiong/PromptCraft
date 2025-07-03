@@ -380,18 +380,6 @@ class TagComponentManager {
             transition: all 0.2s ease;
         `;
 
-        const label = document.createElement('div');
-        label.className = 'recommended-tags-label';
-        label.textContent = '推荐标签';
-        label.style.cssText = `
-            font-size: 12px;
-            font-weight: 600;
-            color: #64748b;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        `;
-
         const container = document.createElement('div');
         container.className = 'recommended-tags-container';
         container.style.cssText = `
@@ -402,7 +390,6 @@ class TagComponentManager {
             align-items: flex-start;
         `;
 
-        section.appendChild(label);
         section.appendChild(container);
         return section;
     }

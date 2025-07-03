@@ -131,24 +131,30 @@
                 </div>
                 <div class="form-container">
                     <input type="hidden" id="promptIdInput">
-                    <div class="form-group">
-                        <label class="form-label" for="promptTitleInput"><span class="required">*</span> 标题</label>
-                        <input type="text" class="form-input" id="promptTitleInput" placeholder="给提示词起个名字">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="promptAuthorInput">作者</label>
-                        <input type="text" class="form-input" id="promptAuthorInput" placeholder="输入作者名称（可选）">
+                    <!-- 标题和作者在同一行 -->
+                    <div class="form-row">
+                        <div class="form-col title-col">
+                            <div class="form-group">
+                                <label class="form-label" for="promptTitleInput"><span class="required">*</span> 标题</label>
+                                <input type="text" class="form-input" id="promptTitleInput" placeholder="给提示词起个名字">
+                            </div>
+                        </div>
+                        <div class="form-col author-col">
+                            <div class="form-group">
+                                <label class="form-label" for="promptAuthorInput">作者</label>
+                                <input type="text" class="form-input" id="promptAuthorInput" placeholder="输入作者名称（可选）">
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="promptContentInput"><span class="required">*</span> 提示词内容</label>
-                        <textarea class="form-textarea" id="promptContentInput" placeholder="在此输入或粘贴您的提示词内容..." maxlength="10000"></textarea>
-                        <div class="character-count" id="characterCount" style="text-align: right; font-size: 12px; color: #64748b; margin-top: 4px;">0 / 10000</div>
+                        <textarea class="form-textarea" id="promptContentInput" placeholder="在此输入或粘贴您的提示词内容..." maxlength="20000"></textarea>
+                        <div class="character-count" id="characterCount" style="text-align: right; font-size: 12px; color: #64748b; margin-top: 4px;">0 / 20000</div>
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="smartTagInput">标签</label>
                         <div id="smartTagInputContainer"></div>
                         <div class="recommended-tags-section">
-                            <div class="recommended-tags-label">推荐标签</div>
                             <div id="recommendedTagsContainer" class="recommended-tags-container"></div>
                         </div>
                     </div>

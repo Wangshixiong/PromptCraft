@@ -479,9 +479,9 @@ const app = {
             return;
         }
 
-        // 检查内容长度（10000个字符限制）
-        if (content.length > 10000) {
-            ui.showToast('提示词内容不能超过10000个字符！', 'warning');
+        // 检查内容长度（20000个字符限制）
+        if (content.length > 20000) {
+            ui.showToast('提示词内容不能超过20000个字符！', 'warning');
             return;
         }
 
@@ -539,6 +539,51 @@ const app = {
         }
         
         ui.forceHideLoading();
+    },
+    
+    /**
+     * 处理编辑提示词
+     * @param {string} id - 提示词ID
+     */
+    async handleEditPrompt(id) {
+        try {
+            // 从全局提示词数组中查找对应的提示词
+            const prompt = allPrompts.find(p => p.id == id);
+            if (!prompt) {
+                ui.showToast('未找到要编辑的提示词', 'error');
+                return;
+            }
+            
+            // 填充表单字段
+            ui.promptIdInput.value = prompt.id;
+            ui.promptTitleInput.value = prompt.title || '';
+            ui.promptContentInput.value = prompt.content || '';
+            
+            // 处理作者字段
+            if (ui.promptAuthorInput) {
+                ui.promptAuthorInput.value = prompt.author || '';
+            }
+            
+            // 处理标签字段（兼容旧的category字段）
+            const tags = prompt.tags || (prompt.category ? [prompt.category] : []);
+            if (this.tagManager) {
+                // 使用智能标签组件设置标签
+                this.tagManager.setTags(tags);
+            }
+            
+            // 设置表单标题
+            ui.formTitle.textContent = '编辑提示词';
+            
+            // 切换到表单视图
+            ui.showView('formView');
+            
+            // 调整textarea高度以适应内容
+            ui.autoResizeTextarea(ui.promptContentInput);
+            
+        } catch (error) {
+            console.error('编辑提示词失败:', error);
+            ui.showToast('编辑提示词失败，请重试', 'error');
+        }
     },
     
     /**
@@ -704,11 +749,11 @@ const app = {
         
         ui.promptContentInput.addEventListener('input', () => {
             const currentLength = ui.promptContentInput.value.length;
-            characterCountElement.textContent = `${currentLength} / 10000`;
+            characterCountElement.textContent = `${currentLength} / 20000`;
             
-            if (currentLength > 9000) {
+            if (currentLength > 18000) {
                 characterCountElement.style.color = '#ef4444';
-            } else if (currentLength > 8000) {
+            } else if (currentLength > 16000) {
                 characterCountElement.style.color = '#f59e0b';
             } else {
                 characterCountElement.style.color = '#64748b';
@@ -723,7 +768,7 @@ const app = {
         const updateCharacterCount = () => {
             const currentLength = ui.promptContentInput.value.length;
             if (characterCountElement) {
-                characterCountElement.textContent = `${currentLength} / 10000`;
+                characterCountElement.textContent = `${currentLength} / 20000`;
             }
         };
         
