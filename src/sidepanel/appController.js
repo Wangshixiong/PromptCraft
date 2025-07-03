@@ -74,6 +74,37 @@ const app = {
         }
     },
 
+    /**
+     * 刷新标签组件的可用标签列表
+     */
+    async refreshTagComponent() {
+        try {
+            // 重新获取所有可用标签
+            const response = await chrome.runtime.sendMessage({ type: 'GET_ALL_TAGS' });
+            let availableTags = [];
+            
+            if (response.success && response.data) {
+                availableTags = response.data;
+            }
+            
+            // 获取当前正在编辑的标签，避免被覆盖
+            let currentEditingTags = [];
+            if (this.tagManager) {
+                currentEditingTags = this.tagManager.getCurrentTags() || [];
+            }
+            
+            // 合并后台标签和当前正在编辑的标签
+            const mergedTags = [...new Set([...availableTags, ...currentEditingTags])];
+            
+            // 更新标签组件的可用标签列表
+            if (this.tagManager) {
+                this.tagManager.setAvailableTags(mergedTags);
+            }
+        } catch (error) {
+            console.error('刷新标签组件失败:', error);
+        }
+    },
+
     // --- 认证与同步业务逻辑 ---
 
     /**
@@ -459,8 +490,10 @@ const app = {
     /**
      * 处理添加新提示词 - 从sidepanel.js迁移
      */
-    handleAddPrompt() {
+    async handleAddPrompt() {
         this.resetForm();
+        // 重新加载可用标签以确保显示最新的标签列表
+        await this.refreshTagComponent();
         ui.showView('formView');
     },
     
@@ -468,6 +501,16 @@ const app = {
      * 处理保存提示词 - 从sidepanel.js的savePrompt迁移
      */
     async handleSavePrompt() {
+        // 检查标签输入框是否有未确认的文本，如有则自动添加为标签
+        if (this.tagManager && this.tagManager.container) {
+            const tagInput = this.tagManager.container.querySelector('.tag-input');
+            if (tagInput && tagInput.value.trim()) {
+                const unconfirmedTag = tagInput.value.trim();
+                this.tagManager.addTag(unconfirmedTag);
+                tagInput.value = ''; // 清空输入框
+            }
+        }
+        
         const id = ui.promptIdInput.value;
         const title = ui.promptTitleInput.value.trim();
         const content = ui.promptContentInput.value.trim();
@@ -489,12 +532,12 @@ const app = {
         
         try {
             const promptData = {
-                user_id: currentUser.id,
-                title,
-                content,
-                tags: tags.length > 0 ? tags : ['未分类'],
-                author: author || ''
-            };
+            user_id: currentUser.id,
+            title,
+            content,
+            tags: tags.length > 0 ? tags : [],
+            author: author || ''
+        };
             
             let response;
             if (id) {
@@ -529,6 +572,26 @@ const app = {
                 }
             }
             
+            // 更新可用标签列表（只在保存成功后）
+            if (tags.length > 0) {
+                try {
+                    // 获取当前所有可用标签
+                    const response = await chrome.runtime.sendMessage({ type: 'GET_ALL_TAGS' });
+                    let currentAvailableTags = [];
+                    if (response.success && response.data) {
+                        currentAvailableTags = response.data;
+                    }
+                    
+                    // 添加新标签到可用列表
+                    const newTags = tags.filter(tag => !currentAvailableTags.includes(tag));
+                    if (newTags.length > 0) {
+                        this.tagManager.setAvailableTags([...currentAvailableTags, ...newTags]);
+                    }
+                } catch (error) {
+                    console.error('更新可用标签列表失败:', error);
+                }
+            }
+            
             // 重新加载数据刷新UI
             // await this.initializeApp();
             ui.showView('mainView');
@@ -553,6 +616,9 @@ const app = {
                 ui.showToast('未找到要编辑的提示词', 'error');
                 return;
             }
+            
+            // 重新加载可用标签以确保显示最新的标签列表
+            await this.refreshTagComponent();
             
             // 填充表单字段
             ui.promptIdInput.value = prompt.id;
@@ -597,6 +663,13 @@ const app = {
         // 清空标签组件
         if (this.tagManager) {
             this.tagManager.clear();
+            // 确保清空标签输入框中的任何残留文本
+            if (this.tagManager.container) {
+                const tagInput = this.tagManager.container.querySelector('.tag-input');
+                if (tagInput) {
+                    tagInput.value = '';
+                }
+            }
         }
         
         // 清空作者字段
@@ -669,6 +742,20 @@ const app = {
             themeMode = selectedTheme;
             ui.applyTheme(themeMode);
             
+            // 更新标签组件样式
+            if (this.tagManager && this.tagManager.container) {
+                const tagContainer = this.tagManager.container.querySelector('.tag-input-container');
+                const input = this.tagManager.container.querySelector('.tag-input');
+                const suggestionsContainer = this.tagManager.container.querySelector('.tag-suggestions');
+                
+                if (tagContainer && input && suggestionsContainer) {
+                    this.tagManager.applyThemeStyles(tagContainer, input, suggestionsContainer);
+                }
+                
+                // 重新渲染推荐标签以应用新主题
+                this.tagManager.renderRecommendedTags();
+            }
+            
             // 通过消息通信保存主题模式
             try {
                 const response = await chrome.runtime.sendMessage({ 
@@ -690,6 +777,17 @@ const app = {
     handleSystemThemeChange() {
         if (themeMode === 'auto') {
             ui.applyTheme('auto');
+            
+            // 更新标签组件样式
+            if (this.tagManager && this.tagManager.container) {
+                const tagContainer = this.tagManager.container.querySelector('.tag-input-container');
+                const input = this.tagManager.container.querySelector('.tag-input');
+                const suggestionsContainer = this.tagManager.container.querySelector('.tag-suggestions');
+                
+                if (tagContainer && input && suggestionsContainer) {
+                    this.tagManager.applyThemeStyles(tagContainer, input, suggestionsContainer);
+                }
+            }
         }
     },
 

@@ -551,6 +551,30 @@
     border: 1px solid rgba(99, 102, 241, 0.2);
 }
 
+.tag-red {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.tag-yellow {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.tag-teal {
+    background-color: rgba(20, 184, 166, 0.1);
+    color: #14b8a6;
+    border: 1px solid rgba(20, 184, 166, 0.2);
+}
+
+.tag-gray {
+    background-color: rgba(107, 114, 128, 0.1);
+    color: #6b7280;
+    border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
 /* 暗色主题标签样式 */
 .dark-mode .tag-blue {
     background-color: rgba(59, 130, 246, 0.2);
@@ -586,6 +610,30 @@
     background-color: rgba(99, 102, 241, 0.2);
     color: #818cf8;
     border-color: rgba(99, 102, 241, 0.3);
+}
+
+.dark-mode .tag-red {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.dark-mode .tag-yellow {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.dark-mode .tag-teal {
+    background-color: rgba(20, 184, 166, 0.2);
+    color: #2dd4bf;
+    border-color: rgba(20, 184, 166, 0.3);
+}
+
+.dark-mode .tag-gray {
+    background-color: rgba(107, 114, 128, 0.2);
+    color: #9ca3af;
+    border-color: rgba(107, 114, 128, 0.3);
 }
 
 /* 作者样式 */
@@ -718,8 +766,8 @@
 
 /* 表单组件 */
 .form-title {
-    font-size: 20px;
-    font-weight: 700;
+    font-size: 18px;
+    font-weight: 600;
     color: var(--primary-color);
 }
 
@@ -729,6 +777,27 @@
 
 .form-group {
     margin-bottom: 20px;
+}
+
+/* 水平布局的表单组 - 标签和输入框在同一行 */
+.form-group-horizontal {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.form-group-horizontal .form-label {
+    margin-bottom: 0;
+    min-width: 80px;
+    flex-shrink: 0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.form-group-horizontal .form-input {
+    flex: 1;
+    margin: 0;
 }
 
 /* 表单行布局 - 用于将多个表单组件放在同一行 */
@@ -773,13 +842,25 @@
     .form-col.author-col {
         flex: 1;
     }
+    
+    /* 小屏幕下水平布局改为垂直布局 */
+    .form-group-horizontal {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .form-group-horizontal .form-label {
+        margin-bottom: 8px;
+        min-width: auto;
+    }
 }
 
 .form-label {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
-    font-size: 15px;
+    font-size: 14px;
     color: var(--text-light);
 }
 
@@ -798,7 +879,7 @@
     border: 1px solid var(--border-light);
     background-color: var(--card-light);
     color: var(--text-light);
-    font-size: 14px;
+    font-size: 13px;
     transition: var(--transition);
 }
 
@@ -2033,4 +2114,22 @@
 
 .toast.success i {
     color: var(--success);
+}
+
+
+/* 定义一个弹性布局的行容器 */
+.form-row {
+    display: flex; /* 让里面的东西可以并排站 */
+    gap: 16px;     /* 两个东西之间留点空隙 */
+    align-items: flex-start; 
+}
+
+/* 定义行内的列 */
+.form-col {
+    min-width: 0; 
+}
+
+/* 在新沙发里，原来的边距就不要了 */
+.form-row .form-group {
+    margin-bottom: 0;
 }

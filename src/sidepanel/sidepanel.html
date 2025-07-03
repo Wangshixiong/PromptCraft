@@ -131,20 +131,14 @@
                 </div>
                 <div class="form-container">
                     <input type="hidden" id="promptIdInput">
-                    <!-- 标题和作者在同一行 -->
-                    <div class="form-row">
-                        <div class="form-col title-col">
-                            <div class="form-group">
-                                <label class="form-label" for="promptTitleInput"><span class="required">*</span> 标题</label>
-                                <input type="text" class="form-input" id="promptTitleInput" placeholder="给提示词起个名字">
-                            </div>
-                        </div>
-                        <div class="form-col author-col">
-                            <div class="form-group">
-                                <label class="form-label" for="promptAuthorInput">作者</label>
-                                <input type="text" class="form-input" id="promptAuthorInput" placeholder="输入作者名称（可选）">
-                            </div>
-                        </div>
+                    <!-- 标题和作者使用水平布局 -->
+                    <div class="form-group-horizontal">
+                        <label class="form-label" for="promptTitleInput"><span class="required">*</span> 标题</label>
+                        <input type="text" class="form-input" id="promptTitleInput" placeholder="给提示词起个名字">
+                    </div>
+                    <div class="form-group-horizontal">
+                        <label class="form-label" for="promptAuthorInput">作者</label>
+                        <input type="text" class="form-input" id="promptAuthorInput" placeholder="输入作者名称（可选）">
                     </div>
                     <div class="form-group">
                         <label class="form-label" for="promptContentInput"><span class="required">*</span> 提示词内容</label>

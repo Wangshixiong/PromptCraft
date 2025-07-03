@@ -116,6 +116,9 @@ const ui = {
      */
     renderPrompts(promptsToRender) {
         try {
+            // 预加载所有标签的颜色分配，确保颜色一致性
+            this.preloadTagColors(promptsToRender);
+            
             // 清空骨架屏占位符和所有内容
             this.promptsContainer.innerHTML = '';
 
@@ -198,18 +201,83 @@ const ui = {
      * @param {string} tag - 标签名称
      * @returns {string} 颜色类名
      */
+    /**
+     * 预加载所有标签的颜色分配，确保颜色一致性
+     * @param {Array} prompts - 提示词数组
+     */
+    preloadTagColors(prompts) {
+        // 初始化颜色使用记录
+        if (!this.colorUsageMap) {
+            this.colorUsageMap = new Map();
+        }
+        
+        // 收集所有唯一标签
+        const allTags = new Set();
+        prompts.forEach(prompt => {
+            if (prompt.tags && Array.isArray(prompt.tags)) {
+                prompt.tags.forEach(tag => {
+                    if (tag && typeof tag === 'string') {
+                        allTags.add(tag);
+                    }
+                });
+            }
+        });
+        
+        // 为所有标签预分配颜色
+        const sortedTags = Array.from(allTags).sort(); // 排序确保一致性
+        sortedTags.forEach(tag => {
+            this.getTagColor(tag); // 这会触发颜色分配并记录
+        });
+    },
+
     getTagColor(tag) {
          // 参数验证：确保tag是有效的字符串
          if (!tag || typeof tag !== 'string') {
              return 'blue'; // 返回默认颜色
          }
          
-         const colors = ['blue', 'green', 'purple', 'orange', 'pink', 'indigo'];
-         let hash = 0;
-         for (let i = 0; i < tag.length; i++) {
-             hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+         // 初始化颜色使用记录
+         if (!this.colorUsageMap) {
+             this.colorUsageMap = new Map();
          }
-         return colors[Math.abs(hash) % colors.length];
+         
+         // 如果已经为这个标签分配过颜色，直接返回
+         if (this.colorUsageMap.has(tag)) {
+             return this.colorUsageMap.get(tag);
+         }
+         
+         const colors = ['blue', 'green', 'purple', 'orange', 'pink', 'indigo', 'red', 'yellow', 'teal', 'gray'];
+         
+         // 统计当前颜色使用情况
+         const colorCount = {};
+         colors.forEach(color => colorCount[color] = 0);
+         
+         // 计算已使用的颜色频次
+         for (let usedColor of this.colorUsageMap.values()) {
+             if (colorCount[usedColor] !== undefined) {
+                 colorCount[usedColor]++;
+             }
+         }
+         
+         // 找到使用次数最少的颜色
+         let minCount = Math.min(...Object.values(colorCount));
+         let availableColors = colors.filter(color => colorCount[color] === minCount);
+         
+         // 如果有多个最少使用的颜色，使用哈希算法选择一个
+         let selectedColor;
+         if (availableColors.length === 1) {
+             selectedColor = availableColors[0];
+         } else {
+             let hash = 0;
+             for (let i = 0; i < tag.length; i++) {
+                 hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+             }
+             selectedColor = availableColors[Math.abs(hash) % availableColors.length];
+         }
+         
+         // 记录颜色分配
+         this.colorUsageMap.set(tag, selectedColor);
+         return selectedColor;
      },
 
     /**

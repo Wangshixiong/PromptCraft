@@ -10,6 +10,64 @@ class TagComponentManager {
         this.container = null;
         this.currentTags = [];
         this.availableTags = [];
+        
+        // 引用UI管理器的颜色映射，确保颜色一致性
+        this.colorUsageMap = ui.colorUsageMap || new Map();
+    }
+
+    /**
+     * 获取标签颜色类（与主界面保持一致）
+     * @param {string} tag - 标签名称
+     * @returns {string} 颜色类名
+     */
+    getTagColor(tag) {
+        // 参数验证：确保tag是有效的字符串
+        if (!tag || typeof tag !== 'string') {
+            return 'blue'; // 返回默认颜色
+        }
+        
+        // 初始化颜色使用记录
+        if (!this.colorUsageMap) {
+            this.colorUsageMap = new Map();
+        }
+        
+        // 如果已经为这个标签分配过颜色，直接返回
+        if (this.colorUsageMap.has(tag)) {
+            return this.colorUsageMap.get(tag);
+        }
+        
+        const colors = ['blue', 'green', 'purple', 'orange', 'pink', 'indigo', 'red', 'yellow', 'teal', 'gray'];
+        
+        // 统计当前颜色使用情况
+        const colorCount = {};
+        colors.forEach(color => colorCount[color] = 0);
+        
+        // 计算已使用的颜色频次
+        for (let usedColor of this.colorUsageMap.values()) {
+            if (colorCount[usedColor] !== undefined) {
+                colorCount[usedColor]++;
+            }
+        }
+        
+        // 找到使用次数最少的颜色
+        let minCount = Math.min(...Object.values(colorCount));
+        let availableColors = colors.filter(color => colorCount[color] === minCount);
+        
+        // 如果有多个最少使用的颜色，使用哈希算法选择一个
+        let selectedColor;
+        if (availableColors.length === 1) {
+            selectedColor = availableColors[0];
+        } else {
+            let hash = 0;
+            for (let i = 0; i < tag.length; i++) {
+                hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            selectedColor = availableColors[Math.abs(hash) % availableColors.length];
+        }
+        
+        // 记录颜色分配
+        this.colorUsageMap.set(tag, selectedColor);
+        return selectedColor;
     }
 
     /**
@@ -46,13 +104,13 @@ class TagComponentManager {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            padding: 8px;
-            border: 1px solid #e1e5e9;
-            border-radius: 6px;
-            background: #ffffff;
+            padding: 12px 16px;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            background: var(--card-light);
             min-height: 40px;
             align-items: center;
-            transition: border-color 0.2s ease;
+            transition: var(--transition);
         `;
 
         // 渲染现有标签
@@ -69,8 +127,8 @@ class TagComponentManager {
             background: transparent;
             flex: 1;
             min-width: 120px;
-            font-size: 14px;
-            color: #333;
+            font-size: 13px;
+            color: var(--text-light);
         `;
 
         // 创建建议容器
@@ -81,14 +139,15 @@ class TagComponentManager {
             top: 100%;
             left: 0;
             right: 0;
-            background: #ffffff;
-            border: 1px solid #e1e5e9;
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
             border-top: none;
-            border-radius: 0 0 6px 6px;
+            border-radius: 0 0 10px 10px;
             max-height: 200px;
             overflow-y: auto;
             z-index: 1000;
             display: none;
+            box-shadow: var(--shadow);
         `;
 
         // 创建推荐标签栏
@@ -121,21 +180,23 @@ class TagComponentManager {
         const existingTags = container.querySelectorAll('.tag-item');
         existingTags.forEach(tag => tag.remove());
 
+        // 检查当前主题
+        const isDarkMode = document.body.classList.contains('dark-mode');
+
         // 渲染当前标签
         this.currentTags.forEach((tag, index) => {
             const tagElement = document.createElement('span');
-            tagElement.className = 'tag-item';
+            const colorClass = this.getTagColor(tag);
+            tagElement.className = `tag-item prompt-tag tag-${colorClass}`;
             tagElement.style.cssText = `
                 display: inline-flex;
                 align-items: center;
                 gap: 4px;
                 padding: 4px 8px;
-                background: #f0f9ff;
-                color: #0369a1;
-                border: 1px solid #bae6fd;
-                border-radius: 4px;
+                border-radius: 6px;
                 font-size: 12px;
                 font-weight: 500;
+                transition: var(--transition);
             `;
 
             const tagText = document.createElement('span');
@@ -146,14 +207,26 @@ class TagComponentManager {
             removeBtn.style.cssText = `
                 background: none;
                 border: none;
-                color: #0369a1;
+                color: var(--primary-color);
                 cursor: pointer;
                 font-size: 14px;
                 font-weight: bold;
                 padding: 0;
                 margin: 0;
                 line-height: 1;
+                transition: var(--transition);
             `;
+            
+            // 添加悬停效果
+            removeBtn.addEventListener('mouseenter', () => {
+                removeBtn.style.color = 'var(--danger)';
+                removeBtn.style.transform = 'scale(1.2)';
+            });
+            
+            removeBtn.addEventListener('mouseleave', () => {
+                removeBtn.style.color = 'var(--primary-color)';
+                removeBtn.style.transform = 'scale(1)';
+            });
 
             removeBtn.addEventListener('click', () => {
                 this.removeTag(index);
@@ -195,7 +268,8 @@ class TagComponentManager {
 
         // 焦点事件
         input.addEventListener('focus', () => {
-            tagContainer.style.borderColor = '#3b82f6';
+            tagContainer.style.borderColor = 'var(--primary-color)';
+            tagContainer.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.2)';
             if (input.value.trim()) {
                 this.showSuggestions(input.value.trim(), suggestionsContainer);
             }
@@ -205,7 +279,9 @@ class TagComponentManager {
             // 延迟隐藏建议，以便点击建议项
             setTimeout(() => {
                 if (!suggestionsContainer.contains(document.activeElement)) {
-                    tagContainer.style.borderColor = '#e1e5e9';
+                    const isDarkMode = document.body.classList.contains('dark-mode');
+                    tagContainer.style.borderColor = isDarkMode ? 'var(--border-dark)' : 'var(--border-light)';
+                    tagContainer.style.boxShadow = 'none';
                     this.hideSuggestions(suggestionsContainer);
                 }
             }, 150);
@@ -239,13 +315,14 @@ class TagComponentManager {
             item.style.cssText = `
                 padding: 8px 12px;
                 cursor: pointer;
-                border-bottom: 1px solid #f3f4f6;
-                font-size: 14px;
-                color: #374151;
+                border-bottom: 1px solid var(--border-light);
+                font-size: 13px;
+                color: var(--text-light);
+                transition: var(--transition);
             `;
 
             item.addEventListener('mouseenter', () => {
-                item.style.backgroundColor = '#f9fafb';
+                item.style.backgroundColor = 'var(--card-hover-light)';
             });
 
             item.addEventListener('mouseleave', () => {
@@ -280,7 +357,8 @@ class TagComponentManager {
         const trimmedTag = tag.trim();
         if (trimmedTag && !this.currentTags.includes(trimmedTag)) {
             this.currentTags.push(trimmedTag);
-            this.updateAvailableTags(trimmedTag);
+            // 不立即添加到可用标签列表，避免数据不一致
+            // 标签将在提示词保存成功后才被添加到全局可用标签列表
             this.renderTags(this.container.querySelector('.tag-input-container'));
             this.updateInputPlaceholder();
             this.renderRecommendedTags(); // 重新渲染推荐标签
@@ -322,28 +400,37 @@ class TagComponentManager {
      * 应用主题样式
      */
     applyThemeStyles(tagContainer, input, suggestionsContainer) {
-        if (document.body.classList.contains('dark-mode')) {
-            // 暗色主题样式
-            tagContainer.style.borderColor = '#374151';
-            tagContainer.style.backgroundColor = '#1f2937';
-            input.style.color = '#f9fafb';
-            suggestionsContainer.style.backgroundColor = '#1f2937';
-            suggestionsContainer.style.borderColor = '#374151';
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        
+        // 设置容器样式
+        tagContainer.style.borderColor = isDarkMode ? 'var(--border-dark)' : 'var(--border-light)';
+        tagContainer.style.backgroundColor = isDarkMode ? 'var(--card-dark)' : 'var(--card-light)';
+        input.style.color = isDarkMode ? 'var(--text-dark)' : 'var(--text-light)';
+        suggestionsContainer.style.backgroundColor = isDarkMode ? 'var(--card-dark)' : 'var(--card-light)';
+        suggestionsContainer.style.borderColor = isDarkMode ? 'var(--border-dark)' : 'var(--border-light)';
 
-            // 更新标签样式
-            const updateTagStyles = () => {
-                const tags = this.container.querySelectorAll('.tag-item');
-                tags.forEach(tag => {
-                    tag.style.backgroundColor = '#1e40af';
-                    tag.style.color = '#dbeafe';
-                    tag.style.borderColor = '#3b82f6';
-                });
-            };
+        // 更新标签样式的函数
+        const updateTagStyles = () => {
+            // 已选标签现在使用CSS类，只需更新删除按钮颜色
+            const removeBtns = this.container.querySelectorAll('.tag-item button');
+            removeBtns.forEach(btn => {
+                btn.style.color = 'var(--primary-color)';
+            });
+        };
 
-            // 监听标签变化
-            const observer = new MutationObserver(updateTagStyles);
-            observer.observe(tagContainer, { childList: true });
-            updateTagStyles();
+        // 监听标签变化
+        if (!this.tagObserver) {
+            this.tagObserver = new MutationObserver(updateTagStyles);
+            this.tagObserver.observe(tagContainer, { childList: true });
+        }
+        updateTagStyles();
+        
+        // 推荐标签现在使用CSS类，无需手动更新样式
+        
+        // 确保推荐标签区域背景透明
+        const recommendedTagsSection = this.container.querySelector('.recommended-tags-section');
+        if (recommendedTagsSection) {
+            recommendedTagsSection.style.background = 'transparent';
         }
     }
 
@@ -355,6 +442,13 @@ class TagComponentManager {
     }
 
     /**
+     * 获取当前标签（别名方法，与getTags功能相同）
+     */
+    getCurrentTags() {
+        return [...this.currentTags];
+    }
+
+    /**
      * 设置标签
      */
     setTags(tags) {
@@ -362,6 +456,7 @@ class TagComponentManager {
         if (this.container) {
             this.renderTags(this.container.querySelector('.tag-input-container'));
             this.updateInputPlaceholder();
+            this.renderRecommendedTags(); // 重新渲染推荐标签
         }
     }
 
@@ -374,9 +469,7 @@ class TagComponentManager {
         section.style.cssText = `
             margin-top: 12px;
             padding: 12px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
+            background: transparent;
             transition: all 0.2s ease;
         `;
 
@@ -404,6 +497,9 @@ class TagComponentManager {
         // 清空现有推荐标签
         container.innerHTML = '';
 
+        // 检查当前主题
+        const isDarkMode = document.body.classList.contains('dark-mode');
+
         // 获取未选中的标签
         const availableRecommendedTags = this.availableTags.filter(tag => 
             !this.currentTags.includes(tag)
@@ -413,7 +509,8 @@ class TagComponentManager {
             const emptyMessage = document.createElement('div');
             emptyMessage.textContent = '暂无推荐标签';
             emptyMessage.style.cssText = `
-                color: #94a3b8;
+                color: ${isDarkMode ? 'var(--text-dark)' : 'var(--text-light)'};
+                opacity: 0.6;
                 font-size: 12px;
                 font-style: italic;
                 padding: 8px 0;
@@ -425,33 +522,27 @@ class TagComponentManager {
         // 渲染推荐标签
         availableRecommendedTags.forEach(tag => {
             const tagPill = document.createElement('button');
-            tagPill.className = 'recommended-tag-pill';
+            const colorClass = this.getTagColor(tag);
+            tagPill.className = `recommended-tag-pill prompt-tag tag-${colorClass}`;
             tagPill.textContent = tag;
             tagPill.style.cssText = `
                 display: inline-flex;
                 align-items: center;
                 padding: 4px 10px;
-                background: #ffffff;
-                color: #475569;
-                border: 1px solid #cbd5e1;
                 border-radius: 12px;
                 font-size: 12px;
                 font-weight: 500;
                 cursor: pointer;
-                transition: all 0.2s ease;
+                transition: var(--transition);
                 white-space: nowrap;
             `;
 
-            // 悬停效果
+            // 悬停效果（使用CSS类自带的悬停效果）
             tagPill.addEventListener('mouseenter', () => {
-                tagPill.style.backgroundColor = '#e2e8f0';
-                tagPill.style.borderColor = '#94a3b8';
                 tagPill.style.transform = 'translateY(-1px)';
             });
 
             tagPill.addEventListener('mouseleave', () => {
-                tagPill.style.backgroundColor = '#ffffff';
-                tagPill.style.borderColor = '#cbd5e1';
                 tagPill.style.transform = 'translateY(0)';
             });
 

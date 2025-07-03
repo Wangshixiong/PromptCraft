@@ -110,7 +110,7 @@
 .form-container-wrapper {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 4px;
+    padding: 16px 16px;
 }
 
 .form-header {
