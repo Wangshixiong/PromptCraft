@@ -420,11 +420,20 @@ const ui = {
             this.filterContainer.classList.remove('expanded');
         }
         
-        // 如果标签数量少或已展开，显示所有标签
-        if (allTags.length <= 4 || isExpanded) {
-            this.renderAllTags(allTags, isExpanded);
+        // 动态计算最大可显示标签数
+        const maxVisibleTags = this.calculateMaxVisibleTags();
+        console.log('All tags count:', allTags.length, 'Max visible tags:', maxVisibleTags, 'Is expanded:', isExpanded);
+        
+        // 如果标签数量少于等于阈值或已展开，显示所有标签
+        if (allTags.length <= maxVisibleTags || isExpanded) {
+            console.log('Rendering all tags');
+            this.renderAllTags(allTags, isExpanded && allTags.length > maxVisibleTags);
         } else {
-            this.renderPartialTags(allTags);
+            // 显示部分标签时，需要为"更多"按钮预留空间
+            // 但标签数量应该是 maxVisibleTags - 1，这样加上"更多"按钮总共是 maxVisibleTags 个元素
+            const visibleTagCount = Math.max(2, maxVisibleTags - 1); // 至少显示2个标签
+            console.log('Rendering partial tags, visible count:', visibleTagCount);
+            this.renderPartialTags(allTags, visibleTagCount);
         }
     },
 
@@ -447,9 +456,9 @@ const ui = {
     /**
      * 渲染部分标签 + "更多"按钮
      */
-    renderPartialTags(tags) {
-        // 显示前3个标签
-        const visibleTags = tags.slice(0, 3);
+    renderPartialTags(tags, visibleCount = 3) {
+        // 显示指定数量的标签
+        const visibleTags = tags.slice(0, visibleCount);
         visibleTags.forEach(tag => {
             const btn = this.createFilterButton(tag);
             this.filterContainer.appendChild(btn);
@@ -510,6 +519,62 @@ const ui = {
         
         this.filterState.isExpanded = !this.filterState.isExpanded;
         this.renderFilterButtons();
+    },
+
+    /**
+     * 计算基于容器宽度的最大可显示标签数
+     * @returns {number} 最大可显示标签数
+     */
+    calculateMaxVisibleTags() {
+        if (!this.filterContainer) {
+            console.log('filterContainer not found, using fallback value 4');
+            return 4; // 降级到原有逻辑
+        }
+        
+        const containerWidth = this.filterContainer.offsetWidth;
+        console.log('Container width:', containerWidth);
+        
+        // 如果容器宽度为0或很小，可能还没有渲染完成，使用默认值
+        if (containerWidth < 100) {
+            console.log('Container width too small, using fallback value 4');
+            return 4;
+        }
+        
+        const averageTagWidth = 60; // 估算的平均标签宽度（包括间距）- 调整为更紧凑
+        const moreButtonWidth = 40; // 更多按钮的宽度 - 调整为更小
+        const padding = 10; // 容器内边距 - 调整为更小
+        
+        const availableWidth = containerWidth - padding - moreButtonWidth;
+        const maxTags = Math.floor(availableWidth / averageTagWidth);
+        
+        console.log('Available width:', availableWidth, 'Max tags calculated:', maxTags);
+        
+        // 确保至少显示3个标签，最多不超过8个（避免过度拥挤）
+        const result = Math.max(3, Math.min(maxTags, 8));
+        console.log('Final max visible tags:', result);
+        return result;
+    },
+
+    /**
+     * 初始化响应式标签显示
+     * 设置窗口大小变化监听器
+     */
+    initializeResponsiveTagDisplay() {
+        // 防止重复设置监听器
+        if (this.resizeListenerSetup) return;
+        
+        // 添加窗口大小变化监听
+        window.addEventListener('resize', () => {
+            // 防抖处理，避免频繁重新计算
+            clearTimeout(this.resizeTimer);
+            this.resizeTimer = setTimeout(() => {
+                if (this.filterState && !this.filterState.isExpanded) {
+                    this.renderFilterButtons();
+                }
+            }, 300);
+        });
+        
+        this.resizeListenerSetup = true;
     },
 
 

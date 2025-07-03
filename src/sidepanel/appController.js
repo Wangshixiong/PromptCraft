@@ -31,6 +31,9 @@ const app = {
             // 获取并应用主题设置
             await this.initializeTheme();
             
+            // 初始化响应式标签显示
+            ui.initializeResponsiveTagDisplay();
+            
             // 通过消息通信获取提示词数据（遵循分层架构原则）
             await this.loadUserPrompts();
             
