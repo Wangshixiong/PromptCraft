@@ -96,7 +96,7 @@
 
 #### 方式二：开发者模式安装
 
-```bash
+```markdown
 # 1. 克隆项目
 git clone [https://github.com/Wangshixiong/PromptCraft.git](https://github.com/Wangshixiong/PromptCraft.git)
 cd PromptCraft
@@ -124,15 +124,9 @@ cd PromptCraft
    - 或按快捷键 `Ctrl+Shift+Z` (Mac: `Cmd+Shift+Z`)
 
 2. **添加提示词**
-   ```
-   点击 "+ 添加提示词" → 填写标题和内容 → 选择分类 → 保存
-   ```
-
+点击 "+ 添加提示词" → 填写标题和内容 → 选择分类 → 保存
 3. **快速搜索**
-   ```
-   在搜索框输入关键词 → 实时显示匹配结果
-   ```
-
+在搜索框输入关键词 → 实时显示匹配结果
 4. **使用提示词**
    - **复制使用**: 点击复制按钮，粘贴到目标位置
    - **快速插入**: 在输入框输入 "pp" 唤起选择器
@@ -141,9 +135,7 @@ cd PromptCraft
 ### 🔄 云端同步设置
 
 1. **登录账户**
-   ```
-   点击设置图标 → 点击"Google登录" → 完成授权
-   ```
+点击设置图标 → 点击"Google登录" → 完成授权
 
 2. **同步机制**
    - **自动同步**: 本地操作立即推送到云端
@@ -153,14 +145,11 @@ cd PromptCraft
 ### 📊 数据管理
 
 1. **导出数据**
-   ```
-   设置 → 数据管理 → 导出数据 → 下载 JSON 文件
-   ```
-
+ 设置 → 数据管理 → 导出数据 → 下载 JSON 文件
 2. **导入数据**
-   ```
    设置 → 数据管理 → 导入数据 → 选择 JSON 文件
-   ```
+```
+
 
 ### 💡 使用技巧
 
@@ -176,8 +165,6 @@ cd PromptCraft
 ### 🏗️ 整体架构
 
 PromptCraft 采用现代化的分层架构设计，确保代码的可维护性和扩展性：
-
-```
 PromptCraft/
 ├── 📄 manifest.json             # Chrome扩展配置文件 (Manifest V3)
 ├── 📄 package.json              # 项目依赖配置（当前无第三方依赖）
@@ -208,55 +195,54 @@ PromptCraft/
             ├── components.css
             ├── layout.css
             └── main.css
-```
 
 ### 📋 文件功能说明
 
 #### 🔧 核心配置文件
-| 文件 | 主要作用 | 技术栈 |
-|------|----------|--------|
-| **manifest.json** | 扩展元数据配置，定义权限、图标、侧边面板路径、后台脚本等 | Manifest V3 |
-| **package.json** | 项目依赖管理，定义脚本命令和项目信息 | Node.js |
-| **server.js** | 本地开发HTTP服务器，提供静态文件服务 | Node.js HTTP |
+| 文件              | 主要作用                                                 | 技术栈       |
+| ----------------- | -------------------------------------------------------- | ------------ |
+| **manifest.json** | 扩展元数据配置，定义权限、图标、侧边面板路径、后台脚本等 | Manifest V3  |
+| **package.json**  | 项目依赖管理，定义脚本命令和项目信息                     | Node.js      |
+| **server.js**     | 本地开发HTTP服务器，提供静态文件服务                     | Node.js HTTP |
 
 #### 🔧 后台服务层
-| 文件 | 主要作用 | 调用关系 |
-|------|----------|----------|
-| **background.js** | 扩展生命周期管理，监听安装/启动事件，处理右键菜单，加载默认数据 | 导入并调用 `data-service.js`、`auth-handler.js`、`uuid.js`、`supabase.min.js` |
-| **content_script.js** | 页面内容注入，实现"pp"快速调用功能，注入CSS样式和UI组件 | 接收来自 `background.js` 的消息 |
+| 文件                  | 主要作用                                                     | 调用关系                                                     |
+| --------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| **background.js**     | 扩展生命周期管理，监听安装/启动事件，处理右键菜单，加载默认数据 | 导入并调用 `data-service.js`、`auth-handler.js`、`uuid.js`、`supabase.min.js` |
+| **content_script.js** | 页面内容注入，实现"pp"快速调用功能，注入CSS样式和UI组件      | 接收来自 `background.js` 的消息                              |
 
 #### 🛠️ 工具服务层
-| 文件 | 主要作用 | 调用关系 |
-|------|----------|----------|
+| 文件                | 主要作用                                                     | 调用关系                                                     |
+| ------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | **data-service.js** | 统一数据访问接口，管理Chrome Storage，提供CRUD操作和数据验证 | 被 `background.js`、`appController.js`、`sync-service.js` 调用 |
-| **auth-service.js** | Supabase认证服务，管理用户登录状态，处理Google OAuth认证 | 被 `appController.js`、`sync-service.js` 调用 |
-| **auth-handler.js** | 认证处理器，处理认证状态恢复和管理 | 被 `background.js` 调用 |
-| **sync-service.js** | 云端数据同步，实现本地与Supabase的双向同步，冲突解决 | 调用 `auth-service.js`、`data-service.js`，被 `appController.js` 调用 |
-| **json-utils.js** | JSON数据处理工具，提供数据验证和格式化功能 | 被数据导入导出功能调用 |
-| **uuid.js** | UUID生成工具，为数据记录提供唯一标识符 | 被 `background.js`、`data-service.js` 调用 |
+| **auth-service.js** | Supabase认证服务，管理用户登录状态，处理Google OAuth认证     | 被 `appController.js`、`sync-service.js` 调用                |
+| **auth-handler.js** | 认证处理器，处理认证状态恢复和管理                           | 被 `background.js` 调用                                      |
+| **sync-service.js** | 云端数据同步，实现本地与Supabase的双向同步，冲突解决         | 调用 `auth-service.js`、`data-service.js`，被 `appController.js` 调用 |
+| **json-utils.js**   | JSON数据处理工具，提供数据验证和格式化功能                   | 被数据导入导出功能调用                                       |
+| **uuid.js**         | UUID生成工具，为数据记录提供唯一标识符                       | 被 `background.js`、`data-service.js` 调用                   |
 
 #### 🎨 前端界面层
-| 文件 | 主要作用 | 调用关系 |
-|------|----------|----------|
-| **sidepanel.html** | 侧边栏UI结构，定义主视图、表单视图、设置弹窗等界面元素 | 加载 `sidepanel.js` 作为入口 |
-| **sidepanel.js** | 应用启动器，初始化全局状态，委托业务逻辑给控制器 | 调用 `appController.js` 进行初始化 |
-| **appController.js** | 应用控制器，处理所有业务逻辑，连接UI事件和后台服务 | 调用 `uiManager.js`、`data-service.js`、`auth-service.js`、`sync-service.js` |
-| **uiManager.js** | UI管理器，负责所有DOM操作，视图切换，界面渲染和更新 | 被 `appController.js` 调用 |
-| **tagComponentManager.js** | 标签组件管理器，处理标签相关的UI逻辑和交互 | 被 `appController.js` 调用 |
+| 文件                       | 主要作用                                               | 调用关系                                                     |
+| -------------------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
+| **sidepanel.html**         | 侧边栏UI结构，定义主视图、表单视图、设置弹窗等界面元素 | 加载 `sidepanel.js` 作为入口                                 |
+| **sidepanel.js**           | 应用启动器，初始化全局状态，委托业务逻辑给控制器       | 调用 `appController.js` 进行初始化                           |
+| **appController.js**       | 应用控制器，处理所有业务逻辑，连接UI事件和后台服务     | 调用 `uiManager.js`、`data-service.js`、`auth-service.js`、`sync-service.js` |
+| **uiManager.js**           | UI管理器，负责所有DOM操作，视图切换，界面渲染和更新    | 被 `appController.js` 调用                                   |
+| **tagComponentManager.js** | 标签组件管理器，处理标签相关的UI逻辑和交互             | 被 `appController.js` 调用                                   |
 
 #### 🎨 样式文件
-| 文件 | 主要作用 |
-|------|----------|
-| **base.css** | 基础样式，CSS变量定义，主题系统 |
-| **components.css** | 组件样式，按钮、输入框、卡片等 |
-| **layout.css** | 布局样式，网格系统，响应式设计 |
-| **main.css** | 主样式文件，整合所有样式 |
+| 文件               | 主要作用                        |
+| ------------------ | ------------------------------- |
+| **base.css**       | 基础样式，CSS变量定义，主题系统 |
+| **components.css** | 组件样式，按钮、输入框、卡片等  |
+| **layout.css**     | 布局样式，网格系统，响应式设计  |
+| **main.css**       | 主样式文件，整合所有样式        |
 
 #### 📚 第三方库
-| 文件 | 主要作用 |
-|------|----------|
-| **supabase.min.js** | Supabase客户端库，提供认证和数据库服务（本地文件） |
-| **Font Awesome** | 图标库（CDN引入：https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css） |
+| 文件                | 主要作用                                                     |
+| ------------------- | ------------------------------------------------------------ |
+| **supabase.min.js** | Supabase客户端库，提供认证和数据库服务（本地文件）           |
+| **Font Awesome**    | 图标库（CDN引入：https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css） |
 
 ### 🔄 核心调用关系图
 
@@ -309,8 +295,6 @@ graph TD
             ├── components.css
             ├── layout.css
             └── main.css
-```
-
 ### 🔧 核心架构
 
 - **前端界面**: 原生JavaScript + CSS3，轻量高效
@@ -324,15 +308,15 @@ graph TD
 
 ### 🎯 核心技术
 
-| 技术领域 | 技术选型 | 版本 | 说明 |
-|----------|----------|------|------|
-| **前端框架** | 原生 JavaScript | ES6+ | 零第三方框架依赖，确保轻量和安全 |
-| **认证系统** | Google OAuth 2.0 | - | Chrome Identity API 集成 |
-| **云端服务** | Supabase | Latest | PostgreSQL + Auth + RLS |
-| **样式系统** | CSS3 + CSS Variables | - | 动态主题切换和响应式设计 |
-| **存储引擎** | Chrome Storage API | - | 本地存储 + 云端同步架构 |
-| **扩展标准** | Manifest V3 | 3.0 | 符合最新安全规范 |
-| **图标系统** | Font Awesome | 6.4.0 | CDN引入，矢量化设计 |
+| 技术领域     | 技术选型             | 版本   | 说明                             |
+| ------------ | -------------------- | ------ | -------------------------------- |
+| **前端框架** | 原生 JavaScript      | ES6+   | 零第三方框架依赖，确保轻量和安全 |
+| **认证系统** | Google OAuth 2.0     | -      | Chrome Identity API 集成         |
+| **云端服务** | Supabase             | Latest | PostgreSQL + Auth + RLS          |
+| **样式系统** | CSS3 + CSS Variables | -      | 动态主题切换和响应式设计         |
+| **存储引擎** | Chrome Storage API   | -      | 本地存储 + 云端同步架构          |
+| **扩展标准** | Manifest V3          | 3.0    | 符合最新安全规范                 |
+| **图标系统** | Font Awesome         | 6.4.0  | CDN引入，矢量化设计              |
 
 ### 🏗️ 架构特性
 
@@ -488,7 +472,6 @@ graph TD
 
 本项目采用 **MIT License** 开源协议
 
-```
 MIT License
 
 Copyright (c) 2024 PromptCraft
@@ -529,3 +512,4 @@ SOFTWARE.
 *Built with ❤️ by the PromptCraft Team*
 
 </div>
+```
