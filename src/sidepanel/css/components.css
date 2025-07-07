@@ -1649,12 +1649,7 @@
 /* 数据管理卡片 */
 .data-management-grid {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.data-management-row {
-    display: flex;
+    flex-direction: row;
     gap: 8px;
 }
 
@@ -1662,18 +1657,19 @@
     background: var(--card-light);
     border: 1px solid var(--border-light);
     border-radius: 12px;
-    padding: 12px 8px;
+    padding: 8px 12px;
     cursor: pointer;
     transition: var(--transition);
     text-align: center;
     position: relative;
     overflow: hidden;
-    min-height: 72px;
+    min-height: 40px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
     flex: 1;
+    gap: 6px;
 }
 
 .dark-mode .data-card {
@@ -1706,9 +1702,9 @@
 }
 
 .data-card-icon {
-    font-size: 20px;
-    margin-bottom: 6px;
-    display: block;
+    font-size: 16px;
+    margin-bottom: 0;
+    display: inline-block;
     transition: transform 0.3s ease;
 }
 
@@ -1716,7 +1712,9 @@
     font-size: 12px;
     font-weight: 600;
     margin: 0;
-    line-height: 1.2;
+    line-height: 1;
+    white-space: nowrap;
+    display: inline-block;
 }
 
 .data-card:hover .data-card-icon {
@@ -1772,7 +1770,143 @@
 .version-number.clickable:hover {
     background: var(--primary-color);
     color: white;
-    border-color: var(--primary-color);
+}
+
+/* 作者信息样式 */
+.author-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    padding: 2px 0;
+}
+
+.dark-mode .author-info {
+    /* 移除边框相关样式 */
+}
+
+.author-label {
+    font-size: 14px;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.dark-mode .author-label {
+    color: var(--text-dark);
+}
+
+.author-name {
+    font-size: 14px;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* 联系信息样式 */
+.contact-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2px;
+    padding: 2px 0;
+}
+
+.contact-label {
+    font-size: 14px;
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.dark-mode .contact-label {
+    color: var(--text-dark);
+}
+
+/* 二维码容器样式 */
+.qr-code-container {
+    position: relative;
+    display: inline-block;
+}
+
+.qr-icon {
+    font-size: 18px;
+    color: var(--primary-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.qr-icon:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: scale(1.1);
+}
+
+/* 二维码弹出层样式 */
+.qr-code-popup {
+    position: absolute;
+    top: 50%;
+    right: 100%;
+    transform: translateY(-50%);
+    margin-right: 8px;
+    background: white;
+    border: 2px solid var(--border-light);
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    white-space: nowrap;
+}
+
+.dark-mode .qr-code-popup {
+    background: var(--card-dark);
+    border-color: var(--border-dark);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.qr-code-container:hover .qr-code-popup {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) translateX(-4px);
+}
+
+.qr-code-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 4px;
+    display: block;
+}
+
+/* 添加小箭头指示器 */
+.qr-code-popup::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-left-color: var(--border-light);
+}
+
+.dark-mode .qr-code-popup::after {
+    border-left-color: var(--border-dark);
+}
+
+.qr-code-popup::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-left-color: white;
+    z-index: 1;
+}
+
+.dark-mode .qr-code-popup::before {
+    border-left-color: var(--card-dark);
 }
 
 .version-new {
@@ -1980,7 +2114,7 @@
     color: #757575 !important;
     border: 1px solid #dadce0;
     font-weight: 500;
-    padding: 12px 24px;
+    padding: 8px 12px;
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -1991,6 +2125,7 @@
     font-size: 14px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     cursor: pointer;
+    min-height: 40px;
 }
 
 .dark-mode .google-signin-btn {
