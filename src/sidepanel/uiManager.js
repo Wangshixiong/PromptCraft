@@ -317,14 +317,12 @@ const ui = {
         
         modal.innerHTML = `
             <div class="preview-header">
-                <div class="preview-title-section">
+                <div class="preview-title-row">
                     <h2 class="preview-title">${this.escapeHtml(prompt.title || '无标题')}</h2>
-                    <div class="preview-meta">
-                        ${tags.length > 0 ? `<div class="preview-tags">${this.renderTags(tags)}</div>` : ''}
-                        ${author ? `<div class="preview-author">作者: ${this.escapeHtml(author)}</div>` : ''}
-                    </div>
+                    <button class="preview-close">&times;</button>
                 </div>
-                <button class="preview-close">&times;</button>
+                ${author ? `<div class="preview-author">作者: ${this.escapeHtml(author)}</div>` : ''}
+                ${tags.length > 0 ? `<div class="preview-tags">${this.renderTags(tags)}</div>` : ''}
             </div>
             <div class="preview-body">
                 <div class="preview-content">${this.escapeHtml(prompt.content || '')}</div>
