@@ -23,6 +23,7 @@ const STORAGE_KEYS = {
     DEFAULT_TEMPLATES_LOADED: 'default_templates_loaded',  // 是否已加载默认模板
     SCHEMA_VERSION: 'schema_version',
     THEME_MODE: 'themeMode',
+    PP_COMMAND_ENABLED: 'ppCommandEnabled', // PP命令唤醒功能开关
     HAS_DATA: 'promptcraft_has_data',
     LOAD_ERROR: 'loadError',
     ERROR_MESSAGE: 'errorMessage',
@@ -662,6 +663,38 @@ class DataService {
             await this._setToStorage({ [STORAGE_KEYS.THEME_MODE]: mode });
         } catch (error) {
             console.error('设置主题模式失败:', error);
+            throw error;
+        }
+    }
+
+    // ==================== PP命令开关设置接口 ====================
+
+    /**
+     * 获取PP命令唤醒功能开关状态
+     * @returns {Promise<boolean>} PP命令是否启用
+     */
+    async getPpCommandEnabled() {
+        await this.initialize();
+        try {
+            const result = await this._getFromStorage([STORAGE_KEYS.PP_COMMAND_ENABLED]);
+            return result[STORAGE_KEYS.PP_COMMAND_ENABLED] !== false; // 默认为true，保持向后兼容
+        } catch (error) {
+            console.error('获取PP命令开关状态失败:', error);
+            return true; // 默认启用
+        }
+    }
+
+    /**
+     * 设置PP命令唤醒功能开关状态
+     * @param {boolean} enabled - 是否启用PP命令
+     * @returns {Promise<void>}
+     */
+    async setPpCommandEnabled(enabled) {
+        await this.initialize();
+        try {
+            await this._setToStorage({ [STORAGE_KEYS.PP_COMMAND_ENABLED]: Boolean(enabled) });
+        } catch (error) {
+            console.error('设置PP命令开关状态失败:', error);
             throw error;
         }
     }

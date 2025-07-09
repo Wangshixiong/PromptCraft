@@ -457,6 +457,53 @@ chrome.runtime.onStartup.addListener(async () => {
       return true;
     }
     
+    // 处理GET_PP_COMMAND_ENABLED请求（获取PP命令开关状态）
+    if (message.type === 'GET_PP_COMMAND_ENABLED') {
+      (async () => {
+        try {
+          const isEnabled = await dataService.getPpCommandEnabled();
+          
+          sendResponse({
+            success: true,
+            data: isEnabled
+          });
+          
+        } catch (error) {
+          console.error('PromptCraft: 处理GET_PP_COMMAND_ENABLED请求时发生错误:', error);
+          
+          sendResponse({
+            success: false,
+            error: error.message
+          });
+        }
+      })();
+      
+      return true;
+    }
+    
+    // 处理SET_PP_COMMAND_ENABLED请求（设置PP命令开关状态）
+    if (message.type === 'SET_PP_COMMAND_ENABLED') {
+      (async () => {
+        try {
+          await dataService.setPpCommandEnabled(message.payload);
+          
+          sendResponse({
+            success: true
+          });
+          
+        } catch (error) {
+          console.error('PromptCraft: 处理SET_PP_COMMAND_ENABLED请求时发生错误:', error);
+          
+          sendResponse({
+            success: false,
+            error: error.message
+          });
+        }
+      })();
+      
+      return true;
+    }
+    
     // 处理CLEAR_ALL_PROMPTS请求（清空所有提示词）
     if (message.type === 'CLEAR_ALL_PROMPTS') {
   

@@ -64,53 +64,24 @@ function generateUUIDWithMath() {
 
 
 
-/**
- * 验证UUID格式是否正确
- * @param {string} uuid - 要验证的UUID字符串
- * @returns {boolean} 是否为有效的UUID格式
- */
-function isValidUUID(uuid) {
-    if (typeof uuid !== 'string') {
-        return false;
-    }
-    
-    // UUID v4格式正则表达式
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(uuid);
-}
 
-/**
- * 生成带前缀的UUID
- * @param {string} prefix - 前缀字符串
- * @returns {string} 带前缀的UUID
- */
-function generatePrefixedUUID(prefix = '') {
-    const uuid = generateUUID();
-    return prefix ? `${prefix}_${uuid}` : uuid;
-}
 
 // 导出模块
 if (typeof module !== 'undefined' && module.exports) {
     // Node.js环境
     module.exports = {
-        generateUUID,
-        generatePrefixedUUID,
-        isValidUUID
+        generateUUID
     };
 } else if (typeof window !== 'undefined') {
     // 浏览器环境
     // 在 Chrome 扩展环境中，background.js 没有 window 对象，使用 globalThis
     const globalScope = typeof window !== 'undefined' ? window : globalThis;
     globalScope.UUIDUtils = {
-        generateUUID,
-        generatePrefixedUUID,
-        isValidUUID
+        generateUUID
     };
 } else {
     // Service Worker环境
     globalThis.UUIDUtils = {
-        generateUUID,
-        generatePrefixedUUID,
-        isValidUUID
+        generateUUID
     };
 }

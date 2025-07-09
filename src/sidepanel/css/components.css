@@ -1586,6 +1586,92 @@
     color: var(--primary-color);
 }
 
+/* 设置组样式 */
+.settings-group {
+    margin-bottom: 16px;
+}
+
+.settings-group:last-child {
+    margin-bottom: 0;
+}
+
+/* 水平设置组样式 */
+.settings-group-horizontal {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 8px;
+}
+
+.settings-group-horizontal:last-child {
+    margin-bottom: 0;
+}
+
+/* 组标签样式 */
+.group-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    padding-left: 2px;
+}
+
+.dark-mode .group-label {
+    color: var(--text-dark);
+}
+
+/* 水平组标签样式 */
+.group-label-horizontal {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex-shrink: 0;
+    min-width: 36px;
+}
+
+.dark-mode .group-label-horizontal {
+    color: var(--text-dark);
+}
+
+/* 分割线样式 */
+.group-divider {
+    border: none;
+    height: 1px;
+    background: var(--border-light);
+    margin: 16px 0;
+    opacity: 0.6;
+}
+
+.dark-mode .group-divider {
+    background: var(--border-dark);
+}
+
+/* 功能占位符样式 */
+.feature-placeholder {
+    padding: 12px;
+    background: var(--card-light);
+    border: 1px dashed var(--border-light);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.dark-mode .feature-placeholder {
+    background: var(--card-dark);
+    border-color: var(--border-dark);
+}
+
+.placeholder-text {
+    font-size: 12px;
+    color: var(--text-light);
+    font-style: italic;
+}
+
+.dark-mode .placeholder-text {
+    color: var(--text-dark);
+}
+
 /* 主题选择器样式 */
 .theme-selector {
     display: flex;
@@ -1594,7 +1680,7 @@
     border-radius: 12px;
     padding: 4px;
     gap: 4px;
-    margin-bottom: 20px;
+    margin-bottom: 0;
 }
 
 .dark-mode .theme-selector {
@@ -1608,14 +1694,14 @@
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    padding: 8px 12px;
-    border-radius: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
     cursor: pointer;
     transition: var(--transition);
     background: transparent;
     color: var(--text-light);
-    min-height: 40px;
-    gap: 8px;
+    min-height: 32px;
+    gap: 6px;
 }
 
 .dark-mode .theme-option {
@@ -1636,14 +1722,92 @@
 }
 
 .theme-icon {
-    font-size: 16px;
+    font-size: 14px;
     flex-shrink: 0;
 }
 
 .theme-label {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     white-space: nowrap;
+}
+
+/* 主题选择器样式 */
+.theme-selector {
+    display: flex;
+    gap: 8px;
+    margin: 0;
+    flex: 1;
+}
+
+/* 紧凑主题选择器样式（保留以防其他地方使用） */
+.theme-selector-compact {
+    display: flex;
+    gap: 8px;
+    margin: 0;
+    flex: 1;
+}
+
+.theme-option-compact {
+    flex: 1;
+    padding: 6px 12px;
+    border: 1px solid var(--border-light);
+    background: var(--card-light);
+    color: var(--text-light);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    text-align: center;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dark-mode .theme-option-compact {
+    background: var(--card-dark);
+    color: var(--text-dark);
+    border-color: var(--border-dark);
+}
+
+.theme-option-compact:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: var(--primary-color);
+}
+
+.theme-option-compact.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.theme-option-compact.active:hover {
+    background: var(--primary-dark);
+}
+
+/* 水平功能占位符样式 */
+.feature-placeholder-horizontal {
+    color: var(--text-light);
+    font-style: italic;
+    font-size: 11px;
+    padding: 6px 10px;
+    background: var(--card-light);
+    border-radius: 6px;
+    text-align: center;
+    border: 1px dashed var(--border-light);
+    opacity: 0.7;
+    flex: 1;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dark-mode .feature-placeholder-horizontal {
+    color: var(--text-dark);
+    background: var(--card-dark);
+    border-color: var(--border-dark);
 }
 
 /* 数据管理卡片 */
@@ -1782,8 +1946,10 @@
 }
 
 .dark-mode .author-info {
-    /* 移除边框相关样式 */
+    color: var(--text-dark);
+    background-color: var(--card-dark);
 }
+
 
 .author-label {
     font-size: 14px;
@@ -2440,4 +2606,128 @@
 /* 在新沙发里，原来的边距就不要了 */
 .form-row .form-group {
     margin-bottom: 0;
+}
+
+/* ==================== 功能设置样式 (最终和谐版) ==================== */
+
+/* 让功能设置的容器(feature-settings)自动填满右侧所有剩余空间 */
+.feature-settings {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 关键改动：
+   1. 我们在功能项的容器上直接设置 flex 布局和 space-between。
+   2. 增大了 gap，让“功能”和“pp”快速唤醒的距离拉开。
+*/
+.feature-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px; /* 增大了间距 */
+}
+
+/* 关键改动：
+   让“pp”快速唤醒的样式更像“描述文字”，而不是“标签”。
+   1. 字体不再加粗。
+   2. 颜色变浅，使用次要文字的颜色。
+*/
+.feature-name {
+    font-size: 14px;
+    font-weight: 400; /* 改为正常字重 */
+    color: #64748b;   /* 使用一个更柔和的灰色 */
+    white-space: nowrap; /* 防止文字换行 */
+}
+
+/* 暗色模式下的描述文字颜色 */
+.dark-mode .feature-name {
+    color: #94a3b8;
+}
+
+
+/* ==================== Toggle Switch 样式 ==================== */
+/* (这部分保持不变) */
+
+/* Toggle开关容器 */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+/* 隐藏原生checkbox */
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+/* Toggle滑块 */
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    border-radius: 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+}
+
+.dark-mode .toggle-slider {
+    background-color: #475569;
+}
+
+/* Toggle滑块内的圆点 */
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 选中状态的滑块背景 */
+input:checked + .toggle-label .toggle-slider {
+    background-color: var(--primary-color);
+}
+
+/* 选中状态的圆点位置 */
+input:checked + .toggle-label .toggle-slider:before {
+    transform: translateX(20px);
+}
+
+/* Hover状态 */
+.toggle-slider:hover {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.dark-mode .toggle-slider:hover {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+/* Focus状态 */
+input:focus + .toggle-label .toggle-slider {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+/* 禁用状态 */
+input:disabled + .toggle-label .toggle-slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+input:disabled + .toggle-label .toggle-slider:hover {
+    box-shadow: none;
 }

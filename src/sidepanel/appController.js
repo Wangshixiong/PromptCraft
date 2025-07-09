@@ -31,6 +31,9 @@ const app = {
             // 获取并应用主题设置
             await this.initializeTheme();
             
+            // 初始化PP命令开关状态
+            await this.initializePpCommandToggle();
+            
             // 初始化响应式标签显示
             ui.initializeResponsiveTagDisplay();
             
@@ -775,6 +778,79 @@ const app = {
     },
 
     /**
+     * 初始化PP命令开关状态
+     */
+    async initializePpCommandToggle() {
+        try {
+            // 等待DOM元素完全渲染
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const response = await chrome.runtime.sendMessage({ 
+                type: 'GET_PP_COMMAND_ENABLED'
+            });
+            
+            if (response && response.success) {
+                const isEnabled = response.data;
+                const ppCommandCheckbox = document.getElementById('ppCommandCheckbox');
+                if (ppCommandCheckbox) {
+                    ppCommandCheckbox.checked = isEnabled;
+                    console.log('PP命令开关初始化完成，状态:', isEnabled);
+                } else {
+                    console.warn('未找到PP命令开关元素 (ppCommandCheckbox)');
+                }
+            } else {
+                console.warn('获取PP命令开关状态失败:', response?.error);
+                // 默认启用
+                const ppCommandCheckbox = document.getElementById('ppCommandCheckbox');
+                if (ppCommandCheckbox) {
+                    ppCommandCheckbox.checked = true;
+                }
+            }
+        } catch (error) {
+            console.error('初始化PP命令开关状态失败:', error);
+            // 默认启用
+            const ppCommandCheckbox = document.getElementById('ppCommandCheckbox');
+            if (ppCommandCheckbox) {
+                ppCommandCheckbox.checked = true;
+            }
+        }
+    },
+
+    /**
+     * 处理PP命令开关切换
+     * @param {boolean} isEnabled - 是否启用PP命令
+     */
+    async handlePpCommandToggle(isEnabled) {
+        console.log('handlePpCommandToggle 被调用，参数:', isEnabled);
+        try {
+            const response = await chrome.runtime.sendMessage({ 
+                type: 'SET_PP_COMMAND_ENABLED', 
+                payload: isEnabled 
+            });
+            
+            console.log('后台响应:', response);
+            
+            if (response && response.success) {
+                console.log(`PP命令唤醒功能已${isEnabled ? '启用' : '禁用'}`);
+            } else {
+                console.error('保存PP命令开关状态失败:', response?.error);
+                // 恢复开关状态
+                const ppCommandCheckbox = document.getElementById('ppCommandCheckbox');
+                if (ppCommandCheckbox) {
+                    ppCommandCheckbox.checked = !isEnabled;
+                }
+            }
+        } catch (error) {
+            console.error('保存PP命令开关状态时发生错误:', error);
+            // 恢复开关状态
+            const ppCommandCheckbox = document.getElementById('ppCommandCheckbox');
+            if (ppCommandCheckbox) {
+                ppCommandCheckbox.checked = !isEnabled;
+            }
+        }
+    },
+
+    /**
      * 处理系统主题变化
      */
     handleSystemThemeChange() {
@@ -940,6 +1016,18 @@ const app = {
             manualSyncBtn.addEventListener('click', () => this.handleManualSync());
         }
         
+        // PP命令开关事件监听器
+        const ppCommandCheckbox = document.getElementById('ppCommandCheckbox');
+        if (ppCommandCheckbox) {
+            console.log('PP命令开关元素找到，绑定事件监听器');
+            ppCommandCheckbox.addEventListener('change', (e) => {
+                console.log('PP命令开关change事件触发，新状态:', e.target.checked);
+                this.handlePpCommandToggle(e.target.checked);
+            });
+        } else {
+            console.warn('未找到PP命令开关元素，无法绑定事件监听器');
+        }
+        
         ui.fileInput.addEventListener('change', (event) => this.handleFileImport(event));
     },
 
@@ -972,6 +1060,14 @@ const app = {
     setupStorageListener() {
         if (chrome.storage && chrome.storage.onChanged) {
             chrome.storage.onChanged.addListener((changes, namespace) => {
+                console.log('存储变化事件触发 - namespace:', namespace, 'changes:', Object.keys(changes), 'details:', changes);
+                
+                // 只处理local存储的变化
+                if (namespace !== 'local') {
+                    console.log('忽略非local存储的变化:', namespace);
+                    return;
+                }
+                
                 // 监听同步时间的变化
                 if (changes.lastSyncTime) {
                     ui.updateSyncTime();
@@ -988,7 +1084,19 @@ const app = {
                     ui.renderPrompts(allPrompts);
                     ui.updateFilterButtons();
                 }
+                
+                // 监听PP命令开关状态的变化
+                if (changes.ppCommandEnabled) {
+                    const newValue = changes.ppCommandEnabled.newValue;
+                    const ppCommandCheckbox = document.getElementById('ppCommandCheckbox');
+                    if (ppCommandCheckbox) {
+                        ppCommandCheckbox.checked = newValue;
+                    }
+                }
             });
+            console.log('存储监听器已设置');
+        } else {
+            console.error('chrome.storage.onChanged 不可用');
         }
     },
 

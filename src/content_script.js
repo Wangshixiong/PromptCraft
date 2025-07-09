@@ -772,23 +772,24 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
         // 只有当触发词在单词边界且后面是空格或文本结束时才触发
         if (isAtWordBoundary && isFollowedBySpace) {
-    
+            // 检查PP命令开关是否启用
+            checkPpCommandEnabled((isEnabled) => {
+                if (isEnabled) {
+                    // 锁定目标输入框 - 防止目标丢失
+                    state.lockedTargetInput = inputElement;
+                    state.triggerPosition = triggerIndex;
 
-            // 锁定目标输入框 - 防止目标丢失
-            state.lockedTargetInput = inputElement;
-            state.triggerPosition = triggerIndex;
+                    // 保存原始输入框引用（向后兼容）
+                    if (!state.originalInput) {
+                        state.originalInput = inputElement;
+                    }
 
-            // 保存原始输入框引用（向后兼容）
-            if (!state.originalInput) {
-                state.originalInput = inputElement;
-            }
-
-    
-            // Target input locking debug info removed
-
-            showQuickInvokeUI();
-        } else {
-    
+                    showQuickInvokeUI();
+                } else {
+                    // PP命令开关未启用，不显示UI
+                    console.log('PromptCraft: PP command is disabled, ignoring trigger');
+                }
+            });
         }
     }
 
@@ -1553,7 +1554,10 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
             script.src = chrome.runtime.getURL('src/shared/globalTagColorManager.js');
             script.onload = function() {
                 script.remove();
-                resolve(window.globalTagColorManager);
+                // 给脚本一点时间执行并设置全局变量
+                setTimeout(() => {
+                    resolve(window.globalTagColorManager);
+                }, 10);
             };
             script.onerror = function() {
                 script.remove();
@@ -1594,7 +1598,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         if (globalManager) {
             console.log('Global tag color manager loaded in content script');
         } else {
-            console.warn('Failed to load global tag color manager, using fallback');
+            console.info('Global tag color manager not loaded, using local fallback (this is normal)');
         }
     }).catch(err => {
         console.error('Failed to load global tag color manager:', err);
@@ -2109,6 +2113,41 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         
         // 标记监听器已设置
         themeListenersSetup = true;
+    }
+
+    /**
+     * 检查PP命令开关是否启用
+     * @param {function} callback 回调函数，参数为boolean值表示是否启用
+     */
+    function checkPpCommandEnabled(callback) {
+        try {
+            // 检查是否在扩展环境中
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+                chrome.runtime.sendMessage({ type: 'GET_PP_COMMAND_ENABLED' }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.warn('PromptCraft: Failed to get PP command status:', chrome.runtime.lastError.message);
+                        // 默认启用，保持向后兼容
+                        callback(true);
+                        return;
+                    }
+
+                    if (response && response.success) {
+                        callback(response.data === true);
+                    } else {
+                        console.warn('PromptCraft: Failed to get PP command status:', response?.error);
+                        // 默认启用，保持向后兼容
+                        callback(true);
+                    }
+                });
+            } else {
+                // 非扩展环境，默认启用
+                callback(true);
+            }
+        } catch (error) {
+            console.warn('PromptCraft: Error checking PP command status:', error);
+            // 默认启用，保持向后兼容
+            callback(true);
+        }
     }
 
 })();
