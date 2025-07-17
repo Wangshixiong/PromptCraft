@@ -1,7 +1,16 @@
 {
-  "currentVersion": "1.3.6",
-  "lastViewedVersion": "1.3.5",
+  "currentVersion": "1.3.7",
+  "lastViewedVersion": "1.3.6",
   "versions": [
+    {
+      "version": "1.3.7",
+      "date": "2025-07-16",
+      "title": "重要Bug修复",
+      "changes": [
+        "🐛 修复Gemini画板页面卡死问题",
+        "🔐 修复登录状态无法保持问题"
+      ]
+    },
     {
       "version": "1.3.6",
       "date": "2025-07-07",

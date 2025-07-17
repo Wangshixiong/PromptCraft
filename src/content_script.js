@@ -5,10 +5,14 @@
 (function () {
     'use strict';
 
-    // 防止重复注入
-    if (window.promptCraftInjected) {
+    // 防止重复注入 - 增强版初始化保护
+    if (window.promptCraftInitialized) {
+        console.log('PromptCraft: Already initialized, skipping...');
         return;
     }
+    window.promptCraftInitialized = true;
+    
+    // 向后兼容的标记
     window.promptCraftInjected = true;
 
     // 注入CSS样式 - 现代化命令面板风格
@@ -630,33 +634,88 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         }
     }
 
-    // 设置DOM观察器 - 处理动态加载的输入框
+    // 设置DOM观察器 - 处理动态加载的输入框（优化版本）
     function setupDOMObserver() {
         if (!window.MutationObserver) {
             console.warn('PromptCraft: MutationObserver not supported');
             return;
         }
 
+        // 防抖动处理，避免频繁触发
+        let observerTimer = null;
+        const OBSERVER_DEBOUNCE_DELAY = 200; // 200ms防抖
+
         const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                            // 递归检查新添加的节点及其子节点
-                            scanAndBindInputElements(node);
-                        }
-                    });
-                }
-            });
+            // 清除之前的定时器
+            clearTimeout(observerTimer);
+            
+            // 使用防抖动处理突发的DOM变化
+            observerTimer = setTimeout(() => {
+                const nodesToProcess = new Set();
+                
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                        mutation.addedNodes.forEach((node) => {
+                            if (node.nodeType === Node.ELEMENT_NODE) {
+                                // 只处理可能包含输入框的节点
+                                if (couldContainInputElements(node)) {
+                                    nodesToProcess.add(node);
+                                }
+                            }
+                        });
+                    }
+                });
+
+                // 批量处理收集到的节点
+                nodesToProcess.forEach((node) => {
+                    scanAndBindInputElements(node);
+                });
+            }, OBSERVER_DEBOUNCE_DELAY);
         });
+
+        // 优化观察配置，减少不必要的监听
+        const observerConfig = {
+            childList: true,
+            subtree: true,
+            // 不监听属性变化，只关注节点添加
+            attributes: false,
+            characterData: false
+        };
 
         // 监控整个document.body的DOM变化
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+        observer.observe(document.body, observerConfig);
 
-    
+        // 存储observer引用以便后续清理
+        window.promptCraftObserver = observer;
+    }
+
+    // 检查节点是否可能包含输入元素（性能优化）
+    function couldContainInputElements(node) {
+        if (!node || !node.tagName) return false;
+        
+        const tagName = node.tagName.toLowerCase();
+        
+        // 直接是输入元素
+        if (tagName === 'textarea' || tagName === 'input') {
+            return true;
+        }
+        
+        // 是contenteditable元素
+        if (node.contentEditable === 'true') {
+            return true;
+        }
+        
+        // 是可能包含输入元素的容器
+        const containerTags = ['div', 'form', 'section', 'article', 'main', 'aside', 'nav'];
+        if (containerTags.includes(tagName)) {
+            return true;
+        }
+        
+        // 对于复杂的单页应用，检查是否有特定的类名或属性
+        const className = node.className || '';
+        const hasInputRelatedClass = /input|text|edit|form|chat|message|prompt/i.test(className);
+        
+        return hasInputRelatedClass;
     }
 
     // 扫描并绑定输入元素 - 递归检查所有子节点
@@ -1958,6 +2017,18 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         if (state.debounceTimer) {
             clearTimeout(state.debounceTimer);
             state.debounceTimer = null;
+        }
+
+        // 清理MutationObserver
+        if (window.promptCraftObserver) {
+            window.promptCraftObserver.disconnect();
+            window.promptCraftObserver = null;
+        }
+
+        // 清理输入防抖定时器
+        if (inputDebounceTimer) {
+            clearTimeout(inputDebounceTimer);
+            inputDebounceTimer = null;
         }
 
         // 重置状态
