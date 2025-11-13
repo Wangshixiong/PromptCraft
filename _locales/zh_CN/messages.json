@@ -1,0 +1,18 @@
+{
+  "extensionName": {
+    "message": "Prompt管理助手",
+    "description": "The name of the extension displayed in the store and browser."
+  },
+  "extensionDescription": {
+    "message": "一个安全、可靠、可跨设备同步的个人提示词管理工具。",
+    "description": "A detailed description of the extension's purpose."
+  },
+  "actionTitle": {
+    "message": "打开 Prompt管理助手",
+    "description": "The title displayed when hovering over the extension's icon in the toolbar."
+  },
+  "commandDescription": {
+    "message": "打开或关闭 Prompt管理助手 侧边栏",
+    "description": "The description for the keyboard shortcut to open the side panel."
+  }
+}

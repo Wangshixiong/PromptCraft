@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PromptCraft - 提示词管理工具</title>
+    <!-- 样式部分保持不变，为节省空间已折叠 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div class="sidebar">
+
+
+        <!-- 主视图 -->
+        <div class="view" id="mainView">
+            <div class="header">
+                <div class="logo">
+                    <div class="logo-icon">P</div>
+                </div>
+                <div class="search-container">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" class="search-box" placeholder="搜索提示词..." id="searchInput">
+                </div>
+                <div class="controls">
+                    <button class="add-btn-icon" id="addPromptBtn" title="添加新提示词">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    <button class="settings-btn" id="settingsBtn" title="设置"><i class="fas fa-cog"></i></button>
+                </div>
+            </div>
+            <div class="filter-container" id="filterContainer">
+                <!-- 分类按钮将动态生成 -->
+            </div>
+
+            <div class="prompts-container" id="promptsContainer">
+                <!-- 骨架屏占位符 -->
+                <div class="skeleton-card">
+                    <div class="skeleton-header">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-actions">
+                            <div class="skeleton-btn"></div>
+                            <div class="skeleton-btn"></div>
+                            <div class="skeleton-btn"></div>
+                        </div>
+                    </div>
+                    <div class="skeleton-tags"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                    <div class="skeleton-footer">
+                        <div class="skeleton-date"></div>
+                    </div>
+                </div>
+                <div class="skeleton-card">
+                    <div class="skeleton-header">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-actions">
+                            <div class="skeleton-btn"></div>
+                            <div class="skeleton-btn"></div>
+                            <div class="skeleton-btn"></div>
+                        </div>
+                    </div>
+                    <div class="skeleton-tags"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                    <div class="skeleton-footer">
+                        <div class="skeleton-date"></div>
+                    </div>
+                </div>
+                <div class="skeleton-card">
+                    <div class="skeleton-header">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-actions">
+                            <div class="skeleton-btn"></div>
+                            <div class="skeleton-btn"></div>
+                            <div class="skeleton-btn"></div>
+                        </div>
+                    </div>
+                    <div class="skeleton-tags"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                    <div class="skeleton-footer">
+                        <div class="skeleton-date"></div>
+                    </div>
+                </div>
+                <div class="skeleton-card">
+                    <div class="skeleton-header">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-actions">
+                            <div class="skeleton-btn"></div>
+                            <div class="skeleton-btn"></div>
+                            <div class="skeleton-btn"></div>
+                        </div>
+                    </div>
+                    <div class="skeleton-tags"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                    <div class="skeleton-footer">
+                        <div class="skeleton-date"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表单视图 -->
+        <div class="view" id="formView">
+            <div class="form-container-wrapper">
+                 <div class="form-header">
+                    <button class="back-btn" id="backToListBtn"><i class="fas fa-arrow-left"></i></button>
+                    <h2 class="form-title" id="formTitle">添加新提示词</h2>
+                </div>
+                <div class="form-container">
+                    <input type="hidden" id="promptIdInput">
+                    <!-- 标题和作者使用水平布局 -->
+                    <div class="form-group-horizontal">
+                        <label class="form-label" for="promptTitleInput"><span class="required">*</span> 标题</label>
+                        <input type="text" class="form-input" id="promptTitleInput" placeholder="给提示词起个名字">
+                    </div>
+                    <div class="form-group-horizontal">
+                        <label class="form-label" for="promptAuthorInput">作者</label>
+                        <input type="text" class="form-input" id="promptAuthorInput" placeholder="输入作者名称（可选）">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="promptContentInput"><span class="required">*</span> 提示词内容</label>
+                        <textarea class="form-textarea" id="promptContentInput" placeholder="在此输入或粘贴您的提示词内容..." maxlength="20000"></textarea>
+                        <div class="character-count" id="characterCount" style="text-align: right; font-size: 12px; color: #64748b; margin-top: 4px;">0 / 20000</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="smartTagInput">标签</label>
+                        <div id="smartTagInputContainer"></div>
+                        <div class="recommended-tags-section">
+                            <div id="recommendedTagsContainer" class="recommended-tags-container"></div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="cancel-btn" id="cancelFormBtn">取消</button>
+                        <button class="save-btn" id="savePromptBtn">保存提示词</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 加载状态 -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loader"></div>
+    </div>
+
+    <!-- 设置弹窗 -->
+    <div class="settings-overlay" id="settingsOverlay" style="display: none;">
+        <div class="settings-modal">
+            <div class="settings-header">
+                <h3>设置</h3>
+                <button class="settings-close" id="settingsClose"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="settings-body">
+                <!-- 账户与同步模块 -->
+                <div class="settings-section">
+                    <h4><i class="fas fa-user"></i> 账户与同步</h4>
+                    
+                    <!-- 未登录状态 -->
+                    <div id="loggedOutSection">
+                        <button class="google-signin-btn" id="googleSignInBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" class="google-icon">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                            <span class="btn-text">使用 Google 登录</span>
+                        </button>
+                    </div>
+                    
+                    <!-- 已登录状态 -->
+                    <div id="loggedInSection" style="display: none;">
+                        <div class="user-info-card">
+                            <div class="user-avatar" id="userAvatar" style="display: none;">
+                                <img class="avatar-img" alt="用户头像">
+                            </div>
+                            <div class="default-avatar" id="defaultAvatar">
+                                AI
+                            </div>
+                            <div class="user-info">
+                                <div class="user-name" id="userName" title="AI PM">AI PM</div>
+                                <div class="user-email" id="userEmail" title="pm@example.com">pm@example.com</div>
+                            </div>
+                            <button class="logout-btn" id="logoutBtn">退出登录</button>
+                        </div>
+                        
+                        <div class="sync-section">
+                            <div class="sync-time" id="syncTime">最后同步时间: 尚未同步</div>
+                            <button class="manual-sync-btn" id="manualSyncBtn" title="手动同步">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 应用设置模块 -->
+                <div class="settings-section">
+                    <h4><i class="fas fa-sliders-h"></i> 应用设置</h4>
+                    
+                    <!-- 主题子模块 -->
+                    <div class="settings-group-horizontal">
+                        <label class="group-label-horizontal">主题</label>
+                        <div class="theme-selector">
+                            <div class="theme-option" data-theme="light">
+                                <div class="theme-icon">
+                                    <i class="fas fa-sun"></i>
+                                </div>
+                                <span class="theme-label">浅色</span>
+                            </div>
+                            <div class="theme-option" data-theme="dark">
+                                <div class="theme-icon">
+                                    <i class="fas fa-moon"></i>
+                                </div>
+                                <span class="theme-label">深色</span>
+                            </div>
+                            <div class="theme-option active" data-theme="auto">
+                                <div class="theme-icon">
+                                    <i class="fas fa-desktop"></i>
+                                </div>
+                                <span class="theme-label">系统</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 功能子模块 -->
+                    <div class="settings-group-horizontal" style="margin-top: 8px;">
+                        <label class="group-label-horizontal">功能</label>
+                        <div class="feature-settings">
+                            <div class="feature-item">
+                                <span class="feature-name">"pp"快速唤醒</span>
+                                <div class="toggle-switch" id="ppCommandToggle">
+                                    <input type="checkbox" id="ppCommandCheckbox" checked>
+                                    <label for="ppCommandCheckbox" class="toggle-label">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 语言子模块 -->
+                    <div class="settings-group-horizontal" style="margin-top: 8px;">
+                        <label class="group-label-horizontal">语言</label>
+                        <div class="theme-selector">
+                            <div class="theme-option" data-language="zh_CN">中文</div>
+                            <div class="theme-option" data-language="en">English</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 数据管理模块 -->
+                <div class="settings-section">
+                    <h4><i class="fas fa-database"></i> 数据管理</h4>
+                    <div class="data-management-grid">
+                        <div class="data-card import" id="importBtn">
+                            <i class="fas fa-file-import data-card-icon"></i>
+                            <div class="data-card-title">导入</div>
+                        </div>
+                        <div class="data-card template" id="downloadTemplateBtn">
+                            <i class="fas fa-download data-card-icon"></i>
+                            <div class="data-card-title">模板</div>
+                        </div>
+                        <div class="data-card export" id="exportBtn">
+                            <i class="fas fa-file-export data-card-icon"></i>
+                            <div class="data-card-title">导出</div>
+                        </div>
+                    </div>
+
+                </div>
+                
+                <!-- 关于模块 -->
+                <div class="settings-section">
+                    <h4><i class="fas fa-info-circle"></i> 关于</h4>
+                    <div class="about-content">
+                        <div class="version-info">
+                            <span class="version-label">版本信息</span>
+                            <div class="version-container">
+                                <span class="version-number clickable" id="versionNumber">v1.3.7</span>
+                                <span class="version-new" id="versionNew" style="display: none;">NEW</span>
+                            </div>
+                        </div>
+                        <div class="author-info">
+                            <span class="author-label">作者</span>
+                            <span class="author-name">吏部侍郎</span>
+                        </div>
+                        <div class="contact-info">
+                            <span class="contact-label">联系作者</span>
+                            <div class="qr-code-container">
+                                <i class="fas fa-qrcode qr-icon"></i>
+                                <div class="qr-code-popup">
+                                    <img src="../../assets/icons/公众号二维码.jpg" alt="公众号二维码" class="qr-code-image">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 版本日志弹窗 -->
+    <div class="version-log-overlay" id="versionLogOverlay" style="display: none;">
+        <div class="version-log-modal">
+            
+            <button class="version-log-close" id="versionLogClose">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <div class="version-log-body" id="versionLogBody">
+                </div>
+        </div>
+    </div>
+
+    <!-- 隐藏的文件输入 -->
+    <input type="file" id="fileInput" accept=".json" style="display: none;">
+
+    <!-- Toast 提示容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 自定义确认弹窗 -->
+    <div class="confirm-overlay" id="confirmOverlay" style="display: none;">
+        <div class="confirm-modal">
+            <div class="confirm-header">
+                <i class="fas fa-exclamation-triangle" style="color: #f59e0b; margin-right: 8px;"></i>
+                <h3 id="confirmTitle">确认操作</h3>
+            </div>
+            <div class="confirm-content">
+                <p id="confirmMessage">您确定要执行此操作吗？</p>
+            </div>
+            <div class="confirm-actions">
+                <button class="confirm-cancel-btn" id="confirmCancelBtn">取消</button>
+                <button class="confirm-ok-btn" id="confirmOkBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 关键改动：为脚本添加 defer 属性 -->
+    <!-- 本地 Supabase SDK -->
+    <script src="../libs/supabase.min.js"></script>
+    
+    <!-- Svelte CDN removed due to CSP restrictions -->
+    
+    <script src="../shared/globalTagColorManager.js"></script>
+<script src="../utils/uuid.js" defer></script>
+<script src="../utils/data-service.js" defer></script>
+<script src="../utils/i18n.js" defer></script>
+<script src="tagComponentManager.js" defer></script>
+<script src="../utils/json-utils.js" defer></script>
+<script src="uiManager.js" defer></script>
+<script src="appController.js" defer></script>
+<script src="sidepanel.js" defer></script>
+</body>
+</html>
