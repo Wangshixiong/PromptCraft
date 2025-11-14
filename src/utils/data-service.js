@@ -1153,6 +1153,34 @@ class DataService {
     }
 
     /**
+     * 清除默认模板已加载标记，允许重新加载默认提示词
+     * @returns {Promise<void>}
+     */
+    async clearDefaultTemplatesLoaded() {
+        await this.initialize();
+        try {
+            await this._setToStorage({ [STORAGE_KEYS.DEFAULT_TEMPLATES_LOADED]: false });
+        } catch (error) {
+            console.error('清除默认模板加载标记失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 清除默认模板已加载标记，允许重新加载默认提示词
+     * @returns {Promise<void>}
+     */
+    async clearDefaultTemplatesLoaded() {
+        await this.initialize();
+        try {
+            await this._setToStorage({ [STORAGE_KEYS.DEFAULT_TEMPLATES_LOADED]: false });
+        } catch (error) {
+            console.error('清除默认模板加载标记失败:', error);
+            throw error;
+        }
+    }
+
+    /**
      * 将默认提示词复制到用户区域
      * @param {Array} defaultPrompts - 默认提示词数组
      * @returns {Promise<void>}

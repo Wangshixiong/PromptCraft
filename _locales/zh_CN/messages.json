@@ -14,10 +14,37 @@
   "commandDescription": {
     "message": "打开或关闭 Prompt管理助手 侧边栏",
     "description": "The description for the keyboard shortcut to open the side panel."
-  }
-  ,
+  },
   "contextAddToPromptcraft": {
     "message": "添加到 Prompt管理助手",
     "description": "右键菜单标题：将选中文本添加到助手"
+  },
+  "search_placeholder": {
+    "message": "搜索提示词...",
+    "description": "PP唤醒窗口搜索框占位符"
+  },
+  "quick_help_select": {
+    "message": "选择",
+    "description": "PP唤醒窗口帮助文本 - 选择"
+  },
+  "quick_help_confirm": {
+    "message": "确认",
+    "description": "PP唤醒窗口帮助文本 - 确认"
+  },
+  "quick_help_cancel": {
+    "message": "取消",
+    "description": "PP唤醒窗口帮助文本 - 取消"
+  },
+  "quick_help_trigger": {
+    "message": "在输入框中输入'pp '唤醒提示词助手",
+    "description": "PP唤醒窗口帮助文本 - 触发方式"
+  },
+  "filter_all": {
+    "message": "全部",
+    "description": "PP唤醒窗口分类筛选 - 全部"
+  },
+  "noResults": {
+    "message": "暂无匹配的提示词",
+    "description": "PP唤醒窗口无结果提示"
   }
 }

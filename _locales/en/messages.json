@@ -14,10 +14,37 @@
   "commandDescription": {
     "message": "Open or close the Prompt Management Assistant sidebar",
     "description": "The description for the keyboard shortcut to open the side panel."
-  }
-  ,
+  },
   "contextAddToPromptcraft": {
     "message": "Add to Prompt Management Assistant",
     "description": "Context menu title for adding selected text"
+  },
+  "search_placeholder": {
+    "message": "Search prompts...",
+    "description": "PP quick invoke window search placeholder"
+  },
+  "quick_help_select": {
+    "message": "Select",
+    "description": "PP quick invoke window help text - select"
+  },
+  "quick_help_confirm": {
+    "message": "Confirm",
+    "description": "PP quick invoke window help text - confirm"
+  },
+  "quick_help_cancel": {
+    "message": "Cancel",
+    "description": "PP quick invoke window help text - cancel"
+  },
+  "quick_help_trigger": {
+    "message": "Type 'pp ' in input box to invoke PromptCraft",
+    "description": "PP quick invoke window help text - trigger"
+  },
+  "filter_all": {
+    "message": "All",
+    "description": "PP quick invoke window category filter - all"
+  },
+  "noResults": {
+    "message": "No matching prompts found",
+    "description": "PP quick invoke window no results message"
   }
 }

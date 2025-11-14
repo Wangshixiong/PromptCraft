@@ -54,6 +54,9 @@ const app = {
             // 检查新版本
             ui.checkForNewVersion();
 
+            // 设置二维码图片路径
+            this.setupQrCodeImage();
+
             // 设置存储变化监听器
             this.setupStorageListener();
 
@@ -1160,7 +1163,7 @@ const app = {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         event.target.classList.add('active');
 
-        if (tag === i18n.t('filter.all')) {
+        if (tag === i18n.t('filter_all')) {
             ui.renderPrompts(allPrompts);
         } else {
             const filtered = allPrompts.filter(p => {
@@ -1352,6 +1355,28 @@ const app = {
     async initializeVersionLog() {
         // 检查是否有新版本
         await ui.checkForNewVersion();
+    },
+
+    /**
+     * 设置二维码图片路径
+     */
+    setupQrCodeImage() {
+        try {
+            const qrCodeImage = document.getElementById('qrCodeImage');
+            if (qrCodeImage) {
+                // 如果HTML中已经设置了src属性，则使用HTML中的设置
+                // 否则使用Chrome扩展API动态获取路径
+                if (!qrCodeImage.src || qrCodeImage.src.includes('data:') || qrCodeImage.src === '') {
+                    // 尝试使用Chrome扩展API获取图片路径
+                    if (chrome.runtime && chrome.runtime.getURL) {
+                        qrCodeImage.src = chrome.runtime.getURL('assets/icons/公众号二维码.jpg');
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('设置二维码图片路径失败:', error);
+            // 这个错误不影响主要功能，可以忽略
+        }
     },
 
     /**

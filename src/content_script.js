@@ -461,20 +461,30 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
     function loadI18n() {
         return new Promise((resolve) => {
             if (window.i18n && typeof i18n.init === 'function') {
-                i18n.init().then(resolve).catch(() => resolve());
+                i18n.init().then(resolve).catch((error) => {
+                    console.error('PromptCraft: i18n初始化失败:', error);
+                    resolve();
+                });
                 return;
             }
             const script = document.createElement('script');
             script.src = chrome.runtime.getURL('src/utils/i18n.js');
             script.onload = () => {
                 if (window.i18n && typeof i18n.init === 'function') {
-                    i18n.init().then(resolve).catch(() => resolve());
+                    i18n.init().then(resolve).catch((error) => {
+                        console.error('PromptCraft: i18n初始化失败:', error);
+                        resolve();
+                    });
                 } else {
+                    console.warn('PromptCraft: i18n对象未正确加载');
                     resolve();
                 }
                 script.remove();
             };
-            script.onerror = () => resolve();
+            script.onerror = (error) => {
+                console.error('PromptCraft: 加载i18n脚本失败:', error);
+                resolve();
+            };
             (document.head || document.documentElement).appendChild(script);
         });
     }
@@ -1194,12 +1204,16 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                 className: state.currentInput.className
             } : null,
             url: window.location.href,
-            hostname: window.location.hostname
+            hostname: window.location.hostname,
+            promptsCount: state.prompts.length,
+            triggerPosition: state.triggerPosition,
+            i18nAvailable: !!window.i18n,
+            i18nLang: window.i18n ? window.i18n.lang : 'unavailable'
         });
 
         // 防止重复激活
         if (state.isUIVisible) {
-
+            console.log('PromptCraft: UI已激活，跳过重复显示');
             return;
         }
 
@@ -1212,19 +1226,36 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
             return;
         }
 
-        // 记录UI显示的调试信息
-        // promptsCount: state.prompts.length,
-        // triggerPosition: state.triggerPosition
+        // 检查i18n是否可用，如果不可用则使用默认值
+        if (!window.i18n || !window.i18n.t) {
+            console.warn('PromptCraft: i18n不可用，使用默认文本');
+            // 创建简化的i18n对象作为后备
+            window.i18n = {
+                t: function(key) {
+                    const defaults = {
+                        'search_placeholder': '搜索提示词...',
+                        'quick_help_select': '选择',
+                        'quick_help_confirm': '确认',
+                        'quick_help_cancel': '取消',
+                        'quick_help_trigger': '在输入框中输入\'pp \'唤醒提示词助手',
+                        'filter_all': '全部',
+                        'noResults': '暂无匹配的提示词'
+                    };
+                    return defaults[key] || key;
+                }
+            };
+        }
 
         // 保存原始输入元素，防止被搜索框覆盖
         state.originalInput = state.currentInput;
 
-        // 记录原始输入元素信息
-        // originalInputElement: state.originalInput ? {
-        //     tagName: state.originalInput.tagName,
-        //     id: state.originalInput.id,
-        //     className: state.originalInput.className
-        // } : null
+        console.log('PromptCraft: 原始输入元素信息', {
+            originalInputElement: state.originalInput ? {
+                tagName: state.originalInput.tagName,
+                id: state.originalInput.id,
+                className: state.originalInput.className
+            } : null
+        });
 
         state.isActive = true;
         state.isUIVisible = true;
@@ -1233,23 +1264,28 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         state.selectedCategory = 'all';
         state.searchTerm = '';
 
+        try {
+            createQuickInvokeUI();
+            positionUI();
+            applyFilters();
 
-        createQuickInvokeUI();
-        positionUI();
-        applyFilters();
+            // 聚焦搜索框
+            setTimeout(() => {
+                const searchInput = state.uiContainer?.querySelector('.promptcraft-search-input');
+                if (searchInput) {
+                    console.log('PromptCraft: 聚焦搜索框');
+                    searchInput.focus();
+                } else {
+                    console.warn('PromptCraft: Search input not found for focusing');
+                }
+            }, 10);
 
-        // 聚焦搜索框
-        setTimeout(() => {
-            const searchInput = state.uiContainer?.querySelector('.promptcraft-search-input');
-            if (searchInput) {
-        
-                searchInput.focus();
-            } else {
-                console.warn('PromptCraft: Search input not found for focusing');
-            }
-        }, 10);
-
-
+            console.log('PromptCraft: UI创建成功');
+        } catch (error) {
+            console.error('PromptCraft: UI创建失败:', error);
+            state.isUIVisible = false;
+            state.isActive = false;
+        }
     }
 
     // 隐藏快速调用UI
@@ -1300,7 +1336,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         // 构建UI结构
         state.uiContainer.innerHTML = `
             <div class="promptcraft-search-container">
-                <input type="text" class="promptcraft-search-input" placeholder="${i18n.t('search.placeholder')}" autocomplete="off" spellcheck="false" />
+                <input type="text" class="promptcraft-search-input" placeholder="${i18n.t('search_placeholder')}" autocomplete="off" spellcheck="false" />
             </div>
             <div class="promptcraft-category-filter">
                 <div class="promptcraft-category-tabs"></div>
@@ -1308,12 +1344,12 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
             <div class="promptcraft-prompt-list"></div>
             <div class="promptcraft-help-text">
                 <div class="promptcraft-help-main">
-                    <span class="promptcraft-help-keys">↑↓</span> ${i18n.t('quick.help.select')} • 
-                    <span class="promptcraft-help-keys">Enter</span> ${i18n.t('quick.help.confirm')} • 
-                    <span class="promptcraft-help-keys">Esc</span> ${i18n.t('quick.help.cancel')}
+                    <span class="promptcraft-help-keys">↑↓</span> ${i18n.t('quick_help_select')} • 
+                    <span class="promptcraft-help-keys">Enter</span> ${i18n.t('quick_help_confirm')} • 
+                    <span class="promptcraft-help-keys">Esc</span> ${i18n.t('quick_help_cancel')}
                 </div>
                 <div class="promptcraft-help-trigger">
-                    ${i18n.t('quick.help.trigger')}
+                    ${i18n.t('quick_help_trigger')}
                 </div>
             </div>
         `;
@@ -1507,7 +1543,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
         // 创建分类标签（添加颜色支持）
         tabsContainer.innerHTML = tags.map(tag => {
-            const displayName = tag === 'all' ? i18n.t('filter.all') : tag;
+            const displayName = tag === 'all' ? i18n.t('filter_all') : tag;
             const isActive = tag === state.selectedCategory;
             const colorClass = tag === 'all' ? '' : `category-tab-${tagColorManager.getTagColor(tag)}`;
             return `<button class="promptcraft-category-tab ${isActive ? 'active' : ''} ${colorClass}" data-category="${tag}">${escapeHtml(displayName)}</button>`;

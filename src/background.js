@@ -11,7 +11,13 @@ importScripts('background/auth-handler.js');
 // 导入同步服务
 importScripts('utils/sync-service.js');
 
-// 从default-prompts.json加载默认提示词数据
+// 检测浏览器语言环境并返回对应的语言代码
+function detectBrowserLanguage() {
+    const uiLanguage = chrome.i18n?.getUILanguage ? chrome.i18n.getUILanguage() : navigator.language || 'en';
+    return uiLanguage.startsWith('zh') ? 'zh_CN' : 'en';
+}
+
+// 从默认提示词文件加载数据，支持中英文版本
 async function loadDefaultPromptsToMemory() {
     try {
         // 检查是否已经初始化过
@@ -32,41 +38,62 @@ async function loadDefaultPromptsToMemory() {
         
 
         
-        // 从default-prompts.json文件加载默认数据
-        const fileUrl = chrome.runtime.getURL('assets/data/default-prompts.json');
+        // 根据语言环境检测结果加载对应版本的默认提示词
+        const currentLanguage = detectBrowserLanguage();
+        const fileName = currentLanguage === 'zh_CN' ? 'default-prompts.json' : 'default-prompts-en.json';
+        const fileUrl = chrome.runtime.getURL(`assets/data/${fileName}`);
 
         
         const response = await fetch(fileUrl);
 
         
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const defaultPrompts = await response.json();
-        
-        // 首先进行数据迁移（处理现有用户数据）
-        await dataService.migrateExistingUserData();
-        
-        // 检查是否已经加载过默认模板
-        const isTemplatesLoaded = await dataService.isDefaultTemplatesLoaded();
-        
-        if (!isTemplatesLoaded) {
-            // 将默认提示词复制到用户区域（生成新的用户ID）
-            await dataService.copyDefaultPromptsToUserArea(defaultPrompts);
+            // 如果目标语言文件不存在，回退到中文版本
+            const fallbackUrl = chrome.runtime.getURL('assets/data/default-prompts.json');
+            const fallbackResponse = await fetch(fallbackUrl);
             
-            // 标记默认模板已加载
-            await dataService.setDefaultTemplatesLoaded();
+            if (!fallbackResponse.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             
-
+            const defaultPrompts = await fallbackResponse.json();
+            
+            // 首先进行数据迁移（处理现有用户数据）
+            await dataService.migrateExistingUserData();
+            
+            // 检查是否已经加载过默认模板
+            const isTemplatesLoaded = await dataService.isDefaultTemplatesLoaded();
+            
+            if (!isTemplatesLoaded) {
+                // 将默认提示词复制到用户区域（生成新的用户ID）
+                await dataService.copyDefaultPromptsToUserArea(defaultPrompts);
+                
+                // 标记默认模板已加载
+                await dataService.setDefaultTemplatesLoaded();
+            }
         } else {
-
+            const defaultPrompts = await response.json();
+            
+            // 首先进行数据迁移（处理现有用户数据）
+            await dataService.migrateExistingUserData();
+            
+            // 检查是否已经加载过默认模板
+            const isTemplatesLoaded = await dataService.isDefaultTemplatesLoaded();
+            
+            if (!isTemplatesLoaded) {
+                // 将默认提示词复制到用户区域（生成新的用户ID）
+                await dataService.copyDefaultPromptsToUserArea(defaultPrompts);
+                
+                // 标记默认模板已加载
+                await dataService.setDefaultTemplatesLoaded();
+            }
         }
         
         // 使用原子性操作确保数据一致性
         await dataService._atomicStorageOperation([
             { 'promptcraft_has_data': true },
-            { 'themeMode': 'auto' }
+            { 'themeMode': 'auto' },
+            { 'language': currentLanguage }
         ]);
 
         
@@ -447,7 +474,15 @@ chrome.runtime.onStartup.addListener(async () => {
     if (message.type === 'SET_LANGUAGE') {
       (async () => {
         try {
+          // 保存语言设置
           await dataService.setLanguage(message.payload);
+          
+          // 清除默认模板已加载标记，以便下次加载使用对应语言的默认提示词
+          await dataService.clearDefaultTemplatesLoaded();
+          
+          // 重新加载默认提示词（使用新的语言版本）
+          await loadDefaultPromptsToMemory();
+          
           sendResponse({ success: true });
         } catch (error) {
           sendResponse({ success: false, error: error.message });

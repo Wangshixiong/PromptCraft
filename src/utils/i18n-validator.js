@@ -13,7 +13,7 @@ class I18nValidator {
     getRequiredKeys() {
         return [
             // 应用基本信息
-            'app.title', 'search.placeholder',
+            'app.title', 'search_placeholder',
             
             // 按钮文本
             'button.add', 'button.settings', 'button.copy', 'button.edit', 
@@ -21,45 +21,45 @@ class I18nValidator {
             
             // 表单相关
             'form.label.title', 'form.label.content', 'form.title.new', 'form.title.edit',
-            'form.placeholder.title', 'form.placeholder.content',
+            'form_placeholder_title', 'form_placeholder_content',
             
             // 筛选和标签
-            'filter.all', 'filter.tags', 'filter.showMore', 'filter.collapse',
-            'tag.input.addHint', 'tag.input.addMore', 'tag.recommended.empty',
-            'tag.recommended.label', 'tag.remove',
+            'filter_all', 'filter.tags', 'filter.showMore', 'filter.collapse',
+            'tag_input_addHint', 'tag_input_addMore', 'tag_recommended_empty',
+            'tag_recommended_label', 'tag_remove',
             
             // 状态提示
             'empty.title', 'empty.desc', 'noResults',
-            'sync.lastTimePrefix', 'sync.none', 'sync.loading',
-            'sync.enabled', 'sync.disabled', 'sync.manual',
+            'sync_lastTimePrefix', 'sync_none', 'sync_loading',
+            'sync_enabled', 'sync_disabled', 'sync_manual',
             
             // 操作反馈
-            'toast.syncSuccess', 'toast.syncError', 'toast.copySuccess', 
-            'toast.copyFail', 'toast.languageChangeError',
-            'prompt.addSuccess', 'prompt.updateSuccess', 'prompt.deleteSuccess',
-            'import.success', 'export.success', 'data.clearSuccess',
-            'theme.change', 'language.change',
+            'toast_syncSuccess', 'toast_syncError', 'toast_copySuccess', 
+            'toast_copyFail', 'toast_languageChangeError',
+            'prompt_addSuccess', 'prompt_updateSuccess', 'prompt_deleteSuccess',
+            'import_success', 'export_success', 'data_clearSuccess',
+            'theme_change', 'language_change',
             
             // 设置界面
-            'settings.title', 'settings.account', 'settings.app', 
-            'settings.data', 'settings.about', 'settings.theme', 
-            'settings.language', 'settings.features', 'settings.quickInvoke',
-            'settings.login', 'settings.logout',
+            'settings_title', 'settings_account', 'settings_app', 
+            'settings_data', 'settings_about', 'settings_theme', 
+            'settings_language', 'settings_features', 'settings_quickInvoke',
+            'settings_login', 'settings_logout',
             
             // 主题和语言选项
-            'theme.system', 'theme.light', 'theme.dark',
-            'language.zh_CN', 'language.en',
+            'theme_system', 'theme_light', 'theme_dark',
+            'language_zh_CN', 'language_en',
             
             // 确认对话框
-            'confirm.title', 'confirm.ok', 'confirm.cancel',
-            'confirm.clearAll', 'confirm.downloadFailedRecords',
-            'delete.confirm',
+            'confirm_title', 'confirm_ok', 'confirm_cancel',
+            'confirm_clearAll', 'confirm_downloadFailedRecords',
+            'delete_confirm',
             
             // 错误处理
-            'error.loadData', 'error.saveFailed', 'error.editFailed',
+            'error_loadData', 'error_saveFailed', 'error_editFailed',
             
             // 文件操作
-            'file.backupPrefix', 'file.importTemplateName', 'file.importErrorsPrefix'
+            'file_backupPrefix', 'file_importTemplateName', 'file_importErrorsPrefix'
         ];
     }
 

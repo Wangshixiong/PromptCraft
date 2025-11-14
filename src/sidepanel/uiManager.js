@@ -427,7 +427,7 @@ const ui = {
             }
         });
         
-        const tags = [i18n.t('filter.all'), ...Array.from(allTags)];
+        const tags = [i18n.t('filter_all'), ...Array.from(allTags)];
         
         // 初始化标签状态
         if (!this.filterState) {
@@ -516,12 +516,12 @@ const ui = {
         btn.className = 'filter-btn';
         
         // 如果不是"全部"，使用标签颜色系统
-        if (tag !== this.t('filter.all')) {
+        if (tag !== this.t('filter_all')) {
             const colorClass = this.getTagColor(tag);
             btn.classList.add(`filter-tag-${colorClass}`);
         }
         
-        if (tag === this.t('filter.all')) btn.classList.add('active');
+        if (tag === this.t('filter_all')) btn.classList.add('active');
         btn.textContent = tag;
         btn.addEventListener('click', (e) => app.handleFilter(tag, e));
         return btn;
