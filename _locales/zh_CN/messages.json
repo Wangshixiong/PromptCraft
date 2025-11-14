@@ -15,4 +15,9 @@
     "message": "打开或关闭 Prompt管理助手 侧边栏",
     "description": "The description for the keyboard shortcut to open the side panel."
   }
+  ,
+  "contextAddToPromptcraft": {
+    "message": "添加到 Prompt管理助手",
+    "description": "右键菜单标题：将选中文本添加到助手"
+  }
 }

@@ -457,8 +457,30 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         POSITION_OFFSET: 5
     };
 
+    // 加载 i18n 并初始化
+    function loadI18n() {
+        return new Promise((resolve) => {
+            if (window.i18n && typeof i18n.init === 'function') {
+                i18n.init().then(resolve).catch(() => resolve());
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = chrome.runtime.getURL('src/utils/i18n.js');
+            script.onload = () => {
+                if (window.i18n && typeof i18n.init === 'function') {
+                    i18n.init().then(resolve).catch(() => resolve());
+                } else {
+                    resolve();
+                }
+                script.remove();
+            };
+            script.onerror = () => resolve();
+            (document.head || document.documentElement).appendChild(script);
+        });
+    }
+
     // 初始化系统
-    function init() {
+    async function init() {
 
 
         // 特别检测大模型网站
@@ -474,6 +496,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
         }
 
+        await loadI18n();
         injectStyles(); // 注入CSS样式
         loadPrompts();
         setupEventListeners();

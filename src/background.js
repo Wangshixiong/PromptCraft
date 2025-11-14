@@ -144,8 +144,8 @@ chrome.runtime.onInstalled.addListener(async () => {
         // 创建一个右键菜单项
         chrome.contextMenus.create({
           id: "add-to-promptcraft",
-          title: "添加到 Prompt管理助手",
-          contexts: ["selection"] // 只在用户选中文本时显示
+          title: chrome.i18n && chrome.i18n.getMessage ? chrome.i18n.getMessage('contextAddToPromptcraft') : "添加到 Prompt管理助手",
+          contexts: ["selection"]
         });
     });
     

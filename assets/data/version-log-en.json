@@ -1,0 +1,182 @@
+{
+  "currentVersion": "1.4.0",
+  "lastViewedVersion": "1.3.8",
+  "versions": [
+    {
+      "version": "1.4.0",
+      "date": "2025-11-14",
+      "title": "Comprehensive Internationalization Optimization",
+      "changes": [
+        "🌐 Fixed Toast messages showing Chinese text in English interface",
+        "✨ Added missing Toast message translations (login success, logout success, sync success)",
+        "🔧 Fixed hardcoded Toast messages, all now use internationalization",
+        "🎨 Improved English translation file to ensure all UI elements display correctly",
+        "⚡ Enhanced internationalization switching functionality",
+        "🚀 Optimized internationalization system performance for faster language switching"
+      ]
+    },
+    {
+      "version": "1.3.8",
+      "date": "2025-11-13",
+      "title": "Full Internationalization Support",
+      "changes": [
+        "🌐 Full internationalization (Chinese/English), added language resources and tools",
+        "⚙️ Support dynamic language switching in settings",
+        "📋 Sidebar and content script core texts integrated with internationalization system",
+        "🔄 Fixed plugin auto-refresh/jump issue after clicking copy button",
+        "🔒 Implemented clipboard failure fallback, improved copy success/failure feedback",
+        "📜 Added `clipboardWrite` permission to Manifest for better cross-browser compatibility"
+      ]
+    },
+    {
+      "version": "1.3.7",
+      "date": "2025-07-16",
+      "title": "Critical Bug Fixes",
+      "changes": [
+        "🐛 Fixed Gemini drawing board page freezing issue",
+        "🔐 Fixed login state persistence issue"
+      ]
+    },
+    {
+      "version": "1.3.6",
+      "date": "2025-07-07",
+      "title": "UI Layout Optimization and Feature Enhancement",
+      "changes": [
+        "🎨 Added author and tag fields",
+        "🔧 Optimized settings data management layout with compact icon-text horizontal arrangement",
+        "👤 Added author and contact information display with QR code support",
+        "📱 Optimized prompt preview layout for better user experience"
+      ]
+    },
+    {
+      "version": "1.3.5",
+      "date": "2025-07-02",
+      "title": "UI Interface Reconstruction Optimization",
+      "changes": [
+        "🎨 Top area reconstruction: Modern design style, optimized layout and space utilization",
+        "🔍 Search function area redesign: Rounded corners, light gray borders, improved user experience",
+        "🏷️ Tag filtering area optimization: Pill-shaped design, horizontal scrolling layout adaptable to different screen widths",
+        "🎭 Prompt card UI reconstruction"
+      ]
+    },
+    {
+      "version": "1.3.0",
+      "date": "2025-06-30",
+      "title": "Code Architecture Refactoring",
+      "changes": [
+        "🔧 Completed JavaScript code modularization refactoring, improved code quality and maintainability",
+        "📁 Reorganized project file structure for clearer layered architecture",
+        "🐛 Fixed all JavaScript syntax errors to ensure stable code execution",
+        "⚡ Optimized function call logic, improved application response speed",
+        "📝 Unified code style with complete JSDoc comments",
+        "🔄 Added version update log feature for users to view change history"
+      ]
+    },
+    {
+      "version": "1.2.2",
+      "date": "2025-06-27",
+      "title": "Data Security Fixes",
+      "changes": [
+        "🛡️ Fixed critical issue of user data loss after Google login logout",
+        "🔧 Replaced excessive cleanup logic, preserve user prompts when logging out",
+        "🚀 Fixed issue triggering 'first install' process after browser restart",
+        "🔒 Added data protection mechanism to prevent accidental data deletion",
+        "🌐 Fixed compatibility issues causing page loading problems on certain websites"
+      ]
+    },
+    {
+      "version": "1.2.1",
+      "date": "2025-06-25",
+      "title": "Google Login State Fix",
+      "changes": [
+        "🔧 Fixed Google login state loss after browser restart, achieved persistent authentication state",
+        "🎯 Added 'initial handshake' mechanism for consistent UI and backend authentication state",
+        "✨ Optimized handling logic when users actively close Google login window",
+        "🛡️ Differentiated between 'user cancellation' and 'real login failure' for precise feedback",
+        "📊 Improved console log output, using regular logs instead of error level for user cancellations"
+      ]
+    },
+    {
+      "version": "1.2.0",
+      "date": "2025-06-22",
+      "title": "Login Animation Optimization",
+      "changes": [
+        "🎭 Implemented smooth login button loading animation with clear visual feedback",
+        "📊 Added multi-stage login progress prompts (Connecting to Google..., Verifying identity..., Syncing data...)",
+        "⚡ Pre-warmed login resources at startup, significantly reduced initial login delay (10-second issue)",
+        "🛡️ Added duplicate click protection with automatic state recovery",
+        "🎯 Complete login interaction experience redesign with full visual feedback",
+        "🔧 Implemented message-driven progress callback mechanism for frontend-backend coordination"
+      ]
+    },
+    {
+      "version": "1.1.0",
+      "date": "2025-06-22",
+      "title": "Message-Driven Architecture",
+      "changes": [
+        "🚀 Implemented comprehensive communication mechanism refactoring, all core services managed by background script",
+        "🔧 Ensured single instance operation of core services, solved multi-instance interference",
+        "🎯 Completely separated UI rendering from business logic, improved code maintainability",
+        "⚡ Solved interface lag caused by 'notification storm', improved list update performance",
+        "🛡️ Completely fixed concurrent execution bugs in sync process, ensured data processing atomicity",
+        "🔐 Fixed authentication timeout issues caused by script context isolation",
+        "🔄 Optimized cloud deletion record processing logic, avoided 'zombie records'",
+        "🧹 Removed duplicate polling requests for theme settings, reduced resource consumption"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2025-06-20",
+      "title": "Cloud Sync Functionality",
+      "changes": [
+        "🔄 Implemented complete Supabase cloud data synchronization for cross-device data一致性",
+        "🔀 Local operations immediately pushed to cloud, cloud changes synchronized locally via scheduled (10min) and event-triggered updates",
+        "🐛 Fixed duplicate toast notification issue, removed duplicate message listeners",
+        "🔧 Fixed cloud deletion operations not syncing to local",
+        "⚡ Optimized sync state management, reduced unnecessary UI refreshes",
+        "🛡️ Enhanced local-cloud data consistency guarantee mechanism",
+        "📱 Improved multi-device data synchronization experience"
+      ]
+    },
+    {
+      "version": "0.9.0",
+      "date": "2025-06-19",
+      "title": "User Authentication System",
+      "changes": [
+        "🔐 Added Google OAuth login functionality supporting secure user authentication",
+        "🔧 Completely refactored OAuth authentication system, removed conflicting code using pure chrome.identity.launchWebAuthFlow",
+        "🛡️ Optimized Supabase configuration, simplified message passing mechanism, improved system security",
+        "🧹 Removed redundant code and unnecessary permissions, streamlined manifest.json configuration",
+        "🐛 Fixed authService identifier duplicate declaration issue",
+        "⚡ Fixed multiple GoTrueClient instance warnings, optimized authentication service loading logic",
+        "🔄 Simplified authentication service initialization with anti-duplicate loading mechanism"
+      ]
+    },
+    {
+      "version": "0.5.1",
+      "date": "2025-06-17",
+      "title": "Prompt Sorting Optimization",
+      "changes": [
+        "📋 Newly created prompts automatically displayed at top of list, sorted by creation time descending",
+        "🎨 Redesigned appearance settings layout with icon-text horizontal display for better user experience",
+        "🔧 Optimized visual effects and spacing of theme selector in settings panel",
+        "🎯 Ensured quick call functionality text insertion format consistency with copy button"
+      ]
+    },
+    {
+      "version": "0.5.0",
+      "date": "2025-06-16",
+      "title": "Major Architecture Refactoring",
+      "changes": [
+        "🚀 Simplified overall extension architecture, removed unnecessary complexity, improved system performance and stability",
+        "🔒 Optimized Chrome Storage API usage mechanism, improved data read/write efficiency and security",
+        "🛡️ Strengthened user data privacy protection, ensured all data processed locally with no external transmission",
+        "🏗️ Optimized user operation flow, removed unnecessary authentication steps for more direct experience",
+        "⚡ Reduced external dependency libraries, significantly improved extension startup speed and response performance",
+        "🧹 Large-scale code refactoring and cleanup, removed redundant code, improved code maintainability",
+        "📝 Optimized manifest.json configuration, removed unnecessary permission requests, reduced security risk",
+        "🔧 Streamlined package.json dependencies, reduced package size, improved installation and update speed"
+      ]
+    }
+  ]
+}

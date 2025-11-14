@@ -85,7 +85,7 @@
           class="tag-remove" 
           on:click={() => removeTag(tag)}
           type="button"
-          aria-label="删除标签 {tag}"
+          aria-label={window?.i18n ? window.i18n.t('tag.remove') + ' ' + tag : '删除标签 ' + tag}
         >
           ×
         </button>
@@ -109,7 +109,7 @@
   <!-- 推荐标签栏 -->
   {#if (isInputFocused || inputValue) && suggestedTags.length > 0}
     <div class="suggested-tags-bar">
-      <div class="suggested-tags-label">推荐标签:</div>
+      <div class="suggested-tags-label">{window?.i18n ? window.i18n.t('tag.recommended.label') : '推荐标签'}:</div>
       <div class="suggested-tags-list">
         {#each suggestedTags as tag (tag)}
           <button 

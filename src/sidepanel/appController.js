@@ -4,6 +4,10 @@
  * 创建时间: 2025-06-29
  */
 
+// 全局主题模式变量，附加到window对象以便其他模块访问
+let themeMode = 'light';
+window.themeMode = themeMode;
+
 // 应用控制器对象将在后续任务中逐步完善
 const app = {
     /**
@@ -27,7 +31,7 @@ const app = {
         try {
             if (window.i18n && i18n.init) {
                 await i18n.init();
-                i18n.applyTranslations();
+                // 注意：i18n.init()内部已经调用了applyTranslations()，无需重复调用
             }
             // 显示主视图
             ui.showView('mainView');
@@ -55,7 +59,7 @@ const app = {
 
         } catch (error) {
             console.error('初始化应用失败:', error);
-            ui.showToast('加载数据失败，请刷新页面重试', 'error');
+            ui.showToast(i18n.t('toast.loadDataError') || '加载数据失败，请刷新页面重试', 'error');
         }
     },
 
@@ -63,12 +67,21 @@ const app = {
         try {
             if (window.i18n && i18n.setLanguage) {
                 await i18n.setLanguage(lang);
-                i18n.applyTranslations();
+                // 注意：i18n.setLanguage()内部已经调用了applyTranslations()，无需重复调用
                 ui.renderPrompts(allPrompts || []);
                 ui.updateFilterButtons();
+                // 更新语言选择按钮的选中状态（i18n.setLanguage()内部也已处理，这里确保状态正确）
+                const languageOptions = document.querySelectorAll('.theme-option[data-language]');
+                languageOptions.forEach(option => {
+                    if (option.dataset.language === lang) {
+                        option.classList.add('active');
+                    } else {
+                        option.classList.remove('active');
+                    }
+                });
             }
         } catch (error) {
-            ui.showToast('语言切换失败', 'error');
+            ui.showToast(i18n.t('toast.languageChangeError') || '语言切换失败', 'error');
         }
     },
 
@@ -224,7 +237,7 @@ const app = {
                     ui.setLoginButtonLoading(false);
                 } else {
                     console.error('登录命令发送失败或后台处理失败:', response?.error);
-                    ui.showToast('登录启动失败，请重试', 'error');
+                    ui.showToast(i18n.t('toast.loginStartError') || '登录启动失败，请重试', 'error');
                     // 登录失败时恢复按钮状态
                     ui.setLoginButtonLoading(false);
                 }
@@ -243,7 +256,7 @@ const app = {
         chrome.runtime.sendMessage({ type: 'LOGOUT' }, (response) => {
             if (chrome.runtime.lastError || !response.success) {
                 console.error('退出命令发送失败或后台处理失败:', response?.error);
-                ui.showToast('退出启动失败，请重试', 'error');
+                ui.showToast(i18n.t('toast.logoutStartError') || '退出启动失败，请重试', 'error');
             } else {
                 // 移除"正在退出中"提示，避免与"已退出登录"Toast重复
             }
@@ -259,7 +272,7 @@ const app = {
 
         // 检查用户是否已登录
         if (!currentUser || currentUser.id === 'local-user') {
-            ui.showToast('请先登录以使用云端同步功能', 'warning');
+            ui.showToast(i18n.t('toast.requireLogin') || '请先登录以使用云端同步功能', 'warning');
             return;
         }
 
@@ -282,7 +295,7 @@ const app = {
             if (response && response.success) {
                 // 更新同步时间
                 ui.updateSyncTime();
-                ui.showToast('同步成功！', 'success');
+                ui.showToast(i18n.t('toast.syncSuccess'), 'success');
             } else {
                 console.error('手动同步失败:', response?.error);
                 ui.showToast('同步失败: ' + (response?.error || '未知错误'), 'error');
@@ -390,7 +403,7 @@ const app = {
      */
     async handleDeletePrompt(promptId) {
         // 显示自定义确认弹窗
-        const isConfirmed = await ui.showCustomConfirm('您确定要删除这个提示词吗？此操作无法撤销。');
+        const isConfirmed = await ui.showCustomConfirm(i18n.t('delete.confirm'), i18n.t('confirm.title'));
         if (!isConfirmed) return;
 
         ui.safeShowLoading();
@@ -409,15 +422,15 @@ const app = {
             });
 
             if (response.success) {
-                ui.showToast('删除成功', 'success');
+                ui.showToast(i18n.t('prompt.deleteSuccess'), 'success');
                 // UI更新由setupStorageListener自动处理
             } else {
-                throw new Error(response.error || '删除提示词失败');
+                throw new Error(response.error || i18n.t('error.editFailed'));
             }
 
         } catch (error) {
             console.error('删除失败:', error);
-            ui.showToast('删除失败，请稍后再试', 'error');
+            ui.showToast(i18n.t('error.editFailed'), 'error');
             // 【修复】删除失败时，重新加载数据确保UI状态正确
             await this.loadPrompts();
         }
@@ -429,7 +442,7 @@ const app = {
      * 清除所有数据
      */
     async clearAllData() {
-        const isConfirmed = await ui.showCustomConfirm('您确定要清除所有提示词数据吗？此操作无法撤销。');
+        const isConfirmed = await ui.showCustomConfirm(i18n.t('confirm.clearAll'), i18n.t('confirm.title'));
         if (!isConfirmed) return;
 
         ui.safeShowLoading();
@@ -442,14 +455,14 @@ const app = {
                 allPrompts = [];
                 ui.renderPrompts([]);
                 ui.updateFilterButtons();
-                ui.showToast('所有数据已清除', 'success');
+                ui.showToast(i18n.t('data.clearSuccess'), 'success');
             } else {
                 console.error('清除数据失败:', response.error);
-                ui.showToast('清除数据失败，请稍后再试', 'error');
+                ui.showToast(i18n.t('error.saveFailed'), 'error');
             }
         } catch (error) {
             console.error('清除数据失败:', error);
-            ui.showToast('清除数据失败，请稍后再试', 'error');
+            ui.showToast(i18n.t('error.saveFailed'), 'error');
         }
 
         ui.forceHideLoading();
@@ -463,13 +476,13 @@ const app = {
             ui.safeShowLoading();
             const result = await window.JSONUtils.downloadTemplate();
             if (result.success) {
-                ui.showToast('JSON模板下载成功！', 'success');
+                ui.showToast(i18n.t('import.success'), 'success');
             } else {
-                ui.showToast(result.message, 'error');
+                ui.showToast(result.message || i18n.t('error.saveFailed'), 'error');
             }
         } catch (error) {
             console.error('下载模板失败:', error);
-            ui.showToast('下载模板失败，请稍后再试', 'error');
+            ui.showToast(i18n.t('error.saveFailed'), 'error');
         } finally {
             ui.forceHideLoading();
         }
@@ -481,20 +494,20 @@ const app = {
     async handleExport() {
         try {
             if (allPrompts.length === 0) {
-                ui.showToast('没有可导出的提示词', 'warning');
+                ui.showToast(i18n.t('empty.title'), 'warning');
                 return;
             }
 
             ui.safeShowLoading();
             const result = await window.JSONUtils.exportToJSON(allPrompts);
             if (result.success) {
-                ui.showToast(result.message, 'success');
+                ui.showToast(i18n.t('export.success'), 'success');
             } else {
-                ui.showToast(result.message, 'error');
+                ui.showToast(result.message || i18n.t('error.saveFailed'), 'error');
             }
         } catch (error) {
             console.error('导出失败:', error);
-            ui.showToast('导出失败，请稍后再试', 'error');
+            ui.showToast(i18n.t('error.saveFailed'), 'error');
         } finally {
             ui.forceHideLoading();
         }
@@ -516,7 +529,7 @@ const app = {
             // 检查文件类型
             const fileName = file.name.toLowerCase();
             if (!fileName.endsWith('.json')) {
-                ui.showToast('请选择JSON文件（.json格式）', 'warning');
+                ui.showToast(i18n.t('data.selectJson'), 'warning');
                 return;
             }
 
@@ -524,16 +537,16 @@ const app = {
             const importResult = await window.JSONUtils.importFromJSON(file);
 
             if (!importResult.success) {
-                ui.showToast(importResult.message || '导入失败', 'error');
+                ui.showToast(importResult.message || i18n.t('error.saveFailed'), 'error');
                 return;
             }
 
             const { prompts: importedPrompts, errors, total, imported } = importResult;
 
             if (imported === 0) {
-                ui.showToast(`导入完成：共 ${total} 条记录，全部导入失败。请检查JSON格式是否正确。`, 'error');
+                ui.showToast(i18n.t('error.saveFailed'), 'error');
                 if (errors && errors.length > 0) {
-                    const downloadFailed = await ui.showCustomConfirm('是否下载失败记录？');
+                    const downloadFailed = await ui.showCustomConfirm(i18n.t('confirm.downloadFailedRecords'), i18n.t('confirm.title'));
                     if (downloadFailed) {
                         await window.JSONUtils.exportFailedRecords(errors);
                     }
@@ -554,24 +567,24 @@ const app = {
                 settingsOverlay.style.display = 'none';
 
                 // 显示导入结果
-                let message = `导入完成：\n共计 ${total} 条记录\n新增 ${addedCount} 条`;
+                let message = `${i18n.t('import.success')}\n${i18n.t('search.results')}: ${total}\n${i18n.t('button.add')}: ${addedCount}`;
                 if (updatedCount > 0) {
-                    message += `\n更新 ${updatedCount} 条（同名覆盖）`;
+                    message += `\n${i18n.t('prompt.updateSuccess')}: ${updatedCount}`;
                 }
                 if (errors && errors.length > 0) {
-                    message += `\n失败 ${errors.length} 条`;
+                    message += `\n${errors.length}`;
                 }
 
                 ui.showToast(message, addedCount > 0 || updatedCount > 0 ? 'success' : 'warning');
                 // 注意：不再手动调用loadUserPrompts()，依赖chrome.storage.onChanged自动刷新UI
             } else {
                 console.error('导入失败:', response.error);
-                ui.showToast('导入失败：' + response.error, 'error');
+                ui.showToast((i18n.t('error.saveFailed') + ': ' + (response.error || '')), 'error');
             }
 
             // 如果有失败记录，询问是否下载
             if (errors && errors.length > 0) {
-                const downloadFailed = await ui.showCustomConfirm('是否下载失败记录？');
+                const downloadFailed = await ui.showCustomConfirm(i18n.t('confirm.downloadFailedRecords'), i18n.t('confirm.title'));
                 if (downloadFailed) {
                     await window.JSONUtils.exportFailedRecords(errors);
                 }
@@ -579,7 +592,7 @@ const app = {
 
         } catch (error) {
             console.error('导入失败:', error);
-            ui.showToast('导入失败：' + error.message, 'error');
+            ui.showToast((i18n.t('error.saveFailed') + ': ' + error.message), 'error');
         } finally {
             ui.forceHideLoading();
         }
@@ -649,9 +662,9 @@ const app = {
                 });
 
                 if (response.success) {
-                    ui.showToast('提示词更新成功', 'success');
+                    ui.showToast(i18n.t('prompt.updateSuccess'), 'success');
                 } else {
-                    throw new Error(response.error || '更新提示词失败');
+                    throw new Error(response.error || i18n.t('error.editFailed'));
                 }
             } else {
                 // 添加新提示词
@@ -664,9 +677,9 @@ const app = {
                 });
 
                 if (response.success) {
-                    ui.showToast('提示词添加成功', 'success');
+                    ui.showToast(i18n.t('prompt.addSuccess'), 'success');
                 } else {
-                    throw new Error(response.error || '添加提示词失败');
+                    throw new Error(response.error || i18n.t('error.saveFailed'));
                 }
             }
 
@@ -696,7 +709,7 @@ const app = {
 
         } catch (error) {
             console.error('保存提示词失败:', error);
-            ui.showToast('保存失败，请稍后再试', 'error');
+            ui.showToast(i18n.t('error.saveFailed'), 'error');
         }
 
         ui.forceHideLoading();
@@ -711,7 +724,7 @@ const app = {
             // 从全局提示词数组中查找对应的提示词
             const prompt = allPrompts.find(p => p.id == id);
             if (!prompt) {
-                ui.showToast('未找到要编辑的提示词', 'error');
+                ui.showToast(i18n.t('error.editFailed'), 'error');
                 return;
             }
 
@@ -788,7 +801,11 @@ const app = {
      */
     async loadVersionLogData() {
         try {
-            const response = await fetch('/assets/data/version-log.json');
+            // 根据当前语言加载对应的版本日志文件
+            const language = window.i18n ? window.i18n.lang : 'zh_CN';
+            const logFile = language === 'en' ? '/assets/data/version-log-en.json' : '/assets/data/version-log.json';
+            
+            const response = await fetch(logFile);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -822,8 +839,15 @@ const app = {
             } else {
                 themeMode = 'light';
             }
+            
+            window.themeMode = themeMode; // 同步更新window对象中的主题模式
 
             ui.applyTheme(themeMode);
+            
+            // 设置初始主题选中状态
+            if (window.i18n && i18n.setInitialActiveTheme) {
+                i18n.setInitialActiveTheme();
+            }
         } catch (error) {
             console.error('获取主题模式时发生错误:', error);
             themeMode = 'light';
@@ -838,6 +862,7 @@ const app = {
     async handleThemeChange(selectedTheme) {
         if (selectedTheme !== themeMode) {
             themeMode = selectedTheme;
+            window.themeMode = themeMode; // 同步更新window对象中的主题模式
             ui.applyTheme(themeMode);
 
             // 更新标签组件样式
@@ -1135,7 +1160,7 @@ const app = {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         event.target.classList.add('active');
 
-        if (tag === '全部') {
+        if (tag === i18n.t('filter.all')) {
             ui.renderPrompts(allPrompts);
         } else {
             const filtered = allPrompts.filter(p => {
@@ -1306,7 +1331,11 @@ const app = {
      */
     async loadVersionLogData() {
         try {
-            const response = await fetch('/assets/data/version-log.json');
+            // 根据当前语言加载对应的版本日志文件
+            const language = window.i18n ? window.i18n.lang : 'zh_CN';
+            const logFile = language === 'en' ? '/assets/data/version-log-en.json' : '/assets/data/version-log.json';
+            
+            const response = await fetch(logFile);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -1337,13 +1366,13 @@ const app = {
                     ui.updateUIForAuthState(message.session);
                     ui.setLoginButtonLoading(false);
                     if (message.session) {
-                        ui.showToast('登录成功！', 'success');
+                        ui.showToast(i18n.t('toast.loginSuccess'), 'success');
                         const userDropdown = document.getElementById('userDropdown');
                         if (userDropdown) {
                             userDropdown.classList.remove('show');
                         }
                     } else {
-                        ui.showToast('已退出登录', 'success');
+                        ui.showToast(i18n.t('toast.logoutSuccess'), 'success');
                     }
                     break;
 

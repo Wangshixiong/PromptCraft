@@ -15,4 +15,9 @@
     "message": "Open or close the Prompt Management Assistant sidebar",
     "description": "The description for the keyboard shortcut to open the side panel."
   }
+  ,
+  "contextAddToPromptcraft": {
+    "message": "Add to Prompt Management Assistant",
+    "description": "Context menu title for adding selected text"
+  }
 }

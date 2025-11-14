@@ -92,7 +92,7 @@ class TagComponentManager {
         // 创建输入框
         const input = document.createElement('input');
         input.type = 'text';
-        input.placeholder = this.currentTags.length === 0 ? '输入标签，按回车添加' : '添加标签...';
+        input.placeholder = this.currentTags.length === 0 ? i18n.t('tag.input.addHint') : i18n.t('tag.input.addMore');
         input.className = 'tag-input';
         input.style.cssText = `
             border: none;
@@ -356,7 +356,7 @@ class TagComponentManager {
     updateInputPlaceholder() {
         const input = this.container.querySelector('.tag-input');
         if (input) {
-            input.placeholder = this.currentTags.length === 0 ? '输入标签，按回车添加' : '添加标签...';
+            input.placeholder = this.currentTags.length === 0 ? i18n.t('tag.input.addHint') : i18n.t('tag.input.addMore');
         }
     }
 
@@ -480,7 +480,7 @@ class TagComponentManager {
 
         if (availableRecommendedTags.length === 0) {
             const emptyMessage = document.createElement('div');
-            emptyMessage.textContent = '暂无推荐标签';
+            emptyMessage.textContent = i18n.t('tag.recommended.empty');
             emptyMessage.style.cssText = `
                 color: ${isDarkMode ? 'var(--text-dark)' : 'var(--text-light)'};
                 opacity: 0.6;

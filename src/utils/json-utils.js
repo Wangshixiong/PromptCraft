@@ -25,7 +25,7 @@ function exportToJSON(prompts) {
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
-        const filename = `Prompt管理助手备份_${year}-${month}-${day}.json`;
+        const filename = `${i18n.t('file.backupPrefix')}_${year}-${month}-${day}.json`;
         
         // 创建下载链接
         const jsonStr = JSON.stringify(exportData, null, 2);
@@ -41,7 +41,7 @@ function exportToJSON(prompts) {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        return { success: true, message: `导出成功！文件已保存为：${filename}` };
+        return { success: true, message: i18n.t('export.success') };
     } catch (error) {
         console.error('导出失败:', error);
         return { success: false, error: error.message };
@@ -85,7 +85,7 @@ function downloadTemplate() {
         const url = URL.createObjectURL(blob);
         
         // 下载文件
-        const filename = 'Prompt管理助手_导入模板.json';
+        const filename = i18n.t('file.importTemplateName');
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
@@ -192,7 +192,7 @@ function exportFailedRecords(errors) {
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
         const time = now.toTimeString().split(' ')[0].replace(/:/g, '-');
-        const filename = `导入失败记录_${year}-${month}-${day}_${time}.json`;
+        const filename = `${i18n.t('file.importErrorsPrefix')}_${year}-${month}-${day}_${time}.json`;
         
         // 创建下载链接
         const jsonStr = JSON.stringify(failedData, null, 2);

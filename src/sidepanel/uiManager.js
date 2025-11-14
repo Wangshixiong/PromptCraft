@@ -40,6 +40,18 @@ const ui = {
     currentView: null,
     
     /**
+     * 翻译函数
+     * @param {string} key - 翻译键
+     * @returns {string} 翻译后的文本
+     */
+    t(key) {
+        if (window.i18n && window.i18n.t) {
+            return window.i18n.t(key);
+        }
+        return key;
+    },
+    
+    /**
      * 切换视图显示
      * @param {string} viewId - 视图ID
      * @returns {boolean} 切换是否成功
@@ -123,7 +135,7 @@ const ui = {
             this.promptsContainer.innerHTML = '';
 
             if (promptsToRender.length === 0) {
-                this.promptsContainer.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #64748b;"><i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i><h3>空空如也</h3><p>点击上方按钮添加您的第一个提示词吧！</p></div>`;
+                this.promptsContainer.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #64748b;"><i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i><h3>${this.t('empty.title')}</h3><p>${this.t('empty.desc')}</p></div>`;
                 return;
             }
 
@@ -139,10 +151,10 @@ const ui = {
                     card.dataset.id = prompt.id;
                     card.innerHTML = `
                         <div class="prompt-card-header">
-                            <div class="prompt-title">${this.escapeHtml(prompt.title || '无标题')}</div>
-                            <button type="button" class="copy-btn" data-content="${this.escapeHtml(prompt.content || '')}">复制</button>
+                            <div class="prompt-title">${this.escapeHtml(prompt.title || this.t('prompt.untitled'))}</div>
+                            <button type="button" class="copy-btn" data-content="${this.escapeHtml(prompt.content || '')}">${this.t('button.copy')}</button>
                         </div>
-                        ${prompt.author ? `<div class="prompt-author">作者: ${this.escapeHtml(prompt.author)}</div>` : ''}
+                        ${prompt.author ? `<div class="prompt-author">${this.t('label.author')}${this.escapeHtml(prompt.author)}</div>` : ''}
                         <div class="prompt-content">${this.escapeHtml(prompt.content || '')}</div>
                         <div class="card-footer">
                             <div class="meta-info">
@@ -151,10 +163,10 @@ const ui = {
                             </div>
                             <div class="card-actions">
                                 <div class="actions-on-hover">
-                                    <button class="action-btn edit-btn" data-id="${prompt.id}" title="编辑">
+                                    <button class="action-btn edit-btn" data-id="${prompt.id}" title="${this.t('button.edit')}">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button class="action-btn delete-btn" data-id="${prompt.id}" title="删除">
+                                    <button class="action-btn delete-btn" data-id="${prompt.id}" title="${this.t('button.delete')}">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -318,10 +330,10 @@ const ui = {
         modal.innerHTML = `
             <div class="preview-header">
                 <div class="preview-title-row">
-                    <h2 class="preview-title">${this.escapeHtml(prompt.title || '无标题')}</h2>
+                    <h2 class="preview-title">${this.escapeHtml(prompt.title || this.t('prompt.untitled'))}</h2>
                     <button class="preview-close">&times;</button>
                 </div>
-                ${author ? `<div class="preview-author">作者: ${this.escapeHtml(author)}</div>` : ''}
+                ${author ? `<div class="preview-author">${this.t('label.author')}${this.escapeHtml(author)}</div>` : ''}
                 ${tags.length > 0 ? `<div class="preview-tags">${this.renderTags(tags)}</div>` : ''}
             </div>
             <div class="preview-body">
@@ -329,7 +341,7 @@ const ui = {
             </div>
             <div class="preview-footer">
                 <div class="preview-date">${this.formatDate(prompt.created_at)}</div>
-                <button class="preview-copy-btn"><i class="fas fa-copy"></i> 复制</button>
+                <button class="preview-copy-btn"><i class="fas fa-copy"></i> ${this.t('button.copy')}</button>
             </div>
         `;
         
@@ -371,16 +383,16 @@ const ui = {
                     };
                     const onSuccessUI = () => {
                         const originalText = copyBtn.innerHTML;
-                        copyBtn.innerHTML = '<i class="fas fa-check"></i> 已复制!';
+                        copyBtn.innerHTML = '<i class="fas fa-check"></i> ' + this.t('preview.copied');
                         copyBtn.style.background = 'var(--success)';
-                        this.showToast('复制成功', 'success');
+                        this.showToast(this.t('toast.copySuccess'), 'success');
                         setTimeout(() => {
                             copyBtn.innerHTML = originalText;
                             copyBtn.style.background = '';
                         }, 1500);
                     };
                     const onFailUI = () => {
-                        this.showToast('复制失败，请重试', 'error');
+                        this.showToast(this.t('toast.copyFail'), 'error');
                     };
                     if (navigator.clipboard && navigator.clipboard.writeText) {
                         navigator.clipboard.writeText(text).then(onSuccessUI).catch(() => {
@@ -415,7 +427,7 @@ const ui = {
             }
         });
         
-        const tags = [((window.i18n && i18n.t) ? i18n.t('filter.all') : '全部'), ...Array.from(allTags)];
+        const tags = [i18n.t('filter.all'), ...Array.from(allTags)];
         
         // 初始化标签状态
         if (!this.filterState) {
@@ -504,12 +516,12 @@ const ui = {
         btn.className = 'filter-btn';
         
         // 如果不是"全部"，使用标签颜色系统
-        if (tag !== '全部') {
+        if (tag !== this.t('filter.all')) {
             const colorClass = this.getTagColor(tag);
             btn.classList.add(`filter-tag-${colorClass}`);
         }
         
-        if (tag === '全部') btn.classList.add('active');
+        if (tag === this.t('filter.all')) btn.classList.add('active');
         btn.textContent = tag;
         btn.addEventListener('click', (e) => app.handleFilter(tag, e));
         return btn;
@@ -524,10 +536,10 @@ const ui = {
         
         if (isMore) {
             btn.innerHTML = '<i class="fas fa-ellipsis-h"></i>';
-            btn.title = '显示更多标签';
+            btn.title = i18n.t('filter.showMore');
         } else {
             btn.innerHTML = '<i class="fas fa-chevron-up"></i>';
-            btn.title = '收起标签';
+            btn.title = i18n.t('filter.collapse');
         }
         
         btn.addEventListener('click', (e) => {
@@ -672,9 +684,9 @@ const ui = {
                 const onSuccessUI = () => {
                     btn.classList.add('copied');
                     const originalText = btn.innerHTML;
-                    btn.innerHTML = '已复制!';
+                    btn.innerHTML = '<i class="fas fa-check"></i> ' + this.t('preview.copied');
                     btn.style.background = 'var(--success)';
-                    this.showToast('复制成功', 'success');
+                    this.showToast(this.t('toast.copySuccess'), 'success');
                     setTimeout(() => {
                         btn.classList.remove('copied');
                         btn.innerHTML = originalText;
@@ -682,8 +694,8 @@ const ui = {
                     }, 2000);
                 };
                 const onFailUI = () => {
-                    console.error('复制失败');
-                    this.showToast('复制失败，请重试', 'error');
+                    console.error('Copy failed');
+                    this.showToast(this.t('toast.copyFail'), 'error');
                 };
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     navigator.clipboard.writeText(text).then(onSuccessUI).catch(() => {
@@ -727,7 +739,7 @@ const ui = {
             
             // 更改按钮文字
             if (btnText) {
-                btnText.textContent = progressText || '正在登录...';
+                btnText.textContent = progressText || this.t('auth.signingIn');
             }
         } else {
             // 移除加载状态类
@@ -746,7 +758,7 @@ const ui = {
             
             // 恢复按钮文字
             if (btnText) {
-                btnText.textContent = '使用 Google 登录';
+                btnText.textContent = this.t('auth.signInWithGoogle');
             }
         }
     },
@@ -795,13 +807,13 @@ const ui = {
                 // 优先使用用户元数据中的姓名，否则使用邮箱前缀
                 const displayName = user.user_metadata?.full_name || 
                                    user.user_metadata?.name || 
-                                   (user.email ? user.email.split('@')[0] : '用户');
+                                   (user.email ? user.email.split('@')[0] : this.t('auth.user'));
                 userName.textContent = displayName;
                 userName.title = displayName; // 添加hover显示完整用户名
             }
             
             if (userEmail) {
-                const email = user.email || '未知邮箱';
+                const email = user.email || this.t('auth.unknownEmail');
                 userEmail.textContent = email;
                 userEmail.title = email; // 添加hover显示完整邮箱
             }
@@ -871,7 +883,7 @@ const ui = {
                     console.log('[DEBUG] 没有同步时间数据，显示"尚未同步"');
                     console.log('[DEBUG] response.success:', response?.success);
                     console.log('[DEBUG] response.data:', response?.data);
-                    syncTimeElement.textContent = (window.i18n && i18n.t) ? i18n.t('sync.none') : '尚未同步';
+                    syncTimeElement.textContent = this.t('sync.none');
                 }
             } catch (error) {
                 console.error('[DEBUG] 获取同步时间失败:', error);
@@ -915,20 +927,20 @@ const ui = {
                 } else {
                     this.updateSyncTime();
                 }
-                this.showToast((window.i18n && i18n.t) ? i18n.t('toast.syncSuccess') : '云端同步完成', 'success');
+                this.showToast(this.t('toast.syncSuccess'), 'success');
                 break;
                 
             case 'error':
                 if (syncTimeElement) {
-                    syncTimeElement.textContent = (window.i18n && i18n.t) ? i18n.t('toast.syncError') : '同步失败';
+                    syncTimeElement.textContent = this.t('toast.syncError');
                 }
-                this.showToast((window.i18n && i18n.t) ? i18n.t('toast.syncError') : '同步失败，请稍后重试', 'error');
+                this.showToast(this.t('toast.syncError'), 'error');
                 break;
                 
             case 'idle':
             default:
                 if (syncTimeElement) {
-                    syncTimeElement.textContent = (window.i18n && i18n.t) ? i18n.t('sync.none') : '尚未同步';
+                    syncTimeElement.textContent = this.t('sync.none');
                 }
                 break;
         }
@@ -943,7 +955,7 @@ const ui = {
         // 对于新的UI，只需要更新同步时间
         if (status === 'success' && message && message.includes('同步完成')) {
             this.updateSyncTime();
-            this.showToast((window.i18n && i18n.t) ? i18n.t('toast.syncSuccess') : '云端同步完成，数据已更新', 'success');
+            this.showToast(this.t('toast.syncSuccess'), 'success');
         }
     },
 
