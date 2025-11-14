@@ -46,5 +46,49 @@
   "noResults": {
     "message": "暂无匹配的提示词",
     "description": "PP唤醒窗口无结果提示"
+  },
+  "form.title.new": {
+    "message": "添加新提示词",
+    "description": "表单标题 - 新建提示词"
+  },
+  "form.title.edit": {
+    "message": "编辑提示词",
+    "description": "表单标题 - 编辑提示词"
+  },
+  "error.titleOrContentEmpty": {
+    "message": "标题和内容不能为空！",
+    "description": "验证错误 - 标题和内容不能为空"
+  },
+  "error.contentTooLong": {
+    "message": "提示词内容不能超过20000个字符！",
+    "description": "验证错误 - 内容长度限制"
+  },
+  "confirm.abandonEdit": {
+    "message": "💡 是否要放弃当前编辑并创建新的提示词？",
+    "description": "确认对话框 - 放弃编辑"
+  },
+  "tag.input.addHint": {
+    "message": "添加标签...",
+    "description": "标签输入提示 - 当没有标签时"
+  },
+  "tag.input.addMore": {
+    "message": "添加更多标签...",
+    "description": "标签输入提示 - 当已有标签时"
+  },
+  "tag.recommended.empty": {
+    "message": "暂无推荐标签",
+    "description": "推荐标签为空时的提示"
+  },
+  "tag.recommended.label": {
+    "message": "推荐标签",
+    "description": "推荐标签标题"
+  },
+  "version.new": {
+    "message": "新",
+    "description": "版本新标记"
+  },
+  "document.title": {
+    "message": "PromptCraft - 提示词管理工具",
+    "description": "页面标题"
   }
 }

@@ -632,13 +632,13 @@ const app = {
         const author = ui.promptAuthorInput ? ui.promptAuthorInput.value.trim() : '';
 
         if (!title || !content) {
-            ui.showToast('标题和内容不能为空！', 'warning');
+            ui.showToast(i18n.t('error.titleOrContentEmpty'), 'warning');
             return;
         }
 
         // 检查内容长度（20000个字符限制）
         if (content.length > 20000) {
-            ui.showToast('提示词内容不能超过20000个字符！', 'warning');
+            ui.showToast(i18n.t('error.contentTooLong'), 'warning');
             return;
         }
 
@@ -752,7 +752,7 @@ const app = {
             }
 
             // 设置表单标题
-            ui.formTitle.textContent = '编辑提示词';
+            ui.formTitle.textContent = i18n.t('form.title.edit');
 
             // 切换到表单视图
             ui.showView('formView');
@@ -791,7 +791,7 @@ const app = {
             ui.promptAuthorInput.value = '';
         }
 
-        ui.formTitle.textContent = '添加新提示词';
+        ui.formTitle.textContent = i18n.t('form.title.new');
         // 重置textarea高度
         ui.autoResizeTextarea(ui.promptContentInput);
     },
@@ -1446,7 +1446,7 @@ const app = {
                                         sendResponse({ status: "success", message: "Content received and form populated via rAF after view switch." });
                                     });
                                 } else if (isEditing) {
-                                    const userConfirm = await ui.showCustomConfirm('💡 是否要放弃当前编辑并创建新的提示词？');
+                                    const userConfirm = await ui.showCustomConfirm(i18n.t('confirm.abandonEdit'), i18n.t('confirm.title'));
                                     if (userConfirm) {
                                         requestAnimationFrame(() => {
                                             this.resetForm();

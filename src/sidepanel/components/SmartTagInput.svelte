@@ -109,7 +109,7 @@
   <!-- 推荐标签栏 -->
   {#if (isInputFocused || inputValue) && suggestedTags.length > 0}
     <div class="suggested-tags-bar">
-      <div class="suggested-tags-label">{window?.i18n ? window.i18n.t('tag.recommended.label') : '推荐标签'}:</div>
+      <div class="suggested-tags-label">{window?.i18n ? window.i18n.t('tag.recommended.label') : 'Recommended Tags'}:</div>
       <div class="suggested-tags-list">
         {#each suggestedTags as tag (tag)}
           <button 

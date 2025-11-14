@@ -81,6 +81,8 @@
       if (searchInput && !searchInput.placeholder) searchInput.placeholder = this.t('search.placeholder');
       const formTitle = document.querySelector('#formTitle');
       if (formTitle && !formTitle.textContent) formTitle.textContent = this.t('form.title.new');
+      // 设置页面标题
+      document.title = this.t('document.title');
       // 更新语言与主题选中状态
       this.updateLanguageOptions();
       this.updateThemeOptions();

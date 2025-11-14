@@ -46,5 +46,49 @@
   "noResults": {
     "message": "No matching prompts found",
     "description": "PP quick invoke window no results message"
+  },
+  "form.title.new": {
+    "message": "Add New Prompt",
+    "description": "Form title - new prompt"
+  },
+  "form.title.edit": {
+    "message": "Edit Prompt",
+    "description": "Form title - edit prompt"
+  },
+  "error.titleOrContentEmpty": {
+    "message": "Title and content cannot be empty!",
+    "description": "Validation error - title and content required"
+  },
+  "error.contentTooLong": {
+    "message": "Prompt content cannot exceed 20000 characters!",
+    "description": "Validation error - content length limit"
+  },
+  "confirm.abandonEdit": {
+    "message": "💡 Do you want to abandon current editing and create a new prompt?",
+    "description": "Confirmation dialog - abandon editing"
+  },
+  "tag.input.addHint": {
+    "message": "Add tags...",
+    "description": "Tag input hint - when no tags exist"
+  },
+  "tag.input.addMore": {
+    "message": "Add more tags...",
+    "description": "Tag input hint - when tags already exist"
+  },
+  "tag.recommended.empty": {
+    "message": "No recommended tags available",
+    "description": "Message when no recommended tags are available"
+  },
+  "tag.recommended.label": {
+    "message": "Recommended Tags",
+    "description": "Recommended tags label"
+  },
+  "version.new": {
+    "message": "NEW",
+    "description": "Version new badge"
+  },
+  "document.title": {
+    "message": "PromptCraft - Prompt Management Tool",
+    "description": "Document title"
   }
 }
