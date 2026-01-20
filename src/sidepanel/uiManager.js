@@ -140,7 +140,7 @@ const ui = {
                     card.innerHTML = `
                         <div class="prompt-card-header">
                             <div class="prompt-title">${this.escapeHtml(prompt.title || '无标题')}</div>
-                            <button class="copy-btn" data-content="${this.escapeHtml(prompt.content || '')}">复制</button>
+                            <button type="button" class="copy-btn" data-content="${this.escapeHtml(prompt.content || '')}">复制</button>
                         </div>
                         ${prompt.author ? `<div class="prompt-author">作者: ${this.escapeHtml(prompt.author)}</div>` : ''}
                         <div class="prompt-content">${this.escapeHtml(prompt.content || '')}</div>
@@ -329,7 +329,7 @@ const ui = {
             </div>
             <div class="preview-footer">
                 <div class="preview-date">${this.formatDate(prompt.created_at)}</div>
-                <button class="preview-copy-btn"><i class="fas fa-copy"></i> 复制</button>
+                <button type="button" class="preview-copy-btn"><i class="fas fa-copy"></i> 复制</button>
             </div>
         `;
         
@@ -350,7 +350,8 @@ const ui = {
         
         // 复制按钮事件
         const copyBtn = modal.querySelector('.preview-copy-btn');
-        copyBtn.onclick = () => {
+        copyBtn.onclick = (e) => {
+            e.preventDefault();
             navigator.clipboard.writeText(prompt.content || '').then(() => {
                 const originalText = copyBtn.innerHTML;
                 copyBtn.innerHTML = '<i class="fas fa-check"></i> 已复制!';
@@ -620,6 +621,7 @@ const ui = {
 
         document.querySelectorAll('.copy-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 const content = e.currentTarget.dataset.content;
                 navigator.clipboard.writeText(this.unescapeHtml(content)).then(() => {
