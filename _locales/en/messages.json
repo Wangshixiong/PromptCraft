@@ -14,5 +14,342 @@
   "commandDescription": {
     "message": "Open or close the Prompt Management Assistant sidebar",
     "description": "The description for the keyboard shortcut to open the side panel."
-  }
+  },
+  "searchPlaceholder": {
+    "message": "Search prompts...",
+    "description": "Placeholder text for the search input."
+  },
+  "addPromptTitle": {
+    "message": "Add New Prompt",
+    "description": "Title for the add prompt button."
+  },
+  "settingsTitle": {
+    "message": "Settings",
+    "description": "Title for the settings button."
+  },
+  "untitledPrompt": {
+    "message": "Untitled",
+    "description": "Default title for a prompt without a title."
+  },
+  "copyBtn": {
+    "message": "Copy",
+    "description": "Text for the copy button."
+  },
+  "authorPrefix": {
+    "message": "Author: ",
+    "description": "Prefix for the author name."
+  },
+  "editBtn": {
+    "message": "Edit",
+    "description": "Title for the edit button."
+  },
+  "deleteBtn": {
+    "message": "Delete",
+    "description": "Title for the delete button."
+  },
+  "emptyStateTitle": {
+    "message": "No prompts yet",
+    "description": "Title for the empty state."
+  },
+  "emptyStateDesc": {
+    "message": "Click the button above to add your first prompt!",
+    "description": "Description for the empty state."
+  },
+  "formTitleAdd": {
+    "message": "Add New Prompt",
+    "description": "Title for the add prompt form."
+  },
+  "formTitleEdit": {
+    "message": "Edit Prompt",
+    "description": "Title for the edit prompt form."
+  },
+  "formLabelTitle": {
+    "message": "Title",
+    "description": "Label for the title input."
+  },
+  "formPlaceholderTitle": {
+    "message": "Give your prompt a name",
+    "description": "Placeholder for the title input."
+  },
+  "formLabelAuthor": {
+    "message": "Author",
+    "description": "Label for the author input."
+  },
+  "formPlaceholderAuthor": {
+    "message": "Enter author name (optional)",
+    "description": "Placeholder for the author input."
+  },
+  "formLabelContent": {
+    "message": "Content",
+    "description": "Label for the content textarea."
+  },
+  "formPlaceholderContent": {
+    "message": "Enter or paste your prompt content here...",
+    "description": "Placeholder for the content textarea."
+  },
+  "formLabelTags": {
+    "message": "Tags",
+    "description": "Label for the tags input."
+  },
+  "formBtnCancel": {
+    "message": "Cancel",
+    "description": "Text for the cancel button."
+  },
+  "formBtnSave": {
+    "message": "Save Prompt",
+    "description": "Text for the save button."
+  },
+  "formBtnConfirm": {
+    "message": "Confirm",
+    "description": "Text for the confirm button."
+  },
+  "confirmTitle": {
+    "message": "Confirmation",
+    "description": "Title for the confirmation dialog."
+  },
+  "toastSaveSuccess": {
+    "message": "Saved successfully",
+    "description": "Toast message for successful save."
+  },
+  "toastCopySuccess": {
+    "message": "Copied successfully",
+    "description": "Toast message for successful copy."
+  },
+  "toastSyncSuccess": {
+    "message": "Cloud sync completed",
+    "description": "Toast message for successful sync."
+  },
+  "toastSyncError": {
+    "message": "Sync failed, please try again later",
+    "description": "Toast message for sync error."
+  },
+  "syncStatusSyncing": {
+    "message": "Syncing...",
+    "description": "Status text for syncing."
+  },
+  "syncStatusIdle": {
+    "message": "Not synced yet",
+    "description": "Status text for idle sync."
+  },
+  "syncStatusError": {
+    "message": "Sync failed",
+    "description": "Status text for sync error."
+  },
+  "lastSyncTimePrefix": {
+    "message": "Last synced: ",
+    "description": "Prefix for the last sync time."
+  },
+  "contextMenuTitle": {
+    "message": "Add to PromptCraft",
+    "description": "Title for the context menu item."
+  },
+  "googleLogin": {
+    "message": "Sign in with Google",
+    "description": "Text for the Google login button."
+  },
+  "settingsSectionTitle": {
+    "message": "App Settings",
+    "description": "Title for the settings section."
+  },
+  "settingsTheme": {
+    "message": "Theme",
+    "description": "Label for the theme setting."
+  },
+  "themeLight": {
+    "message": "Light",
+    "description": "Label for light theme."
+  },
+  "themeDark": {
+    "message": "Dark",
+    "description": "Label for dark theme."
+  },
+  "themeSystem": {
+    "message": "System",
+    "description": "Label for system theme."
+  },
+  "settingsFeature": {
+    "message": "Features",
+    "description": "Label for the feature setting."
+  },
+  "featureQuickWake": {
+    "message": "\"pp\" Quick Wake",
+    "description": "Label for the quick wake feature."
+  },
+  "dataManagementTitle": {
+    "message": "Data Management",
+    "description": "Title for the data management section."
+  },
+  "dataImport": {
+    "message": "Import",
+    "description": "Label for the import button."
+  },
+  "dataTemplate": {
+    "message": "Template",
+    "description": "Label for the template button."
+  },
+  "dataExport": {
+    "message": "Export",
+    "description": "Label for the export button."
+  },
+  "aboutTitle": {
+    "message": "About",
+    "description": "Title for the about section."
+  },
+  "versionLabel": {
+    "message": "Version",
+    "description": "Label for the version info."
+  },
+  "authorLabel": {
+    "message": "Author",
+    "description": "Label for the author info."
+  },
+  "btnLogout": {
+    "message": "Logout",
+    "description": "Text for the logout button."
+  },
+  "manualSyncTitle": {
+    "message": "Manual Sync",
+    "description": "Title attribute for the manual sync button."
+  },
+  "appTitle": { "message": "PromptCraft - Prompt Manager" },
+  "confirmMessage": { "message": "Are you sure you want to proceed?" },
+  "viewNotFound": { "message": "Error: View element not found with ID: " },
+  "viewRenderWarning": { "message": "Warning: View might not be displayed correctly, retrying style application" },
+  "promptRenderError": { "message": "Error occurred while rendering prompt" },
+  "previewCopySuccess": { "message": "Copied!" },
+  "tagFilterAll": { "message": "All" },
+  "tagFilterMore": { "message": "More" },
+  "tagFilterCollapse": { "message": "Collapse" },
+  "backupFileNamePrefix": { "message": "PromptManager_Backup_" },
+  "exportSuccess": { "message": "Export successful! File saved as: " },
+  "templateSampleTitle1": { "message": "Sample Prompt Title" },
+  "templateSampleContent1": { "message": "Here is the prompt content..." },
+  "templateSampleTag1": { "message": "Work" },
+  "templateSampleAuthor": { "message": "Sample Author" },
+  "templateSampleTitle2": { "message": "Another Sample" },
+  "templateSampleContent2": { "message": "You can add more prompt entries..." },
+  "templateSampleTag2": { "message": "Study" },
+  "templateFileName": { "message": "PromptManager_ImportTemplate.json" },
+  "importErrorMissingPrompts": { "message": "Invalid JSON format: missing 'prompts' array" },
+  "importErrorTitleRequired": { "message": "Item $ITEM_NUM$: Title is required", "placeholders": { "item_num": { "content": "$1" } } },
+  "importErrorContentRequired": { "message": "Item $ITEM_NUM$: Content is required", "placeholders": { "item_num": { "content": "$1" } } },
+  "defaultTagUncategorized": { "message": "Uncategorized" },
+  "unknownVersion": { "message": "Unknown" },
+  "importErrorParse": { "message": "File parse failed: " },
+  "importErrorRead": { "message": "File read failed" },
+  "importFailureRecordFileName": { "message": "ImportFailureRecord_" },
+  "errorDataInitFailed": { "message": "Data service initialization failed: " },
+  "errorStorageReadFailed": { "message": "Storage read failed: " },
+  "errorStorageReadException": { "message": "Storage read exception: " },
+  "errorStorageWriteFailed": { "message": "Storage write failed: " },
+  "errorStorageWriteException": { "message": "Storage write exception: " },
+  "errorStorageDeleteFailed": { "message": "Storage delete failed: " },
+  "errorStorageDeleteException": { "message": "Storage delete exception: " },
+  "errorTitleContentRequired": { "message": "Title and content are required fields" },
+  "errorPromptNotFound": { "message": "Prompt with ID $ID$ not found", "placeholders": { "id": { "content": "$1" } } },
+  "exportSuccessMessage": { "message": "Export successful! File saved as: $FILENAME$", "placeholders": { "filename": { "content": "$1" } } },
+  "templateExampleTitle1": { "message": "Example Prompt Title" },
+  "templateExampleContent1": { "message": "Here is the content of the prompt, please describe your requirements in detail..." },
+  "templateExampleTag1": { "message": "Work" },
+  "templateExampleAuthor": { "message": "Example Author" },
+  "templateExampleTitle2": { "message": "Another Example" },
+  "templateExampleContent2": { "message": "You can add more prompt entries..." },
+  "templateExampleTag2": { "message": "Study" },
+  "errorRestoreAuthFailed": { "message": "Failed to restore authentication status: " },
+  "errorLoadDefaultPromptsFailed": { "message": "Failed to load default prompts: " },
+  "errorGetPromptsFailed": { "message": "Failed to get prompts" },
+  "errorGetPromptsWithMsg": { "message": "Failed to get prompts: " },
+  "errorGetTagsFailed": { "message": "Failed to get tags: " },
+  "errorDataLoadProblem": { "message": "Data loading issue" },
+  "errorAuthTimeout": { "message": "Authentication status check timed out" },
+  "toastLoadDataFailedRetry": { "message": "Failed to load data, please refresh the page to try again" },
+  "toastLoginRequiredForSync": { "message": "Please login first to use cloud sync" },
+  "toastLoginStartFailed": { "message": "Failed to start login, please try again" },
+  "toastLogoutStartFailed": { "message": "Failed to start logout, please try again" },
+  "toastSyncFailedPrefix": { "message": "Sync failed: " },
+  "toastSyncFailedRetry": { "message": "Sync failed, please try again" },
+  "toastLoadDataFailed": { "message": "Failed to load data, please refresh and try again" },
+  "toastDeleteSuccess": { "message": "Delete successful" },
+  "toastDeleteFailed": { "message": "Delete failed, please try again later" },
+  "toastClearSuccess": { "message": "All data cleared" },
+  "toastClearFailed": { "message": "Failed to clear data, please try again later" },
+  "toastTemplateDownloadSuccess": { "message": "JSON template downloaded successfully!" },
+  "toastTemplateDownloadFailed": { "message": "Failed to download template, please try again later" },
+  "toastNoPromptsToExport": { "message": "No prompts to export" },
+  "toastExportFailed": { "message": "Export failed, please try again later" },
+  "toastFileJsonRequired": { "message": "Please select a JSON file (.json format)" },
+  "toastImportFailed": { "message": "Import failed" },
+  "toastImportComplete": { "message": "Import complete: $TOTAL$ records total, all failed. Please check JSON format.", "placeholders": { "total": { "content": "$1" } } },
+  "confirmDownloadFailedRecords": { "message": "Download failed records?" },
+  "toastImportSuccessStats": { "message": "Import complete:\nTotal $TOTAL$ records\nAdded $ADDED$ records", "placeholders": { "total": { "content": "$1" }, "added": { "content": "$2" } } },
+  "toastImportUpdateStats": { "message": "\nUpdated $UPDATED$ records (overwritten by name)", "placeholders": { "updated": { "content": "$1" } } },
+  "toastImportFailStats": { "message": "\nFailed $FAILED$ records", "placeholders": { "failed": { "content": "$1" } } },
+  "toastImportFailedPrefix": { "message": "Import failed: " },
+  "confirmDeletePrompt": { "message": "Are you sure you want to delete this prompt? This action cannot be undone." },
+  "confirmClearAllData": { "message": "Are you sure you want to clear all prompt data? This action cannot be undone." },
+  "errorPromptNotFoundOrDeleted": { "message": "Prompt not found or already deleted" },
+  "errorDeletePromptFailed": { "message": "Failed to delete prompt" },
+  "noMatchingPrompts": { "message": "No matching prompts found" },
+  "promptCraftPrefix": { "message": "PromptCraft: " },
+  "helpSelect": { "message": "Select" },
+  "helpConfirm": { "message": "Confirm" },
+  "helpCancel": { "message": "Cancel" },
+  "helpFooter": { "message": "Type 'pp' to invoke • Supports search and tag filtering" },
+  "errorLoadDataFailedPrefix": { "message": "Failed to load data: " },
+  "errorConnectionToBackgroundFailed": { "message": "Could not connect to extension background service: " },
+  "errorUnknown": { "message": "Unknown Error" },
+  "tagInputPlaceholderEmpty": { "message": "Enter tag, press Enter to add" },
+  "tagInputPlaceholder": { "message": "Add tag..." },
+  "loginProgressPreparing": { "message": "Preparing login resources..." },
+  "loginProgressPreloaded": { "message": "Using preloaded resources" },
+  "loginProgressRedirect": { "message": "Getting redirect URL..." },
+  "loginProgressOAuth": { "message": "Getting Google authorization link..." },
+  "loginProgressAuthPage": { "message": "Opening Google login page..." },
+  "loginErrorTimeout": { "message": "Authentication timed out, please try again" },
+  "loginProgressCallback": { "message": "Processing login callback..." },
+  "errorDependencyInjection": { "message": "Dependency services not correctly injected" },
+  "errorSyncInitFailed": { "message": "Sync service initialization failed: " },
+  "loginProgress": { "message": "Logging in..." },
+  "defaultUserName": { "message": "User" },
+  "unknownEmail": { "message": "Unknown Email" },
+  "syncTimeGetFailed": { "message": "Failed to get sync time" },
+  "toastSyncSuccessUpdate": { "message": "Cloud sync completed, data updated" },
+  "loginProgressSession": { "message": "Establishing user session..." },
+  "loginProgressComplete": { "message": "Login successful!" },
+  "loginSuccessMessage": { "message": "Login successful" },
+  "loginErrorTokenMissing": { "message": "Failed to retrieve valid authentication token" },
+  "loginErrorSessionInvalid": { "message": "Session established but data is invalid" },
+  "loginErrorFailed": { "message": "Login failed: " },
+  "logoutError": { "message": "Supabase logout failed:" },
+  "syncMigrationInProgress": { "message": "Data migration is in progress" },
+  "syncErrorNotLoggedIn": { "message": "User not logged in, cannot perform data migration" },
+  "syncMigrationNoData": { "message": "No data to migrate" },
+  "syncMigrationSuccess": { "message": "Successfully migrated $COUNT$ prompts to cloud", "placeholders": { "count": { "content": "$1" } } },
+  "syncErrorUploadFailed": { "message": "Data upload failed" },
+  "syncErrorMigrationFailed": { "message": "Data migration failed: " },
+  "errorContentTooLong": { "message": "Prompt content cannot exceed 20000 characters!" },
+  "toastPromptUpdateSuccess": { "message": "Prompt updated successfully" },
+  "errorPromptUpdateFailed": { "message": "Failed to update prompt" },
+  "toastPromptAddSuccess": { "message": "Prompt added successfully" },
+  "errorPromptAddFailed": { "message": "Failed to add prompt" },
+  "toastSaveFailedRetry": { "message": "Save failed, please try again later" },
+  "errorPromptNotFoundEdit": { "message": "Prompt to edit not found" },
+  "toastEditFailedRetry": { "message": "Failed to edit prompt, please retry" },
+  "toastPpCommandEnabled": { "message": "PP command wake-up enabled" },
+  "toastPpCommandDisabled": { "message": "PP command wake-up disabled" },
+  "errorLoadDefaultPrompts": { "message": "Failed to load default prompts" },
+  "authorUnknown": { "message": "Unknown" },
+  "noRecommendedTags": { "message": "No recommended tags" },
+  "errorPromptsMustBeArray": { "message": "Prompts data must be an array" },
+  "errorPromptsMustHaveTitleContent": { "message": "Each prompt must contain a title and content" },
+  "errorInvalidThemeMode": { "message": "Invalid theme mode" },
+  "footerGithub": { "message": "GitHub" },
+  "footerFeedback": { "message": "Feedback" },
+  "authorName": { "message": "libushilang" },
+  "settingsAccountAndSync": { "message": "Account & Sync" },
+  "settingsModalTitle": { "message": "Settings" },
+  "errorAuthServiceNotInitialized": { "message": "Authentication service not initialized" },
+  "errorLoginFailedNoResult": { "message": "Login failed, no valid result returned" },
+  "errorSyncServiceNotInitialized": { "message": "Sync service not initialized" },
+  "errorDataServiceNotInitialized": { "message": "Data service not initialized" }
 }

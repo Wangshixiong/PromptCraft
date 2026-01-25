@@ -540,7 +540,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                     if (chrome.runtime.lastError) {
                         const errorMsg = chrome.runtime.lastError.message || chrome.runtime.lastError.toString();
                         console.warn('PromptCraft: Failed to load prompts from memory:', errorMsg);
-                        showErrorMessage(`无法连接到扩展后台服务: ${errorMsg}`);
+                        showErrorMessage(chrome.i18n.getMessage('errorConnectionToBackgroundFailed') + errorMsg);
                         state.prompts = getEmptyPrompts();
         
                         updateUIAfterPromptsLoad();
@@ -551,7 +551,8 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
                     if (response && response.loadError) {
                         // 显示加载错误信息
                         console.error('PromptCraft: Load error detected:', response.errorMessage);
-                        showErrorMessage(response.errorMessage || '加载默认提示词失败');
+                        const defaultError = chrome.i18n.getMessage('errorLoadDefaultPromptsFailed') || 'Failed to load default prompts: ';
+                        showErrorMessage(response.errorMessage || defaultError);
                         state.prompts = getEmptyPrompts();
         
                     } else if (response && response.prompts && response.prompts.length > 0) {
@@ -1275,9 +1276,15 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         state.uiContainer.id = CONSTANTS.UI_CONTAINER_ID;
 
         // 构建UI结构
+        const searchPlaceholder = chrome.i18n.getMessage('searchPlaceholder') || 'Search prompts...';
+        const helpSelect = chrome.i18n.getMessage('helpSelect') || 'Select';
+        const helpConfirm = chrome.i18n.getMessage('helpConfirm') || 'Confirm';
+        const helpCancel = chrome.i18n.getMessage('helpCancel') || 'Cancel';
+        const helpFooter = chrome.i18n.getMessage('helpFooter') || "Type 'pp' to invoke • Supports search and tag filtering";
+
         state.uiContainer.innerHTML = `
             <div class="promptcraft-search-container">
-                <input type="text" class="promptcraft-search-input" placeholder="搜索提示词..." autocomplete="off" spellcheck="false" />
+                <input type="text" class="promptcraft-search-input" placeholder="${escapeHtml(searchPlaceholder)}" autocomplete="off" spellcheck="false" />
             </div>
             <div class="promptcraft-category-filter">
                 <div class="promptcraft-category-tabs"></div>
@@ -1285,12 +1292,12 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
             <div class="promptcraft-prompt-list"></div>
             <div class="promptcraft-help-text">
                 <div class="promptcraft-help-main">
-                    <span class="promptcraft-help-keys">↑↓</span> 选择 • 
-                    <span class="promptcraft-help-keys">Enter</span> 确认 • 
-                    <span class="promptcraft-help-keys">Esc</span> 取消
+                    <span class="promptcraft-help-keys">↑↓</span> ${escapeHtml(helpSelect)} • 
+                    <span class="promptcraft-help-keys">Enter</span> ${escapeHtml(helpConfirm)} • 
+                    <span class="promptcraft-help-keys">Esc</span> ${escapeHtml(helpCancel)}
                 </div>
                 <div class="promptcraft-help-trigger">
-                    输入 <span class="promptcraft-help-command">pp</span> 唤起 • 支持搜索和标签筛选
+                    ${helpFooter.replace('pp', '<span class="promptcraft-help-command">pp</span>')}
                 </div>
             </div>
         `;
@@ -1484,7 +1491,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
 
         // 创建分类标签（添加颜色支持）
         tabsContainer.innerHTML = tags.map(tag => {
-            const displayName = tag === 'all' ? '全部' : tag;
+            const displayName = tag === 'all' ? (chrome.i18n.getMessage('tagFilterAll') || '全部') : tag;
             const isActive = tag === state.selectedCategory;
             const colorClass = tag === 'all' ? '' : `category-tab-${tagColorManager.getTagColor(tag)}`;
             return `<button class="promptcraft-category-tab ${isActive ? 'active' : ''} ${colorClass}" data-category="${tag}">${escapeHtml(displayName)}</button>`;
@@ -1672,7 +1679,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
         if (!listContainer) return;
 
         if (state.filteredPrompts.length === 0) {
-            listContainer.innerHTML = '<div class="promptcraft-no-results">未找到匹配的提示词</div>';
+            listContainer.innerHTML = `<div class="promptcraft-no-results">${chrome.i18n.getMessage('noMatchingPrompts')}</div>`;
             return;
         }
 
@@ -1690,7 +1697,7 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
             }
             
             // 渲染作者
-            const authorHtml = prompt.author ? `<span class="author">by ${escapeHtml(prompt.author)}</span>` : '';
+            const authorHtml = prompt.author ? `<span class="author">${chrome.i18n.getMessage('authorPrefix')}${escapeHtml(prompt.author)}</span>` : '';
             
             return `
                 <div class="promptcraft-prompt-item ${index === state.selectedIndex ? 'selected' : ''}" data-index="${index}">
@@ -1995,7 +2002,8 @@ html body #promptcraft-quick-invoke-container[data-theme="dark"] .promptcraft-he
             max-width: 300px;
             word-wrap: break-word;
         `;
-        errorDiv.textContent = `提示词助手: ${message}`;
+        const prefix = chrome.i18n.getMessage('promptCraftPrefix') || 'PromptCraft: ';
+        errorDiv.textContent = `${prefix}${message}`;
 
         // 添加到页面
         document.body.appendChild(errorDiv);

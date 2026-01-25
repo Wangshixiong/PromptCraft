@@ -108,23 +108,23 @@ async function signInWithGoogle(progressCallback = null) {
         };
         
         // 0. 尝试使用预加载的资源
-        reportProgress('preparing', '准备登录资源...');
+        reportProgress('preparing', chrome.i18n.getMessage('loginProgressPreparing'));
         if (preloadPromise) {
             try {
                 await preloadPromise;
-                reportProgress('preparing', '使用预加载资源');
+                reportProgress('preparing', chrome.i18n.getMessage('loginProgressPreloaded'));
             } catch (error) {
 
             }
         }
         
         // 1. 获取 Chrome 扩展的重定向 URL
-        reportProgress('redirect', '获取重定向URL...');
+        reportProgress('redirect', chrome.i18n.getMessage('loginProgressRedirect'));
         const redirectURL = chrome.identity.getRedirectURL();
 
         
         // 2. 调用 Supabase signInWithOAuth 获取授权 URL
-        reportProgress('oauth', '获取Google授权链接...');
+        reportProgress('oauth', chrome.i18n.getMessage('loginProgressOAuth'));
         const { data, error: urlError } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
@@ -142,13 +142,13 @@ async function signInWithGoogle(progressCallback = null) {
         }
 
 
-        reportProgress('auth', '打开Google登录页面...');
+        reportProgress('auth', chrome.i18n.getMessage('loginProgressAuthPage'));
 
         // 3. 使用 chrome.identity.launchWebAuthFlow 进行认证
         return new Promise((resolve, reject) => {
             // 设置超时处理，防止认证流程卡死
             const timeoutId = setTimeout(() => {
-                reject(new Error('认证超时，请重试'));
+                reject(new Error(chrome.i18n.getMessage('loginErrorTimeout')));
             }, 60000); // 60秒超时
             
             chrome.identity.launchWebAuthFlow({
@@ -191,7 +191,7 @@ async function signInWithGoogle(progressCallback = null) {
                 
                 try {
 
-                    reportProgress('callback', '处理登录回调...');
+                    reportProgress('callback', chrome.i18n.getMessage('loginProgressCallback'));
                     
                     // 4. 解析回调 URL 中的参数
                     const url = new URL(responseUrl);
@@ -212,12 +212,12 @@ async function signInWithGoogle(progressCallback = null) {
                     
                     if (!accessToken || !refreshToken) {
                         console.error('令牌缺失 - accessToken:', !!accessToken, 'refreshToken:', !!refreshToken);
-                        reject(new Error('未能获取到有效的认证令牌'));
+                        reject(new Error(chrome.i18n.getMessage('loginErrorTokenMissing')));
                         return;
                     }
                     
 
-                    reportProgress('session', '建立用户会话...');
+                    reportProgress('session', chrome.i18n.getMessage('loginProgressSession'));
                     
                     // 5. 设置 Supabase 会话
                     const { data: sessionData, error: sessionError } = await supabaseClient.auth.setSession({
@@ -233,12 +233,12 @@ async function signInWithGoogle(progressCallback = null) {
                     
                     if (!sessionData || !sessionData.session || !sessionData.user) {
                         console.error('会话数据无效:', sessionData);
-                        reject(new Error('会话设置成功但数据无效'));
+                        reject(new Error(chrome.i18n.getMessage('loginErrorSessionInvalid')));
                         return;
                     }
                     
 
-                    reportProgress('complete', '登录成功！');
+                    reportProgress('complete', chrome.i18n.getMessage('loginProgressComplete'));
                     
                     // 确保认证状态变化事件能够正确触发
                     setTimeout(() => {
@@ -249,7 +249,7 @@ async function signInWithGoogle(progressCallback = null) {
                         success: true,
                         user: sessionData.user,
                         session: sessionData.session,
-                        message: '登录成功'
+                        message: chrome.i18n.getMessage('loginSuccessMessage')
                     });
                     
                 } catch (parseError) {
@@ -261,7 +261,7 @@ async function signInWithGoogle(progressCallback = null) {
 
     } catch (error) {
         console.error('Google 登录失败:', error);
-        throw new Error(`登录失败: ${error.message}`);
+        throw new Error(`${chrome.i18n.getMessage('loginErrorFailed')}${error.message}`);
     }
 }
 
@@ -275,7 +275,7 @@ async function signOut() {
         // 清除 Supabase 会话
         const { error } = await supabaseClient.auth.signOut();
         if (error) {
-            console.error('Supabase 退出失败:', error);
+            console.error(chrome.i18n.getMessage('logoutError'), error);
             throw error;
         }
         

@@ -123,7 +123,9 @@ const ui = {
             this.promptsContainer.innerHTML = '';
 
             if (promptsToRender.length === 0) {
-                this.promptsContainer.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #64748b;"><i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i><h3>空空如也</h3><p>点击上方按钮添加您的第一个提示词吧！</p></div>`;
+                const title = I18nHelper.getMessage('emptyStateTitle', '空空如也');
+                const desc = I18nHelper.getMessage('emptyStateDesc', '点击上方按钮添加您的第一个提示词吧！');
+                this.promptsContainer.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #64748b;"><i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px;"></i><h3>${title}</h3><p>${desc}</p></div>`;
                 return;
             }
 
@@ -137,12 +139,19 @@ const ui = {
                     const card = document.createElement('div');
                     card.className = 'prompt-card fade-in';
                     card.dataset.id = prompt.id;
+                    
+                    const untitled = I18nHelper.getMessage('untitledPrompt', '无标题');
+                    const copyText = I18nHelper.getMessage('copyBtn', '复制');
+                    const authorPrefix = I18nHelper.getMessage('authorPrefix', '作者: ');
+                    const editTitle = I18nHelper.getMessage('editBtn', '编辑');
+                    const deleteTitle = I18nHelper.getMessage('deleteBtn', '删除');
+                    
                     card.innerHTML = `
                         <div class="prompt-card-header">
-                            <div class="prompt-title">${this.escapeHtml(prompt.title || '无标题')}</div>
-                            <button type="button" class="copy-btn" data-content="${this.escapeHtml(prompt.content || '')}">复制</button>
+                            <div class="prompt-title">${this.escapeHtml(prompt.title || untitled)}</div>
+                            <button type="button" class="copy-btn" data-content="${this.escapeHtml(prompt.content || '')}">${copyText}</button>
                         </div>
-                        ${prompt.author ? `<div class="prompt-author">作者: ${this.escapeHtml(prompt.author)}</div>` : ''}
+                        ${prompt.author ? `<div class="prompt-author">${authorPrefix}${this.escapeHtml(prompt.author)}</div>` : ''}
                         <div class="prompt-content">${this.escapeHtml(prompt.content || '')}</div>
                         <div class="card-footer">
                             <div class="meta-info">
@@ -151,10 +160,10 @@ const ui = {
                             </div>
                             <div class="card-actions">
                                 <div class="actions-on-hover">
-                                    <button class="action-btn edit-btn" data-id="${prompt.id}" title="编辑">
+                                    <button class="action-btn edit-btn" data-id="${prompt.id}" title="${editTitle}">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button class="action-btn delete-btn" data-id="${prompt.id}" title="删除">
+                                    <button class="action-btn delete-btn" data-id="${prompt.id}" title="${deleteTitle}">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </div>
@@ -183,7 +192,9 @@ const ui = {
     formatDate(dateString) {
         if (!dateString) return '';
         const date = new Date(dateString);
-        return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        // 使用浏览器当前语言设置，如果获取失败则默认为 'zh-CN'
+        const locale = chrome.i18n.getUILanguage() || 'zh-CN';
+        return date.toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' });
     },
 
     /**
@@ -318,10 +329,10 @@ const ui = {
         modal.innerHTML = `
             <div class="preview-header">
                 <div class="preview-title-row">
-                    <h2 class="preview-title">${this.escapeHtml(prompt.title || '无标题')}</h2>
+                    <h2 class="preview-title">${this.escapeHtml(prompt.title || I18nHelper.getMessage('untitledPrompt', '无标题'))}</h2>
                     <button class="preview-close">&times;</button>
                 </div>
-                ${author ? `<div class="preview-author">作者: ${this.escapeHtml(author)}</div>` : ''}
+                ${author ? `<div class="preview-author">${I18nHelper.getMessage('authorPrefix', '作者: ')}${this.escapeHtml(author)}</div>` : ''}
                 ${tags.length > 0 ? `<div class="preview-tags">${this.renderTags(tags)}</div>` : ''}
             </div>
             <div class="preview-body">
@@ -329,7 +340,7 @@ const ui = {
             </div>
             <div class="preview-footer">
                 <div class="preview-date">${this.formatDate(prompt.created_at)}</div>
-                <button type="button" class="preview-copy-btn"><i class="fas fa-copy"></i> 复制</button>
+                <button type="button" class="preview-copy-btn"><i class="fas fa-copy"></i> ${I18nHelper.getMessage('copyBtn', '复制')}</button>
             </div>
         `;
         
@@ -354,7 +365,7 @@ const ui = {
             e.preventDefault();
             navigator.clipboard.writeText(prompt.content || '').then(() => {
                 const originalText = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<i class="fas fa-check"></i> 已复制!';
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> ' + I18nHelper.getMessage('previewCopySuccess', '已复制!');
                 copyBtn.style.background = 'var(--success)';
                 setTimeout(() => {
                     copyBtn.innerHTML = originalText;
@@ -387,7 +398,7 @@ const ui = {
             }
         });
         
-        const tags = ['全部', ...Array.from(allTags)];
+        const tags = [I18nHelper.getMessage('tagFilterAll', '全部'), ...Array.from(allTags)];
         
         // 初始化标签状态
         if (!this.filterState) {
@@ -476,12 +487,12 @@ const ui = {
         btn.className = 'filter-btn';
         
         // 如果不是"全部"，使用标签颜色系统
-        if (tag !== '全部') {
+        if (tag !== I18nHelper.getMessage('tagFilterAll', '全部')) {
             const colorClass = this.getTagColor(tag);
             btn.classList.add(`filter-tag-${colorClass}`);
         }
         
-        if (tag === '全部') btn.classList.add('active');
+        if (tag === I18nHelper.getMessage('tagFilterAll', '全部')) btn.classList.add('active');
         btn.textContent = tag;
         btn.addEventListener('click', (e) => app.handleFilter(tag, e));
         return btn;
@@ -496,10 +507,10 @@ const ui = {
         
         if (isMore) {
             btn.innerHTML = '<i class="fas fa-ellipsis-h"></i>';
-            btn.title = '显示更多标签';
+            btn.title = I18nHelper.getMessage('tagFilterMore', '更多');
         } else {
             btn.innerHTML = '<i class="fas fa-chevron-up"></i>';
-            btn.title = '收起标签';
+            btn.title = I18nHelper.getMessage('tagFilterCollapse', '收起');
         }
         
         btn.addEventListener('click', (e) => {
@@ -615,7 +626,12 @@ const ui = {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const id = e.currentTarget.dataset.id;
-                app.handleDeletePrompt(id);
+                console.log('[UI] Delete button clicked for id:', id);
+                if (window.app && window.app.handleDeletePrompt) {
+                    window.app.handleDeletePrompt(id);
+                } else {
+                    console.error('[UI] app.handleDeletePrompt is not available');
+                }
             });
         });
 
@@ -675,7 +691,7 @@ const ui = {
             
             // 更改按钮文字
             if (btnText) {
-                btnText.textContent = progressText || '正在登录...';
+                btnText.textContent = progressText || I18nHelper.getMessage('loginProgress', '正在登录...');
             }
         } else {
             // 移除加载状态类
@@ -694,7 +710,7 @@ const ui = {
             
             // 恢复按钮文字
             if (btnText) {
-                btnText.textContent = '使用 Google 登录';
+                btnText.textContent = I18nHelper.getMessage('googleLogin', '使用 Google 登录');
             }
         }
     },
@@ -801,9 +817,9 @@ const ui = {
                     console.log('[DEBUG] UTC时间:', syncTime.toISOString());
                     console.log('[DEBUG] 本地时间:', syncTime.toString());
                     
-                    // 使用北京时间格式化
-                    const timeString = syncTime.toLocaleString('zh-CN', {
-                        timeZone: 'Asia/Shanghai',
+                    // 使用浏览器语言设置格式化
+                    const locale = chrome.i18n.getUILanguage() || 'zh-CN';
+                    const timeString = syncTime.toLocaleString(locale, {
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit',
@@ -813,16 +829,17 @@ const ui = {
                         hour12: false
                     });
                     console.log('[DEBUG] 格式化后的时间字符串:', timeString);
-                    syncTimeElement.textContent = `最后同步时间: ${timeString}`;
+                    const prefix = I18nHelper.getMessage('lastSyncTimePrefix', '最后同步时间: ');
+                    syncTimeElement.textContent = `${prefix}${timeString}`;
                 } else {
                     console.log('[DEBUG] 没有同步时间数据，显示"尚未同步"');
                     console.log('[DEBUG] response.success:', response?.success);
                     console.log('[DEBUG] response.data:', response?.data);
-                    syncTimeElement.textContent = '尚未同步';
+                    syncTimeElement.textContent = I18nHelper.getMessage('syncStatusIdle', '尚未同步');
                 }
             } catch (error) {
                 console.error('[DEBUG] 获取同步时间失败:', error);
-                syncTimeElement.textContent = '同步时间获取失败';
+                syncTimeElement.textContent = I18nHelper.getMessage('syncTimeGetFailed', '同步时间获取失败');
             }
         } else {
             console.error('[DEBUG] 找不到syncTime元素');
@@ -836,11 +853,17 @@ const ui = {
      */
     updateSyncStatus(status, lastSyncTime) {
         const syncTimeElement = document.getElementById('syncTime');
+        const syncSuccessMsg = chrome.i18n.getMessage('toastSyncSuccess') || '云端同步完成';
+        const syncErrorMsg = chrome.i18n.getMessage('toastSyncError') || '同步失败，请稍后重试';
+        const statusSyncing = chrome.i18n.getMessage('syncStatusSyncing') || '正在同步...';
+        const statusError = chrome.i18n.getMessage('syncStatusError') || '同步失败';
+        const statusIdle = chrome.i18n.getMessage('syncStatusIdle') || '尚未同步';
+        const timePrefix = chrome.i18n.getMessage('lastSyncTimePrefix') || '最后同步时间: ';
         
         switch (status) {
             case 'syncing':
                 if (syncTimeElement) {
-                    syncTimeElement.textContent = '正在同步...';
+                    syncTimeElement.textContent = statusSyncing;
                 }
                 break;
                 
@@ -856,25 +879,25 @@ const ui = {
                         second: '2-digit'
                     });
                     if (syncTimeElement) {
-                        syncTimeElement.textContent = `最后同步时间: ${timeString}`;
+                        syncTimeElement.textContent = `${timePrefix}${timeString}`;
                     }
                 } else {
                     this.updateSyncTime();
                 }
-                this.showToast('云端同步完成', 'success');
+                this.showToast(syncSuccessMsg, 'success');
                 break;
                 
             case 'error':
                 if (syncTimeElement) {
-                    syncTimeElement.textContent = '同步失败';
+                    syncTimeElement.textContent = statusError;
                 }
-                this.showToast('同步失败，请稍后重试', 'error');
+                this.showToast(syncErrorMsg, 'error');
                 break;
                 
             case 'idle':
             default:
                 if (syncTimeElement) {
-                    syncTimeElement.textContent = '尚未同步';
+                    syncTimeElement.textContent = statusIdle;
                 }
                 break;
         }
@@ -889,7 +912,7 @@ const ui = {
         // 对于新的UI，只需要更新同步时间
         if (status === 'success' && message && message.includes('同步完成')) {
             this.updateSyncTime();
-            this.showToast('云端同步完成，数据已更新', 'success');
+            this.showToast(I18nHelper.getMessage('toastSyncSuccessUpdate', '云端同步完成，数据已更新'), 'success');
         }
     },
 
@@ -992,7 +1015,8 @@ const ui = {
      * @param {string} title - 弹窗标题
      * @returns {Promise<boolean>} 用户选择结果
      */
-    showCustomConfirm(message, title = '确认操作') {
+    showCustomConfirm(message, title = null) {
+        console.log('[UI] Showing custom confirm dialog:', message);
         return new Promise((resolve) => {
             const overlay = document.getElementById('confirmOverlay');
             const titleElement = document.getElementById('confirmTitle');
@@ -1005,13 +1029,25 @@ const ui = {
                 resolve(false);
                 return;
             }
+
+            // 确保 overlay 在 body 的最后，防止被遮挡
+            if (overlay.parentNode !== document.body || overlay.nextElementSibling) {
+                document.body.appendChild(overlay);
+            }
             
             // 设置内容
-            titleElement.textContent = title;
+            const defaultTitle = chrome.i18n.getMessage('confirmTitle') || '确认操作';
+            titleElement.textContent = title || defaultTitle;
             messageElement.textContent = message;
+            
+            // 确保 z-index 最高
+            overlay.style.zIndex = '2147483647';
             
             // 显示弹窗
             overlay.style.display = 'flex';
+            
+            // 强制重绘
+            void overlay.offsetHeight;
             
             // 清除之前的事件监听器
             const newCancelBtn = cancelBtn.cloneNode(true);

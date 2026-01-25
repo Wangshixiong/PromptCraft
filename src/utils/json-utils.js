@@ -21,11 +21,11 @@ function exportToJSON(prompts) {
         };
         
         // 生成文件名
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const filename = `Prompt管理助手备份_${year}-${month}-${day}.json`;
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const filename = `${chrome.i18n.getMessage('backupFileNamePrefix')}${year}-${month}-${day}.json`;
         
         // 创建下载链接
         const jsonStr = JSON.stringify(exportData, null, 2);
@@ -41,7 +41,7 @@ function exportToJSON(prompts) {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        return { success: true, message: `导出成功！文件已保存为：${filename}` };
+        return { success: true, message: chrome.i18n.getMessage('exportSuccessMessage', [filename]) };
     } catch (error) {
         console.error('导出失败:', error);
         return { success: false, error: error.message };
@@ -60,20 +60,20 @@ function downloadTemplate() {
                     id: 'example-id-1',
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
-                    title: '示例提示词标题',
-                    content: '这里是提示词的具体内容，请详细描述您的需求...',
-                    tags: ['工作'],
-                    author: '示例作者',
+                    title: chrome.i18n.getMessage('templateExampleTitle1'),
+                    content: chrome.i18n.getMessage('templateExampleContent1'),
+                    tags: [chrome.i18n.getMessage('templateExampleTag1')],
+                    author: chrome.i18n.getMessage('templateExampleAuthor'),
                     is_deleted: false
                 },
                 {
                     id: 'example-id-2',
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
-                    title: '另一个示例',
-                    content: '您可以添加更多的提示词条目...',
-                    tags: ['学习'],
-                    author: '示例作者',
+                    title: chrome.i18n.getMessage('templateExampleTitle2'),
+                    content: chrome.i18n.getMessage('templateExampleContent2'),
+                    tags: [chrome.i18n.getMessage('templateExampleTag2')],
+                    author: chrome.i18n.getMessage('templateExampleAuthor'),
                     is_deleted: false
                 }
             ]
@@ -85,7 +85,7 @@ function downloadTemplate() {
         const url = URL.createObjectURL(blob);
         
         // 下载文件
-        const filename = 'Prompt管理助手_导入模板.json';
+        const filename = chrome.i18n.getMessage('templateFileName');
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
@@ -113,7 +113,7 @@ function importFromJSON(file) {
                 
                 // 验证JSON结构
                 if (!data.prompts || !Array.isArray(data.prompts)) {
-                    throw new Error('无效的JSON格式：缺少prompts数组');
+                    throw new Error(chrome.i18n.getMessage('importErrorMissingPrompts'));
                 }
                 
                 // 验证和转换数据
@@ -125,12 +125,12 @@ function importFromJSON(file) {
                     
                     // 检查必填字段
                     if (!prompt.title || !prompt.title.trim()) {
-                        errors.push(`第${itemNum}项：标题不能为空`);
+                        errors.push(chrome.i18n.getMessage('importErrorTitleRequired', [String(itemNum)]));
                         return;
                     }
                     
                     if (!prompt.content || !prompt.content.trim()) {
-                        errors.push(`第${itemNum}项：内容不能为空`);
+                        errors.push(chrome.i18n.getMessage('importErrorContentRequired', [String(itemNum)]));
                         return;
                     }
                     
@@ -139,7 +139,7 @@ function importFromJSON(file) {
                         id: prompt.id || '', // 如果有id则保留，否则在添加时会自动生成
                         title: prompt.title.trim(),
                         content: prompt.content.trim(),
-                        tags: prompt.tags || (prompt.category ? [prompt.category] : ['未分类']),
+                        tags: prompt.tags || (prompt.category ? [prompt.category] : [chrome.i18n.getMessage('defaultTagUncategorized')]),
                         author: (prompt.author || '').trim(),
                         created_at: prompt.created_at || prompt.createdAt || new Date().toISOString(),
                         updated_at: prompt.updated_at || prompt.updatedAt || new Date().toISOString(),
@@ -155,17 +155,18 @@ function importFromJSON(file) {
                     errors: errors,
                     total: data.prompts.length,
                     imported: validPrompts.length,
-                    version: data.version || '未知',
-                    exportTime: data.exportTime || '未知'
+                    version: data.version || chrome.i18n.getMessage('unknownVersion'),
+                    exportTime: data.exportTime || chrome.i18n.getMessage('unknownVersion')
                 });
                 
             } catch (error) {
-                reject(new Error('文件解析失败: ' + error.message));
+                console.error('JSON解析错误:', error);
+                reject(new Error(chrome.i18n.getMessage('importErrorParse') + error.message));
             }
         };
         
-        reader.onerror = function() {
-            reject(new Error('文件读取失败'));
+        reader.onerror = () => {
+            reject(new Error(chrome.i18n.getMessage('importErrorRead')));
         };
         
         reader.readAsText(file, 'utf-8');
@@ -192,7 +193,7 @@ function exportFailedRecords(errors) {
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
         const time = now.toTimeString().split(' ')[0].replace(/:/g, '-');
-        const filename = `导入失败记录_${year}-${month}-${day}_${time}.json`;
+        const filename = `${chrome.i18n.getMessage('importFailureRecordFileName')}${year}-${month}-${day}_${time}.json`;
         
         // 创建下载链接
         const jsonStr = JSON.stringify(failedData, null, 2);

@@ -91,7 +91,7 @@ async function loadDefaultPromptsToMemory() {
             await dataService._atomicStorageOperation([
                 { 'promptcraft_has_data': true },
                 { 'loadError': true },
-                { 'errorMessage': `加载默认提示词失败: ${error.message}` },
+                { 'errorMessage': chrome.i18n.getMessage('errorLoadDefaultPromptsFailed') + error.message },
                 { 'errorTimestamp': new Date().toISOString() },
                 { 'themeMode': 'auto' }
             ]);
@@ -132,7 +132,7 @@ async function restoreAuthState() {
     
         }
     } catch (error) {
-        console.error('PromptCraft: 恢复认证状态失败:', error);
+        console.error('PromptCraft: ' + chrome.i18n.getMessage('errorRestoreAuthFailed'), error);
     }
     return null;
 }
@@ -144,7 +144,7 @@ chrome.runtime.onInstalled.addListener(async () => {
         // 创建一个右键菜单项
         chrome.contextMenus.create({
           id: "add-to-promptcraft",
-          title: "添加到 Prompt管理助手",
+          title: chrome.i18n.getMessage("contextMenuTitle"),
           contexts: ["selection"] // 只在用户选中文本时显示
         });
     });
@@ -225,7 +225,7 @@ chrome.runtime.onStartup.addListener(async () => {
             sendResponse({ 
               prompts: [], 
               loadError: true, 
-              errorMessage: errorMessage || '加载默认提示词失败' 
+              errorMessage: errorMessage || chrome.i18n.getMessage('errorLoadDefaultPromptsFailed') 
             });
           } else {
             const prompts = await dataService.getAllPrompts();
@@ -233,7 +233,7 @@ chrome.runtime.onStartup.addListener(async () => {
           }
         } catch (error) {
           console.error('Error getting prompts:', error);
-          sendResponse({ prompts: [], loadError: true, errorMessage: '获取提示词失败' });
+          sendResponse({ prompts: [], loadError: true, errorMessage: chrome.i18n.getMessage('errorGetPromptsFailed') });
         }
       })();
       return true; // 保持消息通道开放以支持异步响应
@@ -260,7 +260,7 @@ chrome.runtime.onStartup.addListener(async () => {
             error: null,
             loadError: loadError.hasError ? {
               hasError: true,
-              message: loadError.message || '数据加载存在问题'
+              message: loadError.message || chrome.i18n.getMessage('errorDataLoadProblem')
             } : null
           });
           
@@ -271,7 +271,7 @@ chrome.runtime.onStartup.addListener(async () => {
           sendResponse({
             success: false,
             data: null,
-            error: `获取提示词失败: ${error.message}`
+            error: chrome.i18n.getMessage('errorGetPromptsFailed') + ': ' + error.message
           });
         }
       })();
@@ -301,7 +301,7 @@ chrome.runtime.onStartup.addListener(async () => {
           sendResponse({
             success: false,
             data: null,
-            error: `获取标签失败: ${error.message}`
+            error: chrome.i18n.getMessage('errorGetTagsFailed') + error.message
           });
         }
       })();
@@ -598,7 +598,7 @@ chrome.runtime.onStartup.addListener(async () => {
                 ...finalPrompts[existingIndex],
                 content: newPrompt.content,
                 tags: newPrompt.tags || (newPrompt.category ? [newPrompt.category] : []),
-                author: newPrompt.author || '未知',
+                author: newPrompt.author || chrome.i18n.getMessage('authorUnknown'),
                 updated_at: new Date().toISOString()
               };
               updatedCount++;
@@ -647,7 +647,7 @@ chrome.runtime.onStartup.addListener(async () => {
       (async () => {
         try {
           if (!authServiceInstance) {
-            throw new Error('认证服务未初始化');
+            throw new Error(chrome.i18n.getMessage('errorAuthServiceNotInitialized'));
           }
           // 创建进度回调函数
           const progressCallback = message.progressCallback ? (stage, progressMessage) => {
@@ -671,7 +671,7 @@ chrome.runtime.onStartup.addListener(async () => {
               data: result
             });
           } else {
-            throw new Error('登录失败，未返回有效结果');
+            throw new Error(chrome.i18n.getMessage('errorLoginFailedNoResult'));
           }
           
         } catch (error) {
@@ -717,7 +717,7 @@ chrome.runtime.onStartup.addListener(async () => {
        (async () => {
          try {
            if (!authServiceInstance) {
-             throw new Error('认证服务未初始化');
+             throw new Error(chrome.i18n.getMessage('errorAuthServiceNotInitialized'));
            }
            
            await authServiceInstance.signOut();
@@ -836,7 +836,7 @@ chrome.runtime.onStartup.addListener(async () => {
           try {
             if (!dataServiceInstance) {
               console.error('[DEBUG] Background: 数据服务未初始化');
-              throw new Error('数据服务未初始化');
+              throw new Error(chrome.i18n.getMessage('errorDataServiceNotInitialized'));
             }
             
             console.log('[DEBUG] Background: 调用dataServiceInstance.getLastSyncTime()');

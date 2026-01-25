@@ -115,7 +115,7 @@ class SyncService {
             
             // 1. 确保依赖服务已初始化
             if (!this.authService || !this.dataService) {
-                throw new Error('依赖服务未正确注入');
+                throw new Error(chrome.i18n.getMessage('errorDependencyInjection'));
             }
             
             // 2. 监听认证状态变化
@@ -137,7 +137,7 @@ class SyncService {
         } catch (error) {
             console.error('SyncService 初始化失败:', error);
             this._updateSyncStatus(SYNC_STATUS.ERROR);
-            throw new Error(`同步服务初始化失败: ${error.message}`);
+            throw new Error(`${chrome.i18n.getMessage('errorSyncInitFailed')}${error.message}`);
         }
     }
     
@@ -252,7 +252,7 @@ class SyncService {
             if (localPrompts.length === 0) {
 
                 this._updateSyncStatus(SYNC_STATUS.SUCCESS);
-                return { success: true, migratedCount: 0, message: '无数据需要迁移' };
+                return { success: true, migratedCount: 0, message: chrome.i18n.getMessage('syncMigrationNoData') };
             }
             
             // 3. 准备上传数据
@@ -278,16 +278,16 @@ class SyncService {
                 return {
                     success: true,
                     migratedCount: uploadResult.count,
-                    message: `成功迁移 ${uploadResult.count} 条提示词到云端`
+                    message: chrome.i18n.getMessage('syncMigrationSuccess', [String(uploadResult.count)])
                 };
             } else {
-                throw new Error(uploadResult.error || '数据上传失败');
+                throw new Error(uploadResult.error || chrome.i18n.getMessage('syncErrorUploadFailed'));
             }
             
         } catch (error) {
             console.error('数据迁移失败:', error);
             this._updateSyncStatus(SYNC_STATUS.ERROR);
-            throw new Error(`数据迁移失败: ${error.message}`);
+            throw new Error(`${chrome.i18n.getMessage('syncErrorMigrationFailed')}${error.message}`);
         } finally {
             // 释放同步状态锁
             this.isSyncing = false;

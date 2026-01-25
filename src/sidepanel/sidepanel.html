@@ -7,6 +7,8 @@
     <!-- 样式部分保持不变，为节省空间已折叠 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/main.css">
+    <!-- 引入 I18nHelper -->
+    <script src="../utils/i18n-helper.js"></script>
 </head>
 <body>
     <div class="sidebar">
@@ -32,7 +34,7 @@
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
                     </button>
-                    <button class="settings-btn" id="settingsBtn" title="设置">
+                    <button class="settings-btn" id="settingsBtn" title="设置" data-i18n-title="settingsTitle">
                         <i class="fas fa-cog"></i>
                     </button>
                 </div>
@@ -127,35 +129,41 @@
             <div class="form-container-wrapper">
                  <div class="form-header">
                     <button class="back-btn" id="backToListBtn"><i class="fas fa-arrow-left"></i></button>
-                    <h2 class="form-title" id="formTitle">添加新提示词</h2>
+                    <h2 class="form-title" id="formTitle" data-i18n="formTitleAdd">添加新提示词</h2>
                 </div>
                 <div class="form-container">
-                    <input type="hidden" id="promptIdInput">
-                    <!-- 标题和作者使用水平布局 -->
-                    <div class="form-group-horizontal">
-                        <label class="form-label" for="promptTitleInput"><span class="required">*</span> 标题</label>
-                        <input type="text" class="form-input" id="promptTitleInput" placeholder="给提示词起个名字">
-                    </div>
-                    <div class="form-group-horizontal">
-                        <label class="form-label" for="promptAuthorInput">作者</label>
-                        <input type="text" class="form-input" id="promptAuthorInput" placeholder="输入作者名称（可选）">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="promptContentInput"><span class="required">*</span> 提示词内容</label>
-                        <textarea class="form-textarea" id="promptContentInput" placeholder="在此输入或粘贴您的提示词内容..." maxlength="20000"></textarea>
-                        <div class="character-count" id="characterCount" style="text-align: right; font-size: 12px; color: #64748b; margin-top: 4px;">0 / 20000</div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="smartTagInput">标签</label>
-                        <div id="smartTagInputContainer"></div>
-                        <div class="recommended-tags-section">
-                            <div id="recommendedTagsContainer" class="recommended-tags-container"></div>
+                    <form id="promptForm">
+                        <input type="hidden" id="promptIdInput">
+                        <div class="form-group">
+                            <!-- 标题和作者使用水平布局 -->
+                            <div class="form-row">
+                                <div class="form-col flex-2">
+                                    <label class="form-label" for="promptTitleInput"><span class="required">*</span> <span data-i18n="formLabelTitle">标题</span></label>
+                                    <input type="text" class="form-input" id="promptTitleInput" data-i18n-placeholder="formPlaceholderTitle" placeholder="给提示词起个名字">
+                                </div>
+                                <div class="form-col flex-1">
+                                    <label class="form-label" for="promptAuthorInput" data-i18n="formLabelAuthor">作者</label>
+                                    <input type="text" class="form-input" id="promptAuthorInput" data-i18n-placeholder="formPlaceholderAuthor" placeholder="输入作者名称（可选）">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-actions">
-                        <button class="cancel-btn" id="cancelFormBtn">取消</button>
-                        <button class="save-btn" id="savePromptBtn">保存提示词</button>
-                    </div>
+                        <div class="form-group">
+                            <label class="form-label" for="promptContentInput"><span class="required">*</span> <span data-i18n="formLabelContent">提示词内容</span></label>
+                            <textarea class="form-textarea" id="promptContentInput" data-i18n-placeholder="formPlaceholderContent" placeholder="在此输入或粘贴您的提示词内容..." maxlength="20000"></textarea>
+                            <div class="character-count" id="characterCount" style="text-align: right; font-size: 12px; color: #64748b; margin-top: 4px;">0 / 20000</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="smartTagInput" data-i18n="formLabelTags">标签</label>
+                            <div id="smartTagInputContainer"></div>
+                            <div class="recommended-tags-section">
+                                <div id="recommendedTagsContainer" class="recommended-tags-container"></div>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="cancel-btn" id="cancelFormBtn" data-i18n="formBtnCancel">取消</button>
+                            <button type="submit" class="save-btn" id="savePromptBtn" data-i18n="formBtnSave">保存提示词</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -170,13 +178,13 @@
     <div class="settings-overlay" id="settingsOverlay" style="display: none;">
         <div class="settings-modal">
             <div class="settings-header">
-                <h3>设置</h3>
+                <h3 data-i18n="settingsModalTitle">设置</h3>
                 <button class="settings-close" id="settingsClose"><i class="fas fa-times"></i></button>
             </div>
             <div class="settings-body">
                 <!-- 账户与同步模块 -->
                 <div class="settings-section">
-                    <h4><i class="fas fa-user"></i> 账户与同步</h4>
+                    <h4><i class="fas fa-user"></i> <span data-i18n="settingsAccountAndSync">账户与同步</span></h4>
                     
                     <!-- 未登录状态 -->
                     <div id="loggedOutSection">
@@ -187,7 +195,7 @@
                                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                             </svg>
-                            <span class="btn-text">使用 Google 登录</span>
+                            <span class="btn-text" data-i18n="googleLogin">使用 Google 登录</span>
                         </button>
                     </div>
                     
@@ -208,8 +216,8 @@
                         </div>
                         
                         <div class="sync-section">
-                            <div class="sync-time" id="syncTime">最后同步时间: 尚未同步</div>
-                            <button class="manual-sync-btn" id="manualSyncBtn" title="手动同步">
+                            <div class="sync-time" id="syncTime" data-i18n="syncStatusIdle">最后同步时间: 尚未同步</div>
+                            <button class="manual-sync-btn" id="manualSyncBtn" data-i18n-title="manualSyncTitle" title="手动同步">
                                 <i class="fas fa-sync-alt"></i>
                             </button>
                         </div>
@@ -218,39 +226,38 @@
                 
                 <!-- 应用设置模块 -->
                 <div class="settings-section">
-                    <h4><i class="fas fa-sliders-h"></i> 应用设置</h4>
-                    
-                    <!-- 主题子模块 -->
+                    <h4><i class="fas fa-sliders-h"></i> <span data-i18n="settingsSectionTitle">应用设置</span></h4>
+                    <div class="settings-group">                   <!-- 主题子模块 -->
                     <div class="settings-group-horizontal">
-                        <label class="group-label-horizontal">主题</label>
+                        <label class="group-label-horizontal" data-i18n="settingsTheme">主题</label>
                         <div class="theme-selector">
                             <div class="theme-option" data-theme="light">
                                 <div class="theme-icon">
                                     <i class="fas fa-sun"></i>
                                 </div>
-                                <span class="theme-label">浅色</span>
+                                <span class="theme-label" data-i18n="themeLight">浅色</span>
                             </div>
                             <div class="theme-option" data-theme="dark">
                                 <div class="theme-icon">
                                     <i class="fas fa-moon"></i>
                                 </div>
-                                <span class="theme-label">深色</span>
+                                <span class="theme-label" data-i18n="themeDark">深色</span>
                             </div>
                             <div class="theme-option active" data-theme="auto">
                                 <div class="theme-icon">
                                     <i class="fas fa-desktop"></i>
                                 </div>
-                                <span class="theme-label">系统</span>
+                                <span class="theme-label" data-i18n="themeSystem">系统</span>
                             </div>
                         </div>
                     </div>
                     
                     <!-- 功能子模块 -->
                     <div class="settings-group-horizontal" style="margin-top: 8px;">
-                        <label class="group-label-horizontal">功能</label>
+                        <label class="group-label-horizontal" data-i18n="settingsFeature">功能</label>
                         <div class="feature-settings">
                             <div class="feature-item">
-                                <span class="feature-name">"pp"快速唤醒</span>
+                                <span class="feature-name" data-i18n="featureQuickWake">"pp"快速唤醒</span>
                                 <div class="toggle-switch" id="ppCommandToggle">
                                     <input type="checkbox" id="ppCommandCheckbox" checked>
                                     <label for="ppCommandCheckbox" class="toggle-label">
@@ -264,19 +271,19 @@
                 
                 <!-- 数据管理模块 -->
                 <div class="settings-section">
-                    <h4><i class="fas fa-database"></i> 数据管理</h4>
+                    <h4><i class="fas fa-database"></i> <span data-i18n="dataManagementTitle">数据管理</span></h4>
                     <div class="data-management-grid">
                         <div class="data-card import" id="importBtn">
                             <i class="fas fa-file-import data-card-icon"></i>
-                            <div class="data-card-title">导入</div>
+                            <div class="data-card-title" data-i18n="dataImport">导入</div>
                         </div>
                         <div class="data-card template" id="downloadTemplateBtn">
                             <i class="fas fa-download data-card-icon"></i>
-                            <div class="data-card-title">模板</div>
+                            <div class="data-card-title" data-i18n="dataTemplate">模板</div>
                         </div>
                         <div class="data-card export" id="exportBtn">
                             <i class="fas fa-file-export data-card-icon"></i>
-                            <div class="data-card-title">导出</div>
+                            <div class="data-card-title" data-i18n="dataExport">导出</div>
                         </div>
                     </div>
 
@@ -284,27 +291,18 @@
                 
                 <!-- 关于模块 -->
                 <div class="settings-section">
-                    <h4><i class="fas fa-info-circle"></i> 关于</h4>
+                    <h4><i class="fas fa-info-circle"></i> <span data-i18n="aboutTitle">关于</span></h4>
                     <div class="about-content">
                         <div class="version-info">
-                            <span class="version-label">版本信息</span>
+                            <span class="version-label" data-i18n="versionLabel">版本信息</span>
                             <div class="version-container">
                                 <span class="version-number clickable" id="versionNumber">v1.3.8</span>
                                 <span class="version-new" id="versionNew" style="display: none;">NEW</span>
                             </div>
                         </div>
                         <div class="author-info">
-                            <span class="author-label">作者</span>
-                            <span class="author-name">吏部侍郎</span>
-                        </div>
-                        <div class="contact-info">
-                            <span class="contact-label">联系作者</span>
-                            <div class="qr-code-container">
-                                <i class="fas fa-qrcode qr-icon"></i>
-                                <div class="qr-code-popup">
-                                    <img src="../../assets/icons/公众号二维码.jpg" alt="公众号二维码" class="qr-code-image">
-                                </div>
-                            </div>
+                            <span class="author-label" data-i18n="authorLabel">作者</span>
+                            <span class="author-name" data-i18n="authorName">PromptCraft Team</span>
                         </div>
                     </div>
                 </div>
@@ -335,15 +333,15 @@
     <div class="confirm-overlay" id="confirmOverlay" style="display: none;">
         <div class="confirm-modal">
             <div class="confirm-header">
-                <i class="fas fa-exclamation-triangle" style="color: #f59e0b; margin-right: 8px;"></i>
-                <h3 id="confirmTitle">确认操作</h3>
+                <i class="fas fa-exclamation-triangle" style="color: #f59e0b; margin-inline-end: 8px;"></i>
+                <h3 id="confirmTitle" data-i18n="confirmTitle">确认操作</h3>
             </div>
             <div class="confirm-content">
-                <p id="confirmMessage">您确定要执行此操作吗？</p>
+                <p id="confirmMessage" data-i18n="confirmMessage">您确定要执行此操作吗？</p>
             </div>
             <div class="confirm-actions">
-                <button class="confirm-cancel-btn" id="confirmCancelBtn">取消</button>
-                <button class="confirm-ok-btn" id="confirmOkBtn">确定</button>
+                <button class="confirm-cancel-btn" id="confirmCancelBtn" data-i18n="helpCancel">取消</button>
+                <button class="confirm-ok-btn" id="confirmOkBtn" data-i18n="helpConfirm">确定</button>
             </div>
         </div>
     </div>

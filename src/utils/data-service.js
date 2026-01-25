@@ -98,7 +98,7 @@ class DataService {
             }
         } catch (error) {
             console.error('数据服务初始化失败:', error);
-            throw new Error(`数据服务初始化失败: ${error.message}`);
+            throw new Error(`${chrome.i18n.getMessage('errorDataInitFailed')}${error.message}`);
         }
     }
 
@@ -113,7 +113,7 @@ class DataService {
             try {
                 chrome.storage.local.get(keys, (result) => {
                     if (chrome.runtime.lastError) {
-                        const error = new Error(`存储读取失败: ${chrome.runtime.lastError.message}`);
+                        const error = new Error(`${chrome.i18n.getMessage('errorStorageReadFailed')}${chrome.runtime.lastError.message}`);
                         console.error('chrome.storage.local.get 错误:', chrome.runtime.lastError);
                         reject(error);
                         return;
@@ -127,7 +127,7 @@ class DataService {
                     keys: keys,
                     timestamp: new Date().toISOString()
                 });
-                reject(new Error(`存储读取异常: ${error.message}`));
+                reject(new Error(`${chrome.i18n.getMessage('errorStorageReadException')}${error.message}`));
             }
         });
     }
@@ -144,7 +144,7 @@ class DataService {
             try {
                 chrome.storage.local.set(data, () => {
                     if (chrome.runtime.lastError) {
-                        const error = new Error(`存储写入失败: ${chrome.runtime.lastError.message}`);
+                        const error = new Error(`${chrome.i18n.getMessage('errorStorageWriteFailed')}${chrome.runtime.lastError.message}`);
                         console.error('chrome.storage.local.set 错误:', {
                             error: chrome.runtime.lastError,
                             dataKeys: Object.keys(data),
@@ -161,7 +161,7 @@ class DataService {
                 });
             } catch (error) {
                 console.error('存储写入异常:', error);
-                reject(new Error(`存储写入异常: ${error.message}`));
+                reject(new Error(`${chrome.i18n.getMessage('errorStorageWriteException')}${error.message}`));
             }
         });
     }
@@ -204,7 +204,7 @@ class DataService {
             try {
                 chrome.storage.local.remove(keys, () => {
                     if (chrome.runtime.lastError) {
-                        const error = new Error(`存储删除失败: ${chrome.runtime.lastError.message}`);
+                        const error = new Error(chrome.i18n.getMessage('errorStorageDeleteFailed') + chrome.runtime.lastError.message);
                         console.error('chrome.storage.local.remove 错误:', chrome.runtime.lastError);
                         reject(error);
                         return;
@@ -213,7 +213,7 @@ class DataService {
                 });
             } catch (error) {
                 console.error('存储删除异常:', error);
-                reject(new Error(`存储删除异常: ${error.message}`));
+                reject(new Error(chrome.i18n.getMessage('errorStorageDeleteException') + error.message));
             }
         });
     }
@@ -269,7 +269,7 @@ class DataService {
         try {
             // 验证必填字段
             if (!promptData.title || !promptData.content) {
-                throw new Error('标题和内容为必填字段');
+                throw new Error(chrome.i18n.getMessage('errorTitleContentRequired'));
             }
 
             // 获取现有提示词
@@ -315,7 +315,7 @@ class DataService {
             const index = prompts.findIndex(p => p.id === id);
 
             if (index === -1) {
-                throw new Error(`未找到ID为 ${id} 的提示词`);
+                throw new Error(chrome.i18n.getMessage('errorPromptNotFound', [id]));
             }
 
             // 更新提示词
@@ -327,7 +327,7 @@ class DataService {
 
             // 验证必填字段
             if (!updatedPrompt.title || !updatedPrompt.content) {
-                throw new Error('标题和内容为必填字段');
+                throw new Error(chrome.i18n.getMessage('errorTitleContentRequired'));
             }
 
             prompts[index] = updatedPrompt;
@@ -355,7 +355,7 @@ class DataService {
         try {
             // 验证必填字段
             if (!promptData.title || !promptData.content) {
-                throw new Error('标题和内容为必填字段');
+                throw new Error(chrome.i18n.getMessage('errorTitleContentRequired'));
             }
 
             const prompts = await this.getAllPrompts();
@@ -476,7 +476,7 @@ class DataService {
                 }
                 
                 if (throwOnNotFound) {
-                    throw new Error(`未找到ID为 ${id} 的提示词`);
+                    throw new Error(chrome.i18n.getMessage('errorPromptNotFound', [id]));
                 } else {
                     return false;
                 }
@@ -658,7 +658,7 @@ class DataService {
         await this.initialize();
         try {
             if (!['auto', 'light', 'dark'].includes(mode)) {
-                throw new Error('无效的主题模式');
+                throw new Error(chrome.i18n.getMessage('errorInvalidThemeMode'));
             }
             await this._setToStorage({ [STORAGE_KEYS.THEME_MODE]: mode });
         } catch (error) {

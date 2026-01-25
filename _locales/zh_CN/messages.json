@@ -14,5 +14,342 @@
   "commandDescription": {
     "message": "打开或关闭 Prompt管理助手 侧边栏",
     "description": "The description for the keyboard shortcut to open the side panel."
-  }
+  },
+  "searchPlaceholder": {
+    "message": "搜索提示词...",
+    "description": "Placeholder text for the search input."
+  },
+  "addPromptTitle": {
+    "message": "添加新提示词",
+    "description": "Title for the add prompt button."
+  },
+  "settingsTitle": {
+    "message": "设置",
+    "description": "Title for the settings button."
+  },
+  "untitledPrompt": {
+    "message": "无标题",
+    "description": "Default title for a prompt without a title."
+  },
+  "copyBtn": {
+    "message": "复制",
+    "description": "Text for the copy button."
+  },
+  "authorPrefix": {
+    "message": "作者: ",
+    "description": "Prefix for the author name."
+  },
+  "editBtn": {
+    "message": "编辑",
+    "description": "Title for the edit button."
+  },
+  "deleteBtn": {
+    "message": "删除",
+    "description": "Title for the delete button."
+  },
+  "emptyStateTitle": {
+    "message": "空空如也",
+    "description": "Title for the empty state."
+  },
+  "emptyStateDesc": {
+    "message": "点击上方按钮添加您的第一个提示词吧！",
+    "description": "Description for the empty state."
+  },
+  "formTitleAdd": {
+    "message": "添加新提示词",
+    "description": "Title for the add prompt form."
+  },
+  "formTitleEdit": {
+    "message": "编辑提示词",
+    "description": "Title for the edit prompt form."
+  },
+  "formLabelTitle": {
+    "message": "标题",
+    "description": "Label for the title input."
+  },
+  "formPlaceholderTitle": {
+    "message": "给提示词起个名字",
+    "description": "Placeholder for the title input."
+  },
+  "formLabelAuthor": {
+    "message": "作者",
+    "description": "Label for the author input."
+  },
+  "formPlaceholderAuthor": {
+    "message": "输入作者名称（可选）",
+    "description": "Placeholder for the author input."
+  },
+  "formLabelContent": {
+    "message": "提示词内容",
+    "description": "Label for the content textarea."
+  },
+  "formPlaceholderContent": {
+    "message": "在此输入或粘贴您的提示词内容...",
+    "description": "Placeholder for the content textarea."
+  },
+  "formLabelTags": {
+    "message": "标签",
+    "description": "Label for the tags input."
+  },
+  "formBtnCancel": {
+    "message": "取消",
+    "description": "Text for the cancel button."
+  },
+  "formBtnSave": {
+    "message": "保存提示词",
+    "description": "Text for the save button."
+  },
+  "formBtnConfirm": {
+    "message": "确定",
+    "description": "Text for the confirm button."
+  },
+  "confirmTitle": {
+    "message": "确认操作",
+    "description": "Title for the confirmation dialog."
+  },
+  "toastSaveSuccess": {
+    "message": "保存成功",
+    "description": "Toast message for successful save."
+  },
+  "toastCopySuccess": {
+    "message": "复制成功",
+    "description": "Toast message for successful copy."
+  },
+  "toastSyncSuccess": {
+    "message": "云端同步完成",
+    "description": "Toast message for successful sync."
+  },
+  "toastSyncError": {
+    "message": "同步失败，请稍后重试",
+    "description": "Toast message for sync error."
+  },
+  "syncStatusSyncing": {
+    "message": "正在同步...",
+    "description": "Status text for syncing."
+  },
+  "syncStatusIdle": {
+    "message": "尚未同步",
+    "description": "Status text for idle sync."
+  },
+  "syncStatusError": {
+    "message": "同步失败",
+    "description": "Status text for sync error."
+  },
+  "lastSyncTimePrefix": {
+    "message": "最后同步时间: ",
+    "description": "Prefix for the last sync time."
+  },
+  "contextMenuTitle": {
+    "message": "添加到 Prompt管理助手",
+    "description": "Title for the context menu item."
+  },
+  "googleLogin": {
+    "message": "使用 Google 登录",
+    "description": "Text for the Google login button."
+  },
+  "settingsSectionTitle": {
+    "message": "应用设置",
+    "description": "Title for the settings section."
+  },
+  "settingsTheme": {
+    "message": "主题",
+    "description": "Label for the theme setting."
+  },
+  "themeLight": {
+    "message": "浅色",
+    "description": "Label for light theme."
+  },
+  "themeDark": {
+    "message": "深色",
+    "description": "Label for dark theme."
+  },
+  "themeSystem": {
+    "message": "系统",
+    "description": "Label for system theme."
+  },
+  "settingsFeature": {
+    "message": "功能",
+    "description": "Label for the feature setting."
+  },
+  "featureQuickWake": {
+    "message": "\"pp\"快速唤醒",
+    "description": "Label for the quick wake feature."
+  },
+  "dataManagementTitle": {
+    "message": "数据管理",
+    "description": "Title for the data management section."
+  },
+  "dataImport": {
+    "message": "导入",
+    "description": "Label for the import button."
+  },
+  "dataTemplate": {
+    "message": "模板",
+    "description": "Label for the template button."
+  },
+  "dataExport": {
+    "message": "导出",
+    "description": "Label for the export button."
+  },
+  "aboutTitle": {
+    "message": "关于",
+    "description": "Title for the about section."
+  },
+  "versionLabel": {
+    "message": "版本信息",
+    "description": "Label for the version info."
+  },
+  "authorLabel": {
+    "message": "作者",
+    "description": "Label for the author info."
+  },
+  "btnLogout": {
+    "message": "退出登录",
+    "description": "Text for the logout button."
+  },
+  "manualSyncTitle": {
+    "message": "手动同步",
+    "description": "Title attribute for the manual sync button."
+  },
+  "appTitle": { "message": "PromptCraft - 提示词管理工具" },
+  "confirmMessage": { "message": "您确定要执行此操作吗？" },
+  "viewNotFound": { "message": "错误：找不到视图元素 ID: " },
+  "viewRenderWarning": { "message": "警告：视图可能未正确显示，尝试重新应用样式" },
+  "promptRenderError": { "message": "渲染提示词时发生错误" },
+  "previewCopySuccess": { "message": "已复制!" },
+  "tagFilterAll": { "message": "全部" },
+  "tagFilterMore": { "message": "更多" },
+  "tagFilterCollapse": { "message": "收起" },
+  "backupFileNamePrefix": { "message": "Prompt管理助手备份_" },
+  "exportSuccess": { "message": "导出成功！文件已保存为：" },
+  "templateSampleTitle1": { "message": "示例提示词标题" },
+  "templateSampleContent1": { "message": "这里是提示词的具体内容，请详细描述您的需求..." },
+  "templateSampleTag1": { "message": "工作" },
+  "templateSampleAuthor": { "message": "示例作者" },
+  "templateSampleTitle2": { "message": "另一个示例" },
+  "templateSampleContent2": { "message": "您可以添加更多的提示词条目..." },
+  "templateSampleTag2": { "message": "学习" },
+  "templateFileName": { "message": "Prompt管理助手_导入模板.json" },
+  "importErrorMissingPrompts": { "message": "无效的JSON格式：缺少prompts数组" },
+  "importErrorTitleRequired": { "message": "第 $ITEM_NUM$ 项：标题不能为空", "placeholders": { "item_num": { "content": "$1" } } },
+  "importErrorContentRequired": { "message": "第 $ITEM_NUM$ 项：内容不能为空", "placeholders": { "item_num": { "content": "$1" } } },
+  "defaultTagUncategorized": { "message": "未分类" },
+  "unknownVersion": { "message": "未知" },
+  "importErrorParse": { "message": "文件解析失败: " },
+  "importErrorRead": { "message": "文件读取失败" },
+  "importFailureRecordFileName": { "message": "导入失败记录_" },
+  "errorDataInitFailed": { "message": "数据服务初始化失败: " },
+  "errorStorageReadFailed": { "message": "存储读取失败: " },
+  "errorStorageReadException": { "message": "存储读取异常: " },
+  "errorStorageWriteFailed": { "message": "存储写入失败: " },
+  "errorStorageWriteException": { "message": "存储写入异常: " },
+  "errorStorageDeleteFailed": { "message": "存储删除失败: " },
+  "errorStorageDeleteException": { "message": "存储删除异常: " },
+  "errorTitleContentRequired": { "message": "标题和内容为必填字段" },
+  "errorPromptNotFound": { "message": "未找到ID为 $ID$ 的提示词", "placeholders": { "id": { "content": "$1" } } },
+  "exportSuccessMessage": { "message": "导出成功！文件已保存为：$FILENAME$", "placeholders": { "filename": { "content": "$1" } } },
+  "templateExampleTitle1": { "message": "示例提示词标题" },
+  "templateExampleContent1": { "message": "这里是提示词的具体内容，请详细描述您的需求..." },
+  "templateExampleTag1": { "message": "工作" },
+  "templateExampleAuthor": { "message": "示例作者" },
+  "templateExampleTitle2": { "message": "另一个示例" },
+  "templateExampleContent2": { "message": "您可以添加更多的提示词条目..." },
+  "templateExampleTag2": { "message": "学习" },
+  "errorRestoreAuthFailed": { "message": "恢复认证状态失败: " },
+  "errorLoadDefaultPromptsFailed": { "message": "加载默认提示词失败: " },
+  "errorGetPromptsFailed": { "message": "获取提示词失败" },
+  "errorGetPromptsWithMsg": { "message": "获取提示词失败: " },
+  "errorGetTagsFailed": { "message": "获取标签失败: " },
+  "errorDataLoadProblem": { "message": "数据加载存在问题" },
+  "errorAuthTimeout": { "message": "获取认证状态超时" },
+  "toastLoadDataFailedRetry": { "message": "加载数据失败，请刷新页面重试" },
+  "toastLoginRequiredForSync": { "message": "请先登录以使用云端同步功能" },
+  "toastLoginStartFailed": { "message": "登录启动失败，请重试" },
+  "toastLogoutStartFailed": { "message": "退出启动失败，请重试" },
+  "toastSyncFailedPrefix": { "message": "同步失败: " },
+  "toastSyncFailedRetry": { "message": "同步失败，请重试" },
+  "toastLoadDataFailed": { "message": "加载数据失败，请刷新重试" },
+  "toastDeleteSuccess": { "message": "删除成功" },
+  "toastDeleteFailed": { "message": "删除失败，请稍后再试" },
+  "toastClearSuccess": { "message": "所有数据已清除" },
+  "toastClearFailed": { "message": "清除数据失败，请稍后再试" },
+  "toastTemplateDownloadSuccess": { "message": "JSON模板下载成功！" },
+  "toastTemplateDownloadFailed": { "message": "下载模板失败，请稍后再试" },
+  "toastNoPromptsToExport": { "message": "没有可导出的提示词" },
+  "toastExportFailed": { "message": "导出失败，请稍后再试" },
+  "toastFileJsonRequired": { "message": "请选择JSON文件（.json格式）" },
+  "toastImportFailed": { "message": "导入失败" },
+  "toastImportComplete": { "message": "导入完成：共 $TOTAL$ 条记录，全部导入失败。请检查JSON格式是否正确。", "placeholders": { "total": { "content": "$1" } } },
+  "confirmDownloadFailedRecords": { "message": "是否下载失败记录？" },
+  "toastImportSuccessStats": { "message": "导入完成：\n共计 $TOTAL$ 条记录\n新增 $ADDED$ 条", "placeholders": { "total": { "content": "$1" }, "added": { "content": "$2" } } },
+  "toastImportUpdateStats": { "message": "\n更新 $UPDATED$ 条（同名覆盖）", "placeholders": { "updated": { "content": "$1" } } },
+  "toastImportFailStats": { "message": "\n失败 $FAILED$ 条", "placeholders": { "failed": { "content": "$1" } } },
+  "toastImportFailedPrefix": { "message": "导入失败：" },
+  "confirmDeletePrompt": { "message": "您确定要删除这个提示词吗？此操作无法撤销。" },
+  "confirmClearAllData": { "message": "您确定要清除所有提示词数据吗？此操作无法撤销。" },
+  "errorPromptNotFoundOrDeleted": { "message": "提示词不存在或已被删除" },
+  "errorDeletePromptFailed": { "message": "删除提示词失败" },
+  "noMatchingPrompts": { "message": "未找到匹配的提示词" },
+  "promptCraftPrefix": { "message": "提示词助手: " },
+  "helpSelect": { "message": "选择" },
+  "helpConfirm": { "message": "确认" },
+  "helpCancel": { "message": "取消" },
+  "helpFooter": { "message": "输入 pp 唤起 • 支持搜索和标签筛选" },
+  "errorLoadDataFailedPrefix": { "message": "加载数据失败: " },
+  "errorConnectionToBackgroundFailed": { "message": "无法连接到扩展后台服务: " },
+  "errorUnknown": { "message": "未知错误" },
+  "tagInputPlaceholderEmpty": { "message": "输入标签，按回车添加" },
+  "tagInputPlaceholder": { "message": "添加标签..." },
+  "loginProgressPreparing": { "message": "准备登录资源..." },
+  "loginProgressPreloaded": { "message": "使用预加载资源" },
+  "loginProgressRedirect": { "message": "获取重定向URL..." },
+  "loginProgressOAuth": { "message": "获取Google授权链接..." },
+  "loginProgressAuthPage": { "message": "打开Google登录页面..." },
+  "loginErrorTimeout": { "message": "认证超时，请重试" },
+  "loginProgressCallback": { "message": "处理登录回调..." },
+  "errorDependencyInjection": { "message": "依赖服务未正确注入" },
+  "errorSyncInitFailed": { "message": "同步服务初始化失败: " },
+  "loginProgress": { "message": "正在登录..." },
+  "defaultUserName": { "message": "用户" },
+  "unknownEmail": { "message": "未知邮箱" },
+  "syncTimeGetFailed": { "message": "同步时间获取失败" },
+  "toastSyncSuccessUpdate": { "message": "云端同步完成，数据已更新" },
+  "loginProgressSession": { "message": "建立用户会话..." },
+  "loginProgressComplete": { "message": "登录成功！" },
+  "loginSuccessMessage": { "message": "登录成功" },
+  "loginErrorTokenMissing": { "message": "未能获取到有效的认证令牌" },
+  "loginErrorSessionInvalid": { "message": "会话设置成功但数据无效" },
+  "loginErrorFailed": { "message": "登录失败: " },
+  "logoutError": { "message": "Supabase 退出失败:" },
+  "syncMigrationInProgress": { "message": "数据迁移正在进行中" },
+  "syncErrorNotLoggedIn": { "message": "用户未登录，无法执行数据迁移" },
+  "syncMigrationNoData": { "message": "无数据需要迁移" },
+  "syncMigrationSuccess": { "message": "成功迁移 $COUNT$ 条提示词到云端", "placeholders": { "count": { "content": "$1" } } },
+  "syncErrorUploadFailed": { "message": "数据上传失败" },
+  "syncErrorMigrationFailed": { "message": "数据迁移失败: " },
+  "errorContentTooLong": { "message": "提示词内容不能超过20000个字符！" },
+  "toastPromptUpdateSuccess": { "message": "提示词更新成功" },
+  "errorPromptUpdateFailed": { "message": "更新提示词失败" },
+  "toastPromptAddSuccess": { "message": "提示词添加成功" },
+  "errorPromptAddFailed": { "message": "添加提示词失败" },
+  "toastSaveFailedRetry": { "message": "保存失败，请稍后再试" },
+  "errorPromptNotFoundEdit": { "message": "未找到要编辑的提示词" },
+  "toastEditFailedRetry": { "message": "编辑提示词失败，请重试" },
+  "toastPpCommandEnabled": { "message": "PP命令唤醒功能已启用" },
+  "toastPpCommandDisabled": { "message": "PP命令唤醒功能已禁用" },
+  "errorLoadDefaultPrompts": { "message": "加载默认提示词失败" },
+  "authorUnknown": { "message": "未知" },
+  "noRecommendedTags": { "message": "暂无推荐标签" },
+  "errorPromptsMustBeArray": { "message": "提示词数据必须是数组格式" },
+  "errorPromptsMustHaveTitleContent": { "message": "每个提示词都必须包含标题和内容" },
+  "errorInvalidThemeMode": { "message": "无效的主题模式" },
+  "footerGithub": { "message": "GitHub" },
+  "footerFeedback": { "message": "反馈" },
+  "authorName": { "message": "吏部侍郎" },
+  "settingsAccountAndSync": { "message": "账户与同步" },
+  "settingsModalTitle": { "message": "设置" },
+  "errorAuthServiceNotInitialized": { "message": "认证服务未初始化" },
+  "errorLoginFailedNoResult": { "message": "登录失败，未返回有效结果" },
+  "errorSyncServiceNotInitialized": { "message": "同步服务未初始化" },
+  "errorDataServiceNotInitialized": { "message": "数据服务未初始化" }
 }
