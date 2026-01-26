@@ -13,12 +13,12 @@
     "local-storage",
     "productivity"
   ],
-  "author": "Your Name",
+  "author": "吏部侍郎",
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {},
   "repository": {
     "type": "git",
-    "url": "your-repository-url"
+    "url": "https://github.com/Wangshixiong/PromptCraft.git"
   }
 }
