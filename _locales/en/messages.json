@@ -119,6 +119,10 @@
     "message": "Cloud sync completed",
     "description": "Toast message for successful sync."
   },
+  "toastLoginSuccess": {
+    "message": "Login successful!",
+    "description": "Toast message for successful login."
+  },
   "toastSyncError": {
     "message": "Sync failed, please try again later",
     "description": "Toast message for sync error."

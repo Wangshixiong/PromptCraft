@@ -779,7 +779,18 @@ const app = {
      */
     async loadVersionLogData() {
         try {
-            const response = await fetch('/assets/data/version-log.json');
+            // 根据浏览器语言决定加载哪个文件
+            const uiLanguage = chrome.i18n.getUILanguage();
+            let fileName = 'version-log.json';
+            
+            // 如果语言代码以 'en' 开头（如 'en', 'en-US', 'en-GB'），则加载英文版
+            if (uiLanguage && uiLanguage.toLowerCase().startsWith('en')) {
+                fileName = 'version-log-en.json';
+            }
+            
+            console.log(`PromptCraft: Loading version log from ${fileName} (Language: ${uiLanguage})`);
+            
+            const response = await fetch(`/assets/data/${fileName}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -1284,32 +1295,7 @@ const app = {
         return formattedText;
     },
 
-    // --- 版本日志业务逻辑 ---
 
-    /**
-     * 加载版本日志数据
-     * @returns {Promise<Object>} 版本日志数据
-     */
-    async loadVersionLogData() {
-        try {
-            const response = await fetch('/assets/data/version-log.json');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return await response.json();
-        } catch (error) {
-            console.error('加载版本日志数据失败:', error);
-            return null;
-        }
-    },
-
-    /**
-     * 初始化版本日志
-     */
-    async initializeVersionLog() {
-        // 检查是否有新版本
-        await ui.checkForNewVersion();
-    },
 
     /**
      * 设置消息监听器 - 从sidepanel.js迁移
@@ -1323,7 +1309,7 @@ const app = {
                     ui.updateUIForAuthState(message.session);
                     ui.setLoginButtonLoading(false);
                     if (message.session) {
-                        ui.showToast('登录成功！', 'success');
+                        ui.showToast(chrome.i18n.getMessage('toastLoginSuccess'), 'success');
                         const userDropdown = document.getElementById('userDropdown');
                         if (userDropdown) {
                             userDropdown.classList.remove('show');

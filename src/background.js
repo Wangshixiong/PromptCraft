@@ -32,8 +32,20 @@ async function loadDefaultPromptsToMemory() {
         
 
         
-        // 从default-prompts.json文件加载默认数据
-        const fileUrl = chrome.runtime.getURL('assets/data/default-prompts.json');
+        // 根据浏览器语言决定加载哪个文件
+        const uiLanguage = chrome.i18n.getUILanguage();
+        let fileName = 'default-prompts.json';
+        
+        // 如果语言代码以 'en' 开头（如 'en', 'en-US', 'en-GB'），则加载英文版
+        // 使用 toLowerCase() 确保匹配不区分大小写
+        if (uiLanguage && uiLanguage.toLowerCase().startsWith('en')) {
+            fileName = 'default-prompts-en.json';
+        }
+        
+        console.log(`PromptCraft: Loading default prompts from ${fileName} (Language: ${uiLanguage})`);
+        
+        // 从文件加载默认数据
+        const fileUrl = chrome.runtime.getURL(`assets/data/${fileName}`);
 
         
         const response = await fetch(fileUrl);

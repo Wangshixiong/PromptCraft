@@ -642,10 +642,10 @@ const ui = {
                 const content = e.currentTarget.dataset.content;
                 navigator.clipboard.writeText(this.unescapeHtml(content)).then(() => {
                     // 添加复制成功的视觉反馈
-                     btn.classList.add('copied');
-                     const originalText = btn.innerHTML;
-                     btn.innerHTML = '已复制!';
-                     btn.style.background = 'var(--success)';
+                    btn.classList.add('copied');
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = I18nHelper.getMessage('previewCopySuccess');
+                    btn.style.background = 'var(--success)';
                      
                      // 2秒后恢复原状
                      setTimeout(() => {
@@ -853,12 +853,12 @@ const ui = {
      */
     updateSyncStatus(status, lastSyncTime) {
         const syncTimeElement = document.getElementById('syncTime');
-        const syncSuccessMsg = chrome.i18n.getMessage('toastSyncSuccess') || '云端同步完成';
-        const syncErrorMsg = chrome.i18n.getMessage('toastSyncError') || '同步失败，请稍后重试';
-        const statusSyncing = chrome.i18n.getMessage('syncStatusSyncing') || '正在同步...';
-        const statusError = chrome.i18n.getMessage('syncStatusError') || '同步失败';
-        const statusIdle = chrome.i18n.getMessage('syncStatusIdle') || '尚未同步';
-        const timePrefix = chrome.i18n.getMessage('lastSyncTimePrefix') || '最后同步时间: ';
+        const syncSuccessMsg = I18nHelper.getMessage('toastSyncSuccess', 'Cloud sync completed');
+        const syncErrorMsg = I18nHelper.getMessage('toastSyncError', 'Sync failed, please try again later');
+        const statusSyncing = I18nHelper.getMessage('syncStatusSyncing', 'Syncing...');
+        const statusError = I18nHelper.getMessage('syncStatusError', 'Sync failed');
+        const statusIdle = I18nHelper.getMessage('syncStatusIdle', 'Not synced yet');
+        const timePrefix = I18nHelper.getMessage('lastSyncTimePrefix', 'Last synced: ');
         
         switch (status) {
             case 'syncing':
