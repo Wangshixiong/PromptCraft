@@ -1,3 +1,7 @@
+---
+alwaysApply: false
+description: 
+---
 # 1. 核心理念 (Core Philosophy)
 
 ## 本地优先，可选同步

@@ -1132,7 +1132,11 @@ const app = {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         event.target.classList.add('active');
 
-        if (tag === '全部') {
+        // 获取当前语言环境下的"全部"文本，如果获取失败默认为"全部"
+        // 注意：这里必须与 uiManager.js 中 updateFilterButtons 生成按钮时的逻辑保持一致
+        const allTagText = chrome.i18n.getMessage('tagFilterAll') || '全部';
+
+        if (tag === allTagText) {
             ui.renderPrompts(allPrompts);
         } else {
             const filtered = allPrompts.filter(p => {
