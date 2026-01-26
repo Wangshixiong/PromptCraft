@@ -1,0 +1,262 @@
+{
+  "currentVersion": "1.4.0",
+  "lastViewedVersion": "1.3.8",
+  "versions": [
+    {
+      "version": "1.4.0",
+      "date": "2026-01-26",
+      "title": "Internationalization Support",
+      "changes": [
+        "🌍 Added complete internationalization (i18n) support with Chinese/English bilingual switching",
+        "📝 Added i18n-helper utility module for unified i18n logic management",
+        "🎨 Fully updated UI text to use i18n API, supporting dynamic language switching",
+        "📄 Added English language pack, covering all interface text",
+        "🔧 Optimized form layout to accommodate different language text lengths"
+      ]
+    },
+    {
+      "version": "1.3.8",
+      "date": "2026-01-20",
+      "title": "Experience Optimization & Bug Fixes",
+      "changes": [
+        "🐛 Fixed an issue where clicking the copy button caused an unexpected page refresh",
+        "⚡ Optimized copy interaction experience to prevent loss of search results"
+      ]
+    },
+    {
+      "version": "1.3.7",
+      "date": "2025-07-16",
+      "title": "Important Bug Fixes",
+      "changes": [
+        "🐛 Fixed Gemini canvas page freeze issue",
+        "🔐 Fixed login state persistence issue"
+      ]
+    },
+    {
+      "version": "1.3.6",
+      "date": "2025-07-07",
+      "title": "Interface Layout Optimization & Feature Enhancement",
+      "changes": [
+        "🎨 Added author and tags fields",
+        "🔧 Optimized settings data management layout with compact icon-text horizontal alignment",
+        "👤 Added author and contact info display, supporting QR code contact",
+        "📱 Optimized prompt preview layout to improve user experience"
+      ]
+    },
+    {
+      "version": "1.3.5",
+      "date": "2025-07-02",
+      "title": "UI Interface Refactoring & Optimization",
+      "changes": [
+        "🎨 Top area refactoring: Adopted modern design style, optimized layout and space utilization",
+        "🔍 Search function area redesign: Rounded corners, light gray borders, improving user experience",
+        "🏷️ Tag filter area optimization: Pill shape design, horizontal scrolling layout, adapting to different screen widths",
+        "🎭 Prompt card UI refactoring"
+      ]
+    },
+    {
+      "version": "1.3.0",
+      "date": "2025-06-30",
+      "title": "Code Architecture Refactoring",
+      "changes": [
+        "🔧 Completed JavaScript code modularization refactoring, improving code quality and maintainability",
+        "📁 Reorganized project file structure, implementing a clearer layered architecture",
+        "🐛 Fixed all JavaScript syntax errors, ensuring stable code operation",
+        "⚡ Optimized function call logic, improving application response speed",
+        "📝 Unified code style, added complete JSDoc comments",
+        "🔄 Added version update log function, allowing users to view version change history"
+      ]
+    },
+    {
+      "version": "1.2.2",
+      "date": "2025-06-27",
+      "title": "Data Security Fixes",
+      "changes": [
+        "🛡️ Fixed a serious issue where user data was lost after logging out of Google login",
+        "🔧 Replaced excessive cleanup logic, only clearing authentication data upon logout, fully preserving user prompts",
+        "🚀 Fixed an issue where browser restart incorrectly triggered the 'first install' flow",
+        "🔒 Added data protection mechanism to prevent accidental user data cleanup",
+        "🌐 Fixed compatibility issues where the extension caused page load failures on certain webpages"
+      ]
+    },
+    {
+      "version": "1.2.1",
+      "date": "2025-06-25",
+      "title": "Google Login State Fixes",
+      "changes": [
+        "🔧 Fixed Google login state loss after browser restart, implementing authentication state persistence",
+        "🎯 Added frontend-backend authentication state 'initial handshake' mechanism to ensure UI and backend state consistency",
+        "✨ Optimized logic for user actively closing Google login window, silently restoring button state",
+        "🛡️ Distinguished between 'user active cancellation' and 'real login failure', providing more accurate user feedback",
+        "📊 Improved console log output, using normal logs instead of error levels when user cancels login"
+      ]
+    },
+    {
+      "version": "1.2.0",
+      "date": "2025-06-22",
+      "title": "Login Animation Optimization",
+      "changes": [
+        "🎭 Implemented smooth login button loading animation, providing clear visual feedback",
+        "📊 Added phased login progress prompts ('Connecting to Google...', 'Verifying identity...', 'Syncing data...')",
+        "⚡ Warmed up login resources at startup, significantly reducing first login wait time, solving the 10-second delay issue",
+        "🛡️ Anti-repeat click protection, automatic state recovery, ensuring stable and reliable login process",
+        "🎯 Complete login interaction experience refactoring, full visual feedback from click to completion",
+        "🔧 Implemented message-driven progress callback mechanism, frontend-backend collaborative processing of login state"
+      ]
+    },
+    {
+      "version": "1.1.0",
+      "date": "2025-06-22",
+      "title": "Message-Driven Architecture",
+      "changes": [
+        "🚀 Implemented comprehensive communication mechanism refactoring, all core services managed by background scripts",
+        "🔧 Ensured single instance operation of core services, solving multi-instance interference issues",
+        "🎯 Thoroughly separated UI rendering and business logic, improving code maintainability",
+        "⚡ Solved interface lag caused by 'notification storm', improving list update performance",
+        "🛡️ Thoroughly solved sync process concurrent execution bug, ensuring data processing atomicity",
+        "🔐 Fixed authentication timeout issue caused by script context isolation",
+        "🔄 Optimized cloud deletion record processing logic, avoiding 'zombie record' issues",
+        "🧹 Removed repeated polling requests for theme settings, reducing resource consumption"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2025-06-20",
+      "title": "Cloud Sync Functionality",
+      "changes": [
+        "🔄 Implemented complete Supabase cloud data sync, supporting cross-device data consistency",
+        "🔀 Local operations immediately pushed to cloud, cloud changes update local via timed sync (10 mins) and event triggers",
+        "🐛 Fixed repeated toast prompt issue, removed duplicate message listeners",
+        "🔧 Fixed issue where cloud delete operations could not sync to local",
+        "⚡ Optimized sync state management, reducing unnecessary UI refreshes",
+        "🛡️ Enhanced local and cloud data consistency guarantee mechanism",
+        "📱 Perfected data sync experience between multiple devices"
+      ]
+    },
+    {
+      "version": "0.9.0",
+      "date": "2025-06-19",
+      "title": "User Authentication System",
+      "changes": [
+        "🔐 Added Google OAuth login function, supporting secure user identity verification",
+        "🔧 Completely refactored OAuth authentication system, removed conflicting code, adopted pure chrome.identity.launchWebAuthFlow implementation",
+        "🛡️ Optimized Supabase configuration, simplified message passing mechanism, improved system security",
+        "🧹 Removed redundant code and unnecessary permissions, streamlined manifest.json configuration",
+        "🐛 Solved authService identifier duplicate declaration issue, ensuring correct code execution",
+        "⚡ Fixed multiple GoTrueClient instance warnings, optimized auth service loading logic",
+        "🔄 Simplified auth service initialization flow, added anti-repeat loading mechanism"
+      ]
+    },
+    {
+      "version": "0.5.1",
+      "date": "2025-06-17",
+      "title": "Prompt Sorting Optimization",
+      "changes": [
+        "📋 Newly created prompts automatically display at the top of the list, sorted by creation time in descending order",
+        "🎨 Redesigned appearance settings layout, icon and text displayed on the same line, improving user experience",
+        "🔧 Optimized visual effect and spacing of theme selector in settings panel",
+        "🎯 Ensured quick call function text insertion format remains consistent with copy button"
+      ]
+    },
+    {
+      "version": "0.5.0",
+      "date": "2025-06-16",
+      "title": "Major Architecture Refactoring",
+      "changes": [
+        "🚀 Simplified extension overall architecture, removed unnecessary complexity, improved system performance and stability",
+        "🔒 Optimized Chrome Storage API usage mechanism, improved data read/write efficiency and security",
+        "🛡️ Strengthened user data privacy protection, ensuring all data is processed locally only, with no external transmission",
+        "🏗️ Optimized user operation flow, removed unnecessary authentication steps, providing a more direct user experience",
+        "⚡ Reduced external dependency libraries, significantly improved extension startup speed and response performance",
+        "🧹 Large-scale code refactoring and cleanup, removed redundant code, improved code maintainability",
+        "📝 Optimized manifest.json configuration, removed unnecessary permission applications, reducing security risks",
+        "🔧 Streamlined package.json dependencies, reduced package size, improved installation and update speed"
+      ]
+    },
+    {
+      "version": "0.1.9",
+      "date": "2025-06-14",
+      "title": "Major Performance Optimization",
+      "changes": [
+        "🚀 Implemented skeleton screen loading, completely solving the 2-3 second white screen issue on first open",
+        "⚡ Users see elegant skeleton screen placeholders immediately when opening the sidebar",
+        "🎨 Added 4 static skeleton cards, containing complete placeholders for title, button, category, content lines, etc.",
+        "🔄 Removed setTimeout delay, changed to fully async/await implementation",
+        "📊 Get data from chrome.storage.local first, then render",
+        "🎭 Skeleton screen adopts smooth pulse animation, supporting light/dark theme switching",
+        "💾 Ensured all components use chrome.storage.local as the sole data source"
+      ]
+    },
+    {
+      "version": "0.1.7",
+      "date": "2025-06-14",
+      "title": "Cross-Framework Text Insertion Optimization",
+      "changes": [
+        "🚀 Improved compatibility with various frontend frameworks",
+        "🎯 Ensured accuracy and stability of text insertion",
+        "🌐 Implemented full framework coverage via manifest.json configuration",
+        "🎨 Restored native CSS media query theme detection, ensuring theme consistency"
+      ]
+    },
+    {
+      "version": "0.1.6",
+      "date": "2025-06-13",
+      "title": "Initialization Architecture Optimization",
+      "changes": [
+        "⚡ Improved data loading performance and extension startup speed",
+        "📋 Extension automatically loads into memory at startup, improving response speed",
+        "🛡️ Added user-friendly error prompt function",
+        "🔧 Ensured correct access to resource files"
+      ]
+    },
+    {
+      "version": "0.1.5",
+      "date": "2025-06-12",
+      "title": "Content Length Limit",
+      "changes": [
+        "📝 Added 10000 character limit for prompt content",
+        "📊 Added character count display function",
+        "🎨 Prompt card preview displays more content",
+        "📚 Added multiple high-quality professional prompts"
+      ]
+    },
+    {
+      "version": "0.1.3",
+      "date": "2025-06-12",
+      "title": "Right-Click Menu Function",
+      "changes": [
+        "🖱️ Added right-click quick add prompt function",
+        "🔍 Improved search function response speed",
+        "🏷️ Optimized category management interface experience"
+      ]
+    },
+    {
+      "version": "0.1.2",
+      "date": "2025-06-11",
+      "title": "JSON Import/Export",
+      "changes": [
+        "📁 Added JSON format data import/export function",
+        "🎨 Improved visual effect of prompt cards"
+      ]
+    },
+    {
+      "version": "0.1.1",
+      "date": "2025-06-10",
+      "title": "Category Management Function",
+      "changes": [
+        "🏷️ Added prompt category management system",
+        "🔍 Improved search performance and accuracy"
+      ]
+    },
+    {
+      "version": "0.1.0",
+      "date": "2025-06-09",
+      "title": "First Release",
+      "changes": [
+        "🎉 Basic prompt management functions",
+        "💾 Pure local data storage, protecting user privacy",
+        "🎨 Modern user interface design"
+      ]
+    }
+  ]
+}

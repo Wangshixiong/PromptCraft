@@ -1,7 +1,19 @@
 {
-  "currentVersion": "1.3.8",
-  "lastViewedVersion": "1.3.7",
+  "currentVersion": "1.4.0",
+  "lastViewedVersion": "1.3.8",
   "versions": [
+    {
+      "version": "1.4.0",
+      "date": "2026-01-26",
+      "title": "国际化支持",
+      "changes": [
+        "🌍 新增完整的国际化（i18n）支持，支持中英文双语切换",
+        "📝 新增i18n-helper工具模块，统一管理国际化逻辑",
+        "🎨 全面更新UI文本使用国际化API，支持动态语言切换",
+        "📄 新增英文语言包，覆盖所有界面文本",
+        "🔧 优化表单布局，适配不同语言文本长度"
+      ]
+    },
     {
       "version": "1.3.8",
       "date": "2026-01-20",
