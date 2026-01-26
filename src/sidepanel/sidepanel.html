@@ -25,7 +25,7 @@
                         <circle cx="11" cy="11" r="8"></circle>
                         <path d="m21 21-4.35-4.35"></path>
                     </svg>
-                    <input type="text" class="search-box" placeholder="搜索提示词..." id="searchInput">
+                    <input type="text" class="search-box" placeholder="搜索提示词..." data-i18n-placeholder="searchPlaceholder" id="searchInput">
                 </div>
                 <div class="controls">
                     <button class="add-btn-icon" id="addPromptBtn" title="添加新提示词">
@@ -135,17 +135,12 @@
                     <form id="promptForm">
                         <input type="hidden" id="promptIdInput">
                         <div class="form-group">
-                            <!-- 标题和作者使用水平布局 -->
-                            <div class="form-row">
-                                <div class="form-col flex-2">
-                                    <label class="form-label" for="promptTitleInput"><span class="required">*</span> <span data-i18n="formLabelTitle">标题</span></label>
-                                    <input type="text" class="form-input" id="promptTitleInput" data-i18n-placeholder="formPlaceholderTitle" placeholder="给提示词起个名字">
-                                </div>
-                                <div class="form-col flex-1">
-                                    <label class="form-label" for="promptAuthorInput" data-i18n="formLabelAuthor">作者</label>
-                                    <input type="text" class="form-input" id="promptAuthorInput" data-i18n-placeholder="formPlaceholderAuthor" placeholder="输入作者名称（可选）">
-                                </div>
-                            </div>
+                            <label class="form-label" for="promptTitleInput"><span class="required">*</span> <span data-i18n="formLabelTitle">标题</span></label>
+                            <input type="text" class="form-input" id="promptTitleInput" data-i18n-placeholder="formPlaceholderTitle" placeholder="给提示词起个名字">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="promptAuthorInput" data-i18n="formLabelAuthor">作者</label>
+                            <input type="text" class="form-input" id="promptAuthorInput" data-i18n-placeholder="formPlaceholderAuthor" placeholder="输入作者名称（可选）">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="promptContentInput"><span class="required">*</span> <span data-i18n="formLabelContent">提示词内容</span></label>
