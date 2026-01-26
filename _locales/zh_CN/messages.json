@@ -123,6 +123,10 @@
     "message": "登录成功！",
     "description": "Toast message for successful login."
   },
+  "toastLogoutSuccess": {
+    "message": "已退出登录",
+    "description": "Toast message for successful logout."
+  },
   "toastSyncError": {
     "message": "同步失败，请稍后重试",
     "description": "Toast message for sync error."

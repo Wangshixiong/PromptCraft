@@ -1315,7 +1315,7 @@ const app = {
                             userDropdown.classList.remove('show');
                         }
                     } else {
-                        ui.showToast('已退出登录', 'success');
+                        ui.showToast(chrome.i18n.getMessage('toastLogoutSuccess'), 'success');
                     }
                     break;
 

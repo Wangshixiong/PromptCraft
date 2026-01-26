@@ -123,6 +123,10 @@
     "message": "Login successful!",
     "description": "Toast message for successful login."
   },
+  "toastLogoutSuccess": {
+    "message": "Logged out successfully",
+    "description": "Toast message for successful logout."
+  },
   "toastSyncError": {
     "message": "Sync failed, please try again later",
     "description": "Toast message for sync error."
